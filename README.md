@@ -53,3 +53,17 @@ npm run test:server  # サーバー側の通し試験（node:test）
 明示的に開ける。本番は同一オリジン（リバースプロキシで `/api` を API へ
 寄せる）を想定していて、その場合 CORS は閉じたまま。データは
 `server/store/`（1 件 1 JSON。コミットしない）。
+
+### 2 モード構成（GAMEYARD と同じ型）
+
+- `SITE_MODE=static`（既定の `npm run build`）… 固定ページ（トップ・
+  ログイン・書く画面など）を `out/` に書き出す。CDN・静的ホスティング用
+- `SITE_MODE=server`（`npm run build:server` → `npm run start:server`）…
+  Story の本文（`/story/<id>/`）・一覧（`/stories/`）・書き手ページ
+  （`/creators/<handle>/`）・タグ索引（`/tags/`）をリクエスト時に組み立てて
+  HTML で返す。本文が HTML に入ることがタグ SEO の前提
+- 前段（nginx など）は静的ファイルがあればそれを返し、無いパス
+  （`/story/` `/creators/` `/stories/` `/tags/` `/api/`）を server モードへ回す
+- `npm run dev` は server モードで立ち上がる（全ルートが動く）。
+  下書きのプレビューだけは実 URL ではなく `/story/?id=` （本人トークン
+  つきでブラウザから API を読む）

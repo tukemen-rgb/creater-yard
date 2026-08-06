@@ -108,7 +108,7 @@ export default function AccountPage() {
       <p className="page__lede">
         <Link prefetch={false} href="/write/">新しい Story を書く</Link>
         {' ・ '}
-        <Link prefetch={false} href={`/creators/?handle=${account.handle}`}>
+        <Link prefetch={false} href={`/creators/${account.handle}/`}>
           公開ページを見る
         </Link>
         {' ・ '}

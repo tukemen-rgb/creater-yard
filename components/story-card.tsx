@@ -8,10 +8,13 @@ import { formatDate, type Story } from '../lib/api'
  */
 export function StoryCard({ story, showAuthor = true }: { story: Story; showAuthor?: boolean }) {
   const excerpt = story.body.length > 120 ? `${story.body.slice(0, 120)}…` : story.body
+  // 公開分は実 URL（server モードが返す）。下書きは本人トークンが要るので
+  // プレビュー（/story/?id=）へ
+  const href = story.status === 'draft' ? `/story/?id=${story.id}` : `/story/${story.id}/`
   return (
     <article className="story-card">
       <h2 className="story-card__title">
-        <Link prefetch={false} href={`/story/?id=${story.id}`}>
+        <Link prefetch={false} href={href}>
           {story.title}
         </Link>
         {story.status === 'draft' && <span className="badge badge--draft">下書き</span>}
@@ -19,7 +22,7 @@ export function StoryCard({ story, showAuthor = true }: { story: Story; showAuth
       <p className="story-card__meta">
         {showAuthor && (
           <>
-            <Link prefetch={false} href={`/creators/?handle=${story.authorHandle}`}>
+            <Link prefetch={false} href={`/creators/${story.authorHandle}/`}>
               {story.authorHandle}
             </Link>
             {' ・ '}

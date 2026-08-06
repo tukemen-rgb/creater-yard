@@ -2,15 +2,19 @@
 
 import Link from 'next/link'
 import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-import { api, ApiError, formatDate, getHandle, type Story } from '../../lib/api'
+import { api, ApiError, getHandle, type Story } from '../../lib/api'
+import { StoryArticle } from '../../components/story-article'
 
 /**
- * Story 1 本のページ。本文はプレーンテキスト（まず装飾なし — SPEC §1）。
- * 下書きは本人にだけ返る（API 側で 404 に揃えている）。
+ * 下書きプレビュー（/story/?id=）。本人トークン付きで API から読むので、
+ * 下書きは本人にだけ見える。公開済みの ID を開いたら実 URL
+ * （/story/<id>/。server モードが HTML で返す）へ送る — 同じ内容が
+ * 2 つの URL に並ぶと検索側でどちらが本物か割れるため。
  */
 function StoryInner() {
+  const router = useRouter()
   const params = useSearchParams()
   const id = params.get('id') ?? ''
 
@@ -22,11 +26,16 @@ function StoryInner() {
       setError('Story が指定されていません。')
       return
     }
-    // 下書きを本人が開けるよう、ログイン中はトークン付きで読む
     api<{ story: Story }>(`/api/stories/${id}.json`, { auth: Boolean(getHandle()) })
-      .then((data) => setStory(data.story))
+      .then((data) => {
+        if (data.story.status === 'public') {
+          router.replace(`/story/${data.story.id}/`)
+          return
+        }
+        setStory(data.story)
+      })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
-  }, [id])
+  }, [id, router])
 
   if (error) {
     return (
@@ -39,57 +48,7 @@ function StoryInner() {
     )
   }
   if (!story) return <p className="notice">読み込み中…</p>
-
-  const mine = getHandle() === story.authorHandle
-  return (
-    <article className="page story">
-      <p className="story__back">
-        <Link prefetch={false} href="/stories/">← Story 一覧</Link>
-      </p>
-      <h1 className="story__title">
-        {story.title}
-        {story.status === 'draft' && <span className="badge badge--draft">下書き</span>}
-      </h1>
-      <p className="story__meta">
-        <Link prefetch={false} href={`/creators/?handle=${story.authorHandle}`}>
-          {story.authorHandle}
-        </Link>
-        {' ・ '}
-        {formatDate(story.publishedAt ?? story.updatedAt)}
-        {mine && (
-          <>
-            {' ・ '}
-            <Link prefetch={false} href={`/write/?id=${story.id}`}>編集する</Link>
-          </>
-        )}
-      </p>
-      <div className="story__body">{story.body}</div>
-      {story.tools.length > 0 && (
-        <p className="story__tools">
-          使ったツール: {story.tools.join(' / ')}
-        </p>
-      )}
-      {(story.toolTags.length > 0 || story.topicTags.length > 0) && (
-        <p className="story-card__tags">
-          {story.toolTags.map((tag) => (
-            <Link prefetch={false} key={`tool-${tag}`} className="tag" href={`/stories/?tool=${encodeURIComponent(tag)}`}>
-              {tag}
-            </Link>
-          ))}
-          {story.topicTags.map((tag) => (
-            <Link prefetch={false} key={`topic-${tag}`} className="tag tag--topic" href={`/stories/?topic=${encodeURIComponent(tag)}`}>
-              {tag}
-            </Link>
-          ))}
-        </p>
-      )}
-      {story.gameUrl && (
-        <p className="story__game">
-          この記録の作品: <a href={story.gameUrl}>{story.gameUrl}</a>（GAMEYARD）
-        </p>
-      )}
-    </article>
-  )
+  return <StoryArticle story={story} />
 }
 
 export default function StoryPage() {

@@ -72,7 +72,7 @@ function WriteInner() {
       const data = editId
         ? await api<{ story: Story }>(`/api/stories/${editId}`, { method: 'PUT', body: payload, auth: true })
         : await api<{ story: Story }>('/api/stories', { method: 'POST', body: payload, auth: true })
-      router.push(saveStatus === 'public' ? `/story/?id=${data.story.id}` : '/account/')
+      router.push(saveStatus === 'public' ? `/story/${data.story.id}/` : '/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '保存できませんでした。')
       setBusy(false)
