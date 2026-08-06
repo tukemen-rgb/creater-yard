@@ -211,7 +211,13 @@ export class StoryStore {
     }
   }
 
-  create(account, input) {
+  /**
+   * @param {object} [options]
+   * @param {object|null} [options.image] 添付画像 {id, ext, width, height}。
+   *   検査と所有者の確認は API 層（images.mjs）が済ませてから渡す。
+   *   Story ストアは形しか見ない（画像の実体はここの管轄外のため）。
+   */
+  create(account, input, { image = null } = {}) {
     const mine = this.listByAuthor(account.id)
     if (mine.length >= STORY_LIMITS.maxPerAuthor) {
       throw new StoryError(
@@ -226,6 +232,7 @@ export class StoryStore {
       authorId: account.id,
       authorHandle: account.handle,
       ...fields,
+      image,
       createdAt: nowIso,
       updatedAt: nowIso,
       publishedAt: fields.status === 'public' ? nowIso : null,
@@ -235,7 +242,12 @@ export class StoryStore {
     return record
   }
 
-  update(id, account, input) {
+  /**
+   * @param {object} [options]
+   * @param {object|null|undefined} [options.image] undefined なら現状維持、
+   *   null なら外す、オブジェクトなら差し替え（検査済みのものだけ渡すこと）。
+   */
+  update(id, account, input, { image } = {}) {
     const record = this.get(id)
     if (!record) throw new StoryError('Story が見つかりません。', 404)
     if (record.authorId !== account.id) {
@@ -246,6 +258,7 @@ export class StoryStore {
     const next = {
       ...record,
       ...fields,
+      image: image === undefined ? (record.image ?? null) : image,
       updatedAt: nowIso,
       // 最初に公開した時刻を保つ。公開→下書き→再公開で時系列が飛ばないように。
       publishedAt: fields.status === 'public' ? (record.publishedAt ?? nowIso) : record.publishedAt,
@@ -340,6 +353,7 @@ export function publicStory(record) {
     toolTags: record.toolTags ?? [],
     topicTags: record.topicTags ?? [],
     gameUrl: record.gameUrl ?? '',
+    image: record.image ?? null,
     status: record.status,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

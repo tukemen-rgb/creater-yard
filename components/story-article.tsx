@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { formatDate, type Story } from '../lib/api'
+import { formatDate, imageUrl, type Story } from '../lib/api'
 import { EditLink } from './edit-link'
 
 /**
@@ -26,6 +26,18 @@ export function StoryArticle({ story }: { story: Story }) {
         {formatDate(story.publishedAt ?? story.updatedAt)}
         <EditLink id={story.id} authorHandle={story.authorHandle} />
       </p>
+      {story.image && (
+        // Next の Image は最適化サーバー前提なので使わない（静的優先の構成。
+        // next.config の images.unoptimized と同じ判断）
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          className="story__image"
+          src={imageUrl(story.image)}
+          width={story.image.width}
+          height={story.image.height}
+          alt=""
+        />
+      )}
       <div className="story__body">{story.body}</div>
       {story.tools.length > 0 && (
         <p className="story__tools">使ったツール: {story.tools.join(' / ')}</p>

@@ -34,6 +34,20 @@ const nextConfig = {
   reactStrictMode: true,
   images: { unoptimized: true },
   eslint: { ignoreDuringBuilds: true },
+  /**
+   * server モードだけ /api を API プロセスへ中継する。開発中（:3000）でも
+   * SSR が出す画像 URL（/api/images/…）がそのまま解決できるようにするため。
+   * 本番は前段（nginx）が /api を先に振り分けるので、この中継は通らない。
+   * static モード（output: 'export'）は rewrites を持てないので付けない。
+   */
+  ...(serverMode
+    ? {
+        async rewrites() {
+          const api = process.env.CY_API_ORIGIN ?? 'http://localhost:8798'
+          return [{ source: '/api/:path*', destination: `${api}/api/:path*` }]
+        },
+      }
+    : {}),
 }
 
 export default nextConfig

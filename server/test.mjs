@@ -12,6 +12,8 @@ import { after, test } from 'node:test'
 
 import { Accounts, AuthError } from './lib/auth.mjs'
 import { Gate, RateLimitError } from './lib/gate.mjs'
+import { ImageError, inspectImage } from './lib/image.mjs'
+import { ImageStore } from './lib/images.mjs'
 import { StoryStore, StoryError } from './lib/stories.mjs'
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'cy-test-'))
@@ -165,6 +167,75 @@ test('退会でその人の Story が全部消える', () => {
   assert.equal(stories.listPublic().total, 1)
 })
 
+// ---- 画像 ----
+
+/**
+ * 検査対象の PNG をバイト列から組み立てる。
+ * 検査はコンテナ構造（IHDR の寸法・チャンク長・IEND での終端）だけを
+ * 見るので、CRC やピクセルデータの中身は問われない。
+ */
+function makePng(width, height, { trailing = 0 } = {}) {
+  const chunk = (type, data) => {
+    const buf = Buffer.alloc(12 + data.length)
+    buf.writeUInt32BE(data.length, 0)
+    buf.write(type, 4, 'latin1')
+    data.copy(buf, 8)
+    return buf
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0)
+  ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8 // ビット深度
+  ihdr[9] = 6 // RGBA
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', Buffer.alloc(16)),
+    chunk('IEND', Buffer.alloc(0)),
+    Buffer.alloc(trailing),
+  ])
+}
+
+test('画像検査: 正しい PNG は通り、細工されたものは断る', () => {
+  const ok = inspectImage(makePng(800, 450))
+  assert.equal(ok.format, 'png')
+  assert.equal(ok.width, 800)
+  assert.equal(ok.height, 450)
+
+  // 多重形式（IEND の後ろにデータ）
+  assert.throws(() => inspectImage(makePng(800, 450, { trailing: 32 })), ImageError)
+  // 展開爆弾（宣言だけ巨大）
+  assert.throws(() => inspectImage(makePng(100_000, 100_000)), ImageError)
+  // 小さすぎる
+  assert.throws(() => inspectImage(makePng(10, 10)), ImageError)
+  // SVG は受けない
+  assert.throws(() => inspectImage(Buffer.from('<svg onload="alert(1)"></svg>')), ImageError)
+  // 画像ですらない
+  assert.throws(() => inspectImage(Buffer.from('just text')), ImageError)
+})
+
+test('画像ストア: 本人だけが添付でき、孤児は時間で消える', () => {
+  let clock = 1_000_000
+  const store = new ImageStore({ dir: path.join(TMP, 'images'), now: () => clock })
+  const saved = store.save(makePng(800, 450), { authorId: AUTHOR.id })
+  assert.equal(saved.ext, 'png')
+
+  // 他人は添付できない
+  assert.throws(() => store.attach(saved.id, { authorId: OTHER.id, storyId: 's1' }), ImageError)
+  // 本人は添付できる
+  const attached = store.attach(saved.id, { authorId: AUTHOR.id, storyId: 'story-01x' })
+  assert.equal(attached.id, saved.id)
+  // 別の Story への使い回しは断る
+  assert.throws(() => store.attach(saved.id, { authorId: AUTHOR.id, storyId: 'another1' }), ImageError)
+
+  // 孤児（未添付）は TTL を過ぎたら消える。添付済みは残る
+  const orphan = store.save(makePng(800, 450), { authorId: AUTHOR.id })
+  clock += 25 * 60 * 60 * 1000
+  assert.equal(store.pruneOrphans(), 1)
+  assert.equal(store.meta(orphan.id), null)
+  assert.notEqual(store.meta(saved.id), null)
+})
+
 // ---- 流量制御 ----
 
 test('書き込みの割当が尽きると 429、読み出しの枠は別勘定', () => {
@@ -245,6 +316,38 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   // 認証なしの書き込みは 401
   const noAuth = await call('POST', '/api/stories', { body: { title: 'x', body: 'y'.repeat(20) } })
   assert.equal(noAuth.status, 401)
+
+  // 画像: アップロード → Story に添付 → 配信 → 外すと消える
+  const imgRes = await fetch(`${base}/api/story-image`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'image/png' },
+    body: makePng(800, 450),
+  })
+  assert.equal(imgRes.status, 201)
+  const { image } = await imgRes.json()
+  const withImage = await call('POST', '/api/stories', {
+    token,
+    body: {
+      title: '画像つきの記録',
+      body: 'スクリーンショットを添えて、当たり判定の壊れ方を残しておく。',
+      imageId: image.id,
+    },
+  })
+  assert.equal(withImage.status, 201)
+  assert.equal(withImage.data.story.image.id, image.id)
+  const served = await fetch(`${base}/api/images/${image.id}.${image.ext}`)
+  assert.equal(served.status, 200)
+  assert.equal(served.headers.get('content-type'), 'image/png')
+  // 画像を外す（imageId: null）と実体も消える
+  const detached = await call('PUT', `/api/stories/${withImage.data.story.id}`, {
+    token,
+    body: { title: '画像つきの記録', body: withImage.data.story.body, imageId: null },
+  })
+  assert.equal(detached.data.story.image, null)
+  const gone = await fetch(`${base}/api/images/${image.id}.${image.ext}`)
+  assert.equal(gone.status, 404)
+  // 後続の件数確認が狂わないよう消しておく
+  await call('DELETE', `/api/stories/${withImage.data.story.id}`, { token })
 
   // パスワード変更で古いトークンが切れ、新しいトークンが渡る
   const changed = await call('POST', '/api/auth/password', {

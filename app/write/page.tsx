@@ -4,7 +4,15 @@ import Link from 'next/link'
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-import { api, ApiError, getHandle, type Story } from '../../lib/api'
+import {
+  api,
+  ApiError,
+  getHandle,
+  imageUrl,
+  uploadImage,
+  type Story,
+  type StoryImage,
+} from '../../lib/api'
 
 /**
  * Story を書く・直す。?id= があれば編集。
@@ -25,6 +33,8 @@ function WriteInner() {
   const [topicTags, setTopicTags] = useState('')
   const [gameUrl, setGameUrl] = useState('')
   const [status, setStatus] = useState<'public' | 'draft'>('public')
+  const [image, setImage] = useState<StoryImage | null>(null)
+  const [imageWarnings, setImageWarnings] = useState<string[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [loaded, setLoaded] = useState(!editId)
@@ -48,6 +58,7 @@ function WriteInner() {
         setTopicTags(story.topicTags.join(', '))
         setGameUrl(story.gameUrl)
         setStatus(story.status)
+        setImage(story.image)
         setLoaded(true)
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
@@ -67,6 +78,7 @@ function WriteInner() {
       topicTags: splitList(topicTags),
       gameUrl,
       status: saveStatus,
+      imageId: image?.id ?? null,
     }
     try {
       const data = editId
@@ -156,6 +168,48 @@ function WriteInner() {
             placeholder="当たり判定, ビルドエラー"
           />
         </label>
+        <div className="form__field">
+          画像（任意。PNG / JPEG / WebP、3MB まで）
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              setError('')
+              setImageWarnings([])
+              try {
+                // 選んだ時点で検査に通す。保存の段で初めて断られると、
+                // 書き上げた本文を前に画像だけ差し替える羽目になる
+                const result = await uploadImage(file)
+                setImage(result.image)
+                setImageWarnings(result.warnings)
+              } catch (err) {
+                e.target.value = ''
+                setError(err instanceof ApiError ? err.message : '画像を保存できませんでした。')
+              }
+            }}
+          />
+          {image && (
+            <span className="form__image-preview">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl(image)} alt="" width={image.width} height={image.height} />
+              <button
+                type="button"
+                className="linklike"
+                onClick={() => {
+                  setImage(null)
+                  setImageWarnings([])
+                }}
+              >
+                画像を外す
+              </button>
+            </span>
+          )}
+          {imageWarnings.map((warning) => (
+            <span key={warning} className="notice">{warning}</span>
+          ))}
+        </div>
         <label className="form__field">
           GAMEYARD の作品リンク（任意）
           <input

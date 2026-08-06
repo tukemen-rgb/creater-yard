@@ -22,6 +22,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const story = publishedStory(id)
   if (!story) return {}
+  // OGP の画像は絶対 URL でなければ拾われない。公開オリジンは
+  // ドメイン決定後に CY_SITE_ORIGIN で入る（未設定なら画像なしで出す）
+  const origin = process.env.CY_SITE_ORIGIN
+  const ogImage =
+    story.image && origin
+      ? [{ url: `${origin}/api/images/${story.image.id}.${story.image.ext}` }]
+      : undefined
   return {
     title: story.title,
     description: excerpt(story.body),
@@ -29,6 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: story.title,
       description: excerpt(story.body),
       type: 'article',
+      images: ogImage,
     },
   }
 }

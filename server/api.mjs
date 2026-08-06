@@ -21,18 +21,23 @@
  *   GET    /api/mine                自分の Story 一覧（下書き含む。要ログイン）
  *   GET    /api/creators/<handle>.json  その人の公開 Story（Timeline の原型）
  *   GET    /api/tags.json           タグ索引（サイト全体の合計値）
+ *   POST   /api/story-image         画像の検査と保存（要ログイン。本文とは別送）
+ *   GET    /api/images/<id>.<ext>   検査済み画像の配信
  *
  * CORS は既定で閉じている。本番は同一オリジン配下（リバースプロキシで
  * /api を寄せる）を想定。開発中だけ CY_ALLOW_ORIGIN=http://localhost:3000
  * のように明示して開ける（無条件に開けると、他サイトに埋め込まれた JS が
  * 利用者のトークンで書き込める）。
  */
+import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { Accounts, AuthError } from './lib/auth.mjs'
 import { Gate, RateLimitError, clientKey } from './lib/gate.mjs'
+import { IMAGE_LIMITS } from './lib/image.mjs'
+import { ImageStore, ImageError } from './lib/images.mjs'
 import { StoryStore, StoryError, STORY_LIMITS, publicStory } from './lib/stories.mjs'
 
 const PORT = Number(process.env.CY_API_PORT ?? 8798)
@@ -45,6 +50,7 @@ const MAX_BODY_BYTES = 64 * 1024
 
 const accounts = new Accounts({ dir: path.join(DATA, 'accounts') })
 const stories = new StoryStore({ dir: path.join(DATA, 'stories') })
+const images = new ImageStore({ dir: path.join(DATA, 'images') })
 const gate = new Gate()
 
 const HANDLE_RE = /^[a-z0-9][a-z0-9_-]{2,31}$/
@@ -65,7 +71,8 @@ function sendError(res, err) {
     send(res, 429, { error: err.message }, { 'retry-after': String(err.retryAfterSec ?? 60) })
     return
   }
-  const known = err instanceof AuthError || err instanceof StoryError
+  const known =
+    err instanceof AuthError || err instanceof StoryError || err instanceof ImageError
   if (known) {
     send(res, err.status ?? 400, { error: err.message })
     return
@@ -104,6 +111,53 @@ function readJson(req) {
   })
 }
 
+/** 生のボディを上限つきで読む（画像用）。超えたら即切る。 */
+function readRaw(req, maxBytes) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    let size = 0
+    req.on('data', (chunk) => {
+      size += chunk.length
+      if (size > maxBytes) {
+        reject(
+          new ImageError(
+            `画像のサイズが上限（${Math.floor(maxBytes / 1024 / 1024)}MB）を超えています。`,
+            413,
+          ),
+        )
+        req.destroy()
+        return
+      }
+      chunks.push(chunk)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks)))
+    req.on('error', reject)
+  })
+}
+
+/**
+ * Story への添付画像の解決。
+ *
+ * imageId は undefined（変更なし）・null か空文字（外す）・文字列（設定）の
+ * 3 通り。所有者の確認は images 側で行う。返り値は stories.update の
+ * options.image にそのまま渡せる形。
+ */
+function resolveImage(imageId, me, current) {
+  if (imageId === undefined) return { image: undefined, removed: null }
+  if (imageId === null || imageId === '') {
+    return { image: null, removed: current?.id ?? null }
+  }
+  if (typeof imageId !== 'string') throw new ImageError('画像の指定が正しくありません。')
+  if (current?.id === imageId) return { image: undefined, removed: null }
+  const meta = images.meta(imageId)
+  if (!meta) throw new ImageError('画像が見つかりません。アップロードし直してください。', 404)
+  if (meta.authorId !== me.id) throw new ImageError('この画像を使えるのは本人だけです。', 403)
+  return {
+    image: { id: meta.id, ext: meta.ext, width: meta.width, height: meta.height },
+    removed: current?.id ?? null,
+  }
+}
+
 /** 開発用 CORS。CY_ALLOW_ORIGIN と一致した Origin にだけ開ける。 */
 function applyCors(req, res) {
   if (!ALLOW_ORIGIN) return false
@@ -114,7 +168,7 @@ function applyCors(req, res) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'access-control-allow-methods': 'GET,POST,PUT,DELETE',
-      'access-control-allow-headers': 'authorization,content-type',
+      'access-control-allow-headers': 'authorization,content-type,x-filename',
       'access-control-max-age': '600',
     })
     res.end()
@@ -212,6 +266,7 @@ async function handle(req, res) {
     // 記録は本人のもので、退会後にハンドルだけ残った Story は誰のものでもなくなる。
     accounts.deleteAccount({ handle: me.handle, password: body.password })
     const removed = stories.removeByAuthor(me.id)
+    images.removeByAuthor(me.id)
     send(res, 200, { ok: true, removedStories: removed })
     return
   }
@@ -229,7 +284,9 @@ async function handle(req, res) {
   if (req.method === 'POST' && p === '/api/stories') {
     const me = accounts.authenticate(req)
     const body = await readJson(req)
-    const record = stories.create(me, body)
+    const { image } = resolveImage(body.imageId, me, null)
+    const record = stories.create(me, body, { image: image ?? null })
+    if (image) images.attach(image.id, { authorId: me.id, storyId: record.id })
     send(res, 201, { story: publicStory(record) })
     return
   }
@@ -254,10 +311,21 @@ async function handle(req, res) {
     const me = accounts.authenticate(req)
     if (req.method === 'PUT') {
       const body = await readJson(req)
-      const record = stories.update(storyPath[1], me, body)
+      const current = stories.get(storyPath[1])
+      const { image, removed } = resolveImage(
+        body.imageId,
+        me,
+        current?.authorId === me.id ? current.image : null,
+      )
+      const record = stories.update(storyPath[1], me, body, { image })
+      if (image?.id) images.attach(image.id, { authorId: me.id, storyId: record.id })
+      // 差し替え・取り外しで使われなくなった画像は消す（残すと誰のものでも
+      // ない実体がディスクに積もる）
+      if (removed && removed !== image?.id) images.remove(removed)
       send(res, 200, { story: publicStory(record) })
     } else {
-      stories.remove(storyPath[1], me)
+      const record = stories.remove(storyPath[1], me)
+      if (record.image?.id) images.remove(record.image.id)
       send(res, 200, { ok: true })
     }
     return
@@ -291,6 +359,40 @@ async function handle(req, res) {
 
   if (req.method === 'GET' && p === '/api/tags.json') {
     send(res, 200, stories.tagIndex())
+    return
+  }
+
+  // ---- 画像 ----
+  if (req.method === 'POST' && p === '/api/story-image') {
+    const me = accounts.authenticate(req)
+    // 上限＋1 バイトまで読む。ぴったりで切ると「上限ちょうど」の正当な
+    // 画像まで壊れて届く
+    const buf = await readRaw(req, IMAGE_LIMITS.maxBytes + 1)
+    const meta = images.save(buf, {
+      authorId: me.id,
+      filename: String(req.headers['x-filename'] ?? ''),
+    })
+    send(res, 201, {
+      image: { id: meta.id, ext: meta.ext, width: meta.width, height: meta.height },
+      warnings: meta.warnings,
+    })
+    return
+  }
+
+  const imagePath = /^\/api\/images\/([A-Za-z0-9_-]{16})\.(png|jpg|webp)$/.exec(p)
+  if (req.method === 'GET' && imagePath) {
+    const found = images.filePath(imagePath[1], imagePath[2])
+    if (!found) throw new ImageError('画像が見つかりません。', 404)
+    // ID は乱数で、中身が変わることはない（差し替えは別 ID になる）ので
+    // 長期キャッシュしてよい。nosniff は「画像として検査したものを画像と
+    // してだけ解釈させる」ための最後の砦
+    res.writeHead(200, {
+      'content-type': found.mime,
+      'x-content-type-options': 'nosniff',
+      'cache-control': 'public, max-age=31536000, immutable',
+      'content-disposition': 'inline',
+    })
+    fs.createReadStream(found.file).pipe(res)
     return
   }
 

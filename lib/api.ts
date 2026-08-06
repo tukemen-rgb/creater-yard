@@ -19,6 +19,13 @@ export type Account = {
   contact: string
 }
 
+export type StoryImage = {
+  id: string
+  ext: 'png' | 'jpg' | 'webp'
+  width: number
+  height: number
+}
+
 export type Story = {
   id: string
   authorHandle: string
@@ -28,6 +35,7 @@ export type Story = {
   toolTags: string[]
   topicTags: string[]
   gameUrl: string
+  image: StoryImage | null
   status: 'public' | 'draft'
   createdAt: string
   updatedAt: string
@@ -126,6 +134,49 @@ export async function api<T>(
     throw new ApiError(message, res.status)
   }
   return data as T
+}
+
+/** 検査済み画像の URL。SSR でも使うので API_BASE を経由する。 */
+export function imageUrl(image: StoryImage): string {
+  return `${API_BASE}/api/images/${image.id}.${image.ext}`
+}
+
+/**
+ * 画像のアップロード（検査つき）。本文の JSON とは別送 — multipart を
+ * 自前でパースするより、生のバイト列 1 本のほうが検査もエラーの伝え方も
+ * 単純になる。
+ */
+export async function uploadImage(
+  file: File,
+): Promise<{ image: StoryImage; warnings: string[] }> {
+  const token = getToken()
+  if (!token) throw new ApiError('この操作にはログインが必要です。', 401)
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}/api/story-image`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': file.type || 'application/octet-stream',
+        // ファイル名はヘッダに ASCII しか置けないので、非 ASCII は落とす。
+        // 拡張子と中身の食い違い警告に使うだけで、保存名には使わない
+        'x-filename': file.name.replace(/[^\x20-\x7e]/g, '_'),
+      },
+      body: file,
+    })
+  } catch {
+    throw new ApiError('サーバーに接続できません。時間をおいてもう一度お試しください。', 0)
+  }
+  const data = (await res.json().catch(() => null)) as
+    | { image: StoryImage; warnings: string[] }
+    | { error: string }
+    | null
+  if (!res.ok || !data || !('image' in data)) {
+    const message =
+      data && 'error' in data ? data.error : `画像を保存できませんでした（${res.status}）。`
+    throw new ApiError(message, res.status)
+  }
+  return data
 }
 
 /** 記事の日付表示。時刻まで出すほどの精度は要らない。 */
