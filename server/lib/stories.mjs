@@ -322,6 +322,22 @@ export class StoryStore {
   }
 
   /**
+   * sitemap 用の最小索引。公開分の ID・書き手・日付だけを返す。
+   * 本文まで持ち出すと、sitemap を引くたびに全文をメモリへ載せることになる。
+   */
+  publicIndex() {
+    return this.#readAll()
+      .filter((r) => r.status === 'public')
+      .map((r) => ({
+        id: r.id,
+        authorHandle: r.authorHandle,
+        updatedAt: r.updatedAt,
+        publishedAt: r.publishedAt,
+      }))
+      .sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt)))
+  }
+
+  /**
    * タグ索引。公開 Story に付いたタグと件数（サイト全体の合計）。
    * 件数は「どの面が育っているか」を示す合計値で、人を並べる数字ではない
    * （個人単位の計測はしない — 文化 §5）。

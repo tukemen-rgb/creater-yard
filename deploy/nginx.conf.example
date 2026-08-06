@@ -1,0 +1,111 @@
+# CreatorYard の nginx 設定例。GAMEYARD の型を縮約したもの。
+#
+# 要点:
+#   1. 固定ページは静的ファイルで返し、無いものだけを動的サーバーへ回す
+#      （/story/ /creators/ /stories/ /tags/ は Story が増えるたびに変わるので
+#      server モードの Next.js が組み立てる）
+#   2. /api/ と /sitemap-stories.xml は API プロセスへ
+#   3. 画像は現状 /api/images/（同一オリジン）。検査済みバイト列＋nosniff。
+#      GAMEYARD と同じ別オリジン配信に揃えるかはドメイン決定時の判断
+#      （Issue #1 の判断材料）。揃える場合はこのファイルに画像用 server
+#      ブロックを足し、API の配信部を移す
+#
+# <creatoryard.example> を本番ドメインに置き換える。証明書:
+#   certbot certonly --nginx -d creatoryard.example
+
+upstream creatoryard_api {
+    server 127.0.0.1:8798;
+    keepalive 8;
+}
+
+upstream creatoryard_web {
+    server 127.0.0.1:3000;
+    keepalive 8;
+}
+
+server {
+    # http2 は listen 行に付ける（nginx 1.24 系は `http2 on;` を知らない）
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name creatoryard.example;
+
+    ssl_certificate     /etc/letsencrypt/live/creatoryard.example/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/creatoryard.example/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+
+    # 静的書き出し（out/）の置き場。deploy 時に rsync で更新する
+    root /var/www/creatoryard/static;
+    index index.html;
+
+    charset utf-8;
+    server_tokens off;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Frame-Options "DENY" always;
+    # 外部読み込みは許さない。画像は自前（/api/images/）と data: のみ。
+    # style の 'unsafe-inline' は Next.js が出すインラインスタイルのため
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" always;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json application/xml image/svg+xml;
+    gzip_min_length 1024;
+
+    # ---- API ----
+    location /api/ {
+        # 画像アップロードの上限（3MB）＋余白。ここが小さいと投稿者には
+        # 理由の分からない 413 だけが見える
+        client_max_body_size 4m;
+
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        # 流量制限が送信元ごとに効くために必要。
+        # API 側は CY_TRUST_PROXY=1 のときだけこれを見る
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://creatoryard_api;
+    }
+
+    # Story の sitemap は API が動的に返す。静的側に任せると 404 になり、
+    # Story がクロールされない
+    location = /sitemap-stories.xml {
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_pass http://creatoryard_api;
+    }
+
+    # ---- 動的ページ（Story が増えるたびに変わるパス） ----
+    location ~ ^/(story|stories|creators|tags)(/|$) {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://creatoryard_web;
+    }
+
+    # ---- 固定ページ（静的ファイル。無ければ動的サーバーへ） ----
+    location / {
+        try_files $uri $uri/index.html @dynamic;
+    }
+    location @dynamic {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://creatoryard_web;
+    }
+}
+
+# HTTP は HTTPS へ
+server {
+    listen 80;
+    listen [::]:80;
+    server_name creatoryard.example;
+    return 301 https://$host$request_uri;
+}

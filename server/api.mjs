@@ -23,6 +23,7 @@
  *   GET    /api/tags.json           タグ索引（サイト全体の合計値）
  *   POST   /api/story-image         画像の検査と保存（要ログイン。本文とは別送）
  *   GET    /api/images/<id>.<ext>   検査済み画像の配信
+ *   GET    /sitemap-stories.xml     公開 Story の sitemap（CY_SITE_ORIGIN 必須）
  *
  * CORS は既定で閉じている。本番は同一オリジン配下（リバースプロキシで
  * /api を寄せる）を想定。開発中だけ CY_ALLOW_ORIGIN=http://localhost:3000
@@ -393,6 +394,49 @@ async function handle(req, res) {
       'content-disposition': 'inline',
     })
     fs.createReadStream(found.file).pipe(res)
+    return
+  }
+
+  // ---- sitemap ----
+  // 公開 Story と書き手ページの sitemap。静的側の sitemap とは別系列
+  // （GAMEYARD の /sitemap-uploads.xml と同じ分け方）。nginx がこのパスを
+  // API へ回す。sitemap の URL は絶対でなければならないので、公開オリジン
+  // （CY_SITE_ORIGIN）が決まるまでは出さない — 相対や仮のドメインで出すと、
+  // 検索側に間違った URL を覚えさせることになる。
+  if (req.method === 'GET' && p === '/sitemap-stories.xml') {
+    const origin = (process.env.CY_SITE_ORIGIN ?? '').replace(/\/+$/, '')
+    if (!/^https:\/\//.test(origin)) {
+      send(res, 404, { error: 'CY_SITE_ORIGIN が未設定のため sitemap はまだ出せません。' })
+      return
+    }
+    const index = stories.publicIndex()
+    const handles = new Map()
+    for (const s of index) {
+      const last = handles.get(s.authorHandle)
+      if (!last || s.updatedAt > last) handles.set(s.authorHandle, s.updatedAt)
+    }
+    const urls = [
+      ...index.map(
+        (s) =>
+          `<url><loc>${origin}/story/${s.id}/</loc><lastmod>${s.updatedAt.slice(0, 10)}</lastmod></url>`,
+      ),
+      ...[...handles.entries()].map(
+        ([handle, last]) =>
+          `<url><loc>${origin}/creators/${handle}/</loc><lastmod>${last.slice(0, 10)}</lastmod></url>`,
+      ),
+    ]
+    const xml =
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      urls.join('\n') +
+      '\n</urlset>\n'
+    res.writeHead(200, {
+      'content-type': 'application/xml; charset=utf-8',
+      'x-content-type-options': 'nosniff',
+      // 公開直後の反映が 1 時間遅れても実害はない。毎回全件読む方を避ける
+      'cache-control': 'public, max-age=3600',
+    })
+    res.end(xml)
     return
   }
 

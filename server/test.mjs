@@ -359,6 +359,19 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   assert.equal(oldMe.status, 401)
   const newToken = changed.data.token
 
+  // sitemap: 公開オリジンが決まるまでは出さない。決まれば公開分だけ載る
+  delete process.env.CY_SITE_ORIGIN
+  const noMap = await fetch(`${base}/sitemap-stories.xml`)
+  assert.equal(noMap.status, 404)
+  process.env.CY_SITE_ORIGIN = 'https://creatoryard.example'
+  const map = await fetch(`${base}/sitemap-stories.xml`)
+  assert.equal(map.status, 200)
+  const xml = await map.text()
+  assert.ok(xml.includes(`https://creatoryard.example/story/${pub.data.story.id}/`))
+  assert.ok(xml.includes('https://creatoryard.example/creators/httpwriter/'))
+  assert.ok(!xml.includes(draft.data.story.id)) // 下書きは載せない
+  delete process.env.CY_SITE_ORIGIN
+
   // 退会で Story も消える
   const bye = await call('DELETE', '/api/auth/me', {
     token: newToken,

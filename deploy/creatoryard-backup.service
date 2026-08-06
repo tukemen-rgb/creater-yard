@@ -1,0 +1,9 @@
+# バックアップの実行体。creatoryard-backup.timer から呼ばれる。
+[Unit]
+Description=CreatorYard backup (store snapshot)
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/opt/creatoryard/deploy/backup.sh
+EnvironmentFile=/etc/creatoryard/creatoryard.env

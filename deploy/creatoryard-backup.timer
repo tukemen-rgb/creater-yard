@@ -1,0 +1,11 @@
+# 毎日 1 回のバックアップ。時刻は JST 早朝（UTC 18:20 = JST 03:20）。
+# 書き手の少ない時間に取る。Persistent で電源断の取りこぼしも拾う。
+[Unit]
+Description=Daily CreatorYard backup
+
+[Timer]
+OnCalendar=*-*-* 18:20:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

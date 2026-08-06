@@ -1,0 +1,35 @@
+# Story API（アカウント・投稿・画像の受付）。
+# GAMEYARD の gameyard-api.service と同じ型。検査エンジン（clamd）を
+# 持たないぶん軽く、MemoryMax も小さくしてある。
+[Unit]
+Description=CreatorYard API (accounts, stories, images)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=creatoryard
+Group=creatoryard
+WorkingDirectory=/opt/creatoryard
+ExecStart=/usr/bin/node server/api.mjs
+EnvironmentFile=/etc/creatoryard/creatoryard.env
+Environment=NODE_ENV=production
+Restart=always
+RestartSec=3
+MemoryMax=512M
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+# 書き込みは実データの置き場だけ
+ReadWritePaths=/var/lib/creatoryard
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

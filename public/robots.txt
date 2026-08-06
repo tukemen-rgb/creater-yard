@@ -1,0 +1,5 @@
+# CreatorYard。すべて公開ページ（下書きはそもそも URL を持たない）。
+# Sitemap の行は本番ドメイン決定後に deploy/GO-LIVE.md の手順で足す:
+#   Sitemap: https://<本番ドメイン>/sitemap-stories.xml
+User-agent: *
+Allow: /
