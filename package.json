@@ -1,0 +1,27 @@
+{
+  "name": "creatoryard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:server": "SITE_MODE=server next build",
+    "start:server": "SITE_MODE=server next start",
+    "lint": "eslint . && npm run typecheck && echo 'lint OK（ESLint + 型検査）'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "15.5.22",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@types/node": "22.10.2",
+    "@types/react": "19.0.2",
+    "@types/react-dom": "19.0.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.22",
+    "typescript": "5.7.2"
+  }
+}
