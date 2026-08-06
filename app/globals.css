@@ -402,3 +402,28 @@ a:hover {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
 }
+
+.form__field select {
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+}
+.form__field select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.story__report {
+  margin-top: 32px;
+  font-size: 0.85rem;
+}
+.story__report a {
+  color: var(--text-muted);
+}
+
+.site-footer__links {
+  font-size: 0.85rem;
+}

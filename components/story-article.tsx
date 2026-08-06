@@ -70,6 +70,11 @@ export function StoryArticle({ story }: { story: Story }) {
           この記録の作品: <a href={story.gameUrl}>{story.gameUrl}</a>（GAMEYARD）
         </p>
       )}
+      <p className="story__report">
+        <Link prefetch={false} href={`/report/?story=${story.id}`}>
+          この Story の問題を通報する
+        </Link>
+      </p>
     </article>
   )
 }

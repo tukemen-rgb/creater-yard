@@ -278,6 +278,34 @@ test('画像ストア: 本人だけが添付でき、孤児は時間で消える
   assert.notEqual(store.meta(saved.id), null)
 })
 
+// ---- 通報 ----
+
+test('通報: 受付番号が返り、運営が状態を更新できる', async () => {
+  const { ReportStore, ReportError } = await import('./lib/reports.mjs')
+  const reports = new ReportStore({ dir: path.join(TMP, 'reports') })
+
+  // 壊れた入力は断る
+  assert.throws(() => reports.create({ target: '', category: 'copyright', detail: 'x'.repeat(20) }), ReportError)
+  assert.throws(() => reports.create({ target: '/story/abc/', category: 'nonsense', detail: 'x'.repeat(20) }), ReportError)
+  assert.throws(() => reports.create({ target: '/story/abc/', category: 'copyright', detail: '短い' }), ReportError)
+
+  const { ticket } = reports.create({
+    target: '/story/F_4h0rB8/',
+    category: 'copyright',
+    detail: 'この Story の画像は私が公開しているドット絵素材の無断転載です。',
+    contact: 'rights@example.com',
+  })
+  assert.match(ticket, /^R-[0-9A-Z]{4}-[0-9A-Z]{4}$/)
+
+  const listed = reports.list()
+  assert.equal(listed.length, 1)
+  assert.equal(listed[0].status, 'open')
+
+  const updated = reports.update(listed[0].id, { status: 'resolved', note: '該当画像を確認、本人と連絡済み' })
+  assert.equal(updated.status, 'resolved')
+  assert.equal(reports.list({ status: 'open' }).length, 0)
+})
+
 // ---- 流量制御 ----
 
 test('書き込みの割当が尽きると 429、読み出しの枠は別勘定', () => {
@@ -362,6 +390,15 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   // メール未設定の環境では、再設定は「使えない」と正直に答える
   const resetOff = await call('POST', '/api/auth/reset', { body: { handle: 'httpwriter' } })
   assert.equal(resetOff.status, 503)
+
+  // 通報は認証なしで出せる。一覧は運営でなければ 404（存在も明かさない）
+  const reported = await call('POST', '/api/reports', {
+    body: { target: '/story/abc12345/', category: 'spam', detail: '宣伝リンクだけの投稿が並んでいます。' },
+  })
+  assert.equal(reported.status, 201)
+  assert.ok(reported.data.ticket)
+  const adminList = await call('GET', '/api/reports', { token })
+  assert.equal(adminList.status, 404)
 
   // 画像: アップロード → Story に添付 → 配信 → 外すと消える
   const imgRes = await fetch(`${base}/api/story-image`, {

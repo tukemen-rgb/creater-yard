@@ -40,6 +40,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               の姉妹サービスです。作品を届けるのが GAMEYARD、つくる人が育つのが
               CreatorYard。
             </p>
+            <p className="site-footer__links">
+              <Link prefetch={false} href="/guidelines/">この場所の決まり</Link>
+              {' ・ '}
+              <Link prefetch={false} href="/data-policy/">データの扱い</Link>
+              {' ・ '}
+              <Link prefetch={false} href="/report/">問題を通報する</Link>
+            </p>
           </div>
         </footer>
       </body>

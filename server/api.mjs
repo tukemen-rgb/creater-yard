@@ -26,6 +26,9 @@
  *   POST   /api/story-image         画像の検査と保存（要ログイン。本文とは別送）
  *   GET    /api/images/<id>.<ext>   検査済み画像の配信
  *   GET    /sitemap-stories.xml     公開 Story の sitemap（CY_SITE_ORIGIN 必須）
+ *   POST   /api/reports             通報の受付（認証不要）
+ *   GET    /api/reports             通報の一覧（運営のみ）
+ *   POST   /api/reports/<id>        通報の状態と対応メモの更新（運営のみ）
  *
  * CORS は既定で閉じている。本番は同一オリジン配下（リバースプロキシで
  * /api を寄せる）を想定。開発中だけ CY_ALLOW_ORIGIN=http://localhost:3000
@@ -42,6 +45,7 @@ import { Gate, RateLimitError, clientKey } from './lib/gate.mjs'
 import { IMAGE_LIMITS } from './lib/image.mjs'
 import { ImageStore, ImageError } from './lib/images.mjs'
 import { Mailer } from './lib/mailer.mjs'
+import { ReportStore, ReportError, REPORT_CATEGORIES, REPORT_STATUSES } from './lib/reports.mjs'
 import { StoryStore, StoryError, STORY_LIMITS, publicStory } from './lib/stories.mjs'
 
 const PORT = Number(process.env.CY_API_PORT ?? 8798)
@@ -55,7 +59,31 @@ const MAX_BODY_BYTES = 64 * 1024
 const accounts = new Accounts({ dir: path.join(DATA, 'accounts') })
 const stories = new StoryStore({ dir: path.join(DATA, 'stories') })
 const images = new ImageStore({ dir: path.join(DATA, 'images') })
+const reports = new ReportStore({ dir: path.join(DATA, 'reports') })
 const gate = new Gate()
+
+/**
+ * 運営の判定（GAMEYARD と同じ方式）。CY_ADMIN_HANDLES にカンマ区切りで
+ * ハンドルを並べる。通報の閲覧・状態更新だけに使う — Story の削除権限は
+ * 持たせていない（必要になったら、その操作を足すときに監査ログとセットで
+ * 設計する。権限だけ先に配ると、使った記録が残らない）。
+ */
+const ADMIN_HANDLES = new Set(
+  (process.env.CY_ADMIN_HANDLES ?? '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean),
+)
+
+function requireAdmin(req) {
+  const account = accounts.authenticate(req)
+  if (!ADMIN_HANDLES.has(account.handle.toLowerCase())) {
+    // 存在を明かさない。「運営専用です」と返すと、この URL が運営機能で
+    // あることと、自分が運営でないことの両方を確かめられてしまう
+    throw new ReportError('見つかりません。', 404)
+  }
+  return account
+}
 // メール送信。MAIL_TRANSPORT が未設定なら enabled=false になり、
 // 再設定 API は「使えない」と明示する（送れないのに受け付けたふりをしない）
 const mailer = new Mailer()
@@ -82,7 +110,10 @@ function sendError(res, err) {
     return
   }
   const known =
-    err instanceof AuthError || err instanceof StoryError || err instanceof ImageError
+    err instanceof AuthError ||
+    err instanceof StoryError ||
+    err instanceof ImageError ||
+    err instanceof ReportError
   if (known) {
     send(res, err.status ?? 400, { error: err.message })
     return
@@ -454,6 +485,40 @@ async function handle(req, res) {
       'content-disposition': 'inline',
     })
     fs.createReadStream(found.file).pipe(res)
+    return
+  }
+
+  // ---- 通報 ----
+  if (req.method === 'POST' && p === '/api/reports') {
+    const body = await readJson(req)
+    const { ticket } = reports.create({
+      target: body.target,
+      category: body.category,
+      detail: body.detail,
+      contact: body.contact,
+    })
+    send(res, 201, {
+      ticket,
+      message: `受け付けました。受付番号は ${ticket} です。お問い合わせの際にお伝えください。`,
+    })
+    return
+  }
+
+  if (req.method === 'GET' && p === '/api/reports') {
+    requireAdmin(req)
+    send(res, 200, {
+      reports: reports.list({ status: url.searchParams.get('status') ?? '' }),
+      categories: REPORT_CATEGORIES,
+      statuses: REPORT_STATUSES,
+    })
+    return
+  }
+
+  const reportPath = /^\/api\/reports\/([0-9a-f-]{36})$/.exec(p)
+  if (req.method === 'POST' && reportPath) {
+    requireAdmin(req)
+    const body = await readJson(req)
+    send(res, 200, { report: reports.update(reportPath[1], { status: body.status, note: body.note }) })
     return
   }
 

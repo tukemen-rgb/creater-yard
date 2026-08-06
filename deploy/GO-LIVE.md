@@ -37,6 +37,9 @@ GAMEYARD の GO-LIVE.md と同じ考え方で書いた、**サーバーに載せ
 - [ ] `MAIL_*` … パスワード再設定を有効にする場合（GAMEYARD と同じ
       Gmail SMTP のアプリパスワードが流用できる）。未設定でも公開は
       できる — 再設定 API が「使えない」と答えるだけ
+- [ ] `CY_ADMIN_HANDLES` … 運営のハンドル。公開後に通常の登録で
+      アカウントを作り（例: sidra_studio）、そのハンドルをここに書く。
+      通報は `/admin/reports/` で確認できる
 
 権限: `chown root:creatoryard` / `chmod 640`。
 
