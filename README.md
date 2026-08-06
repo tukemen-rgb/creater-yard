@@ -9,9 +9,14 @@
 
 ## 状態
 
-**MVP 開発中（未公開）。** 最初の機能は **Creator Story**（制作記録）だけに
+**MVP 実装済み（未公開）。** 最初の機能は **Creator Story**（制作記録）だけに
 絞る。相手がいないと成立しない機能（Guild / Help Wanted / Mentor）は、
 人が集まってから解放する（空の部屋を最初の利用者に見せない）。
+
+動くもの: アカウント（ハンドル＋パスワード、GAMEYARD の自前認証を流用）、
+Story の投稿・編集・削除・下書き、一覧（新着順）、個人ページ（Timeline の
+原型）、つまずきタグ（ツール×トピックの 2 軸）と索引、GAMEYARD 作品への
+手動リンク。画像添付とパスワード再設定（メール）は未実装。
 
 ## 決まっていること
 
@@ -36,7 +41,15 @@ ACQUISITION / CEO_REVIEW）にある。**ここに複製しない**（2 か所�
 
 ```sh
 npm ci
-npm run dev      # 開発サーバー
+npm run dev      # 開発サーバー（:3000）
+npm run api      # Story API（:8798。依存ゼロの Node サーバー）
 npm run lint     # ESLint + 型検査
 npm run build    # 静的書き出し（out/）
+npm run test:server  # サーバー側の通し試験（node:test）
 ```
+
+開発中はサイト（:3000）と API（:8798）が別ポートになるので、API 側を
+`CY_ALLOW_ORIGIN=http://localhost:3000 npm run api` と起動して CORS を
+明示的に開ける。本番は同一オリジン（リバースプロキシで `/api` を API へ
+寄せる）を想定していて、その場合 CORS は閉じたまま。データは
+`server/store/`（1 件 1 JSON。コミットしない）。
