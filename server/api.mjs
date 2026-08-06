@@ -10,6 +10,8 @@
  *   POST   /api/auth/register       書き手アカウント作成（Bearer トークンを返す）
  *   POST   /api/auth/login          ログイン（Bearer トークンを返す）
  *   GET    /api/auth/me             トークンの確認
+ *   POST   /api/auth/reset          パスワード再設定の要求（メールを送る）
+ *   POST   /api/auth/reset/confirm  再設定リンクで新しいパスワードにする
  *   POST   /api/auth/password       ログイン中のパスワード変更（要ログイン）
  *   POST   /api/auth/contact        連絡先の変更（要ログイン＋パスワード）
  *   DELETE /api/auth/me             退会。Story もすべて消す（要ログイン＋パスワード）
@@ -39,6 +41,7 @@ import { Accounts, AuthError } from './lib/auth.mjs'
 import { Gate, RateLimitError, clientKey } from './lib/gate.mjs'
 import { IMAGE_LIMITS } from './lib/image.mjs'
 import { ImageStore, ImageError } from './lib/images.mjs'
+import { Mailer } from './lib/mailer.mjs'
 import { StoryStore, StoryError, STORY_LIMITS, publicStory } from './lib/stories.mjs'
 
 const PORT = Number(process.env.CY_API_PORT ?? 8798)
@@ -53,6 +56,12 @@ const accounts = new Accounts({ dir: path.join(DATA, 'accounts') })
 const stories = new StoryStore({ dir: path.join(DATA, 'stories') })
 const images = new ImageStore({ dir: path.join(DATA, 'images') })
 const gate = new Gate()
+// メール送信。MAIL_TRANSPORT が未設定なら enabled=false になり、
+// 再設定 API は「使えない」と明示する（送れないのに受け付けたふりをしない）
+const mailer = new Mailer()
+if (mailer.problems.length) {
+  for (const problem of mailer.problems) console.error(`mailer: ${problem}`)
+}
 
 const HANDLE_RE = /^[a-z0-9][a-z0-9_-]{2,31}$/
 
@@ -198,7 +207,8 @@ async function handle(req, res) {
 
   // ---- 死活 ----
   if (req.method === 'GET' && p === '/api/health') {
-    send(res, 200, { ok: true, service: 'creatoryard-api' })
+    // mail は再設定機能が使えるかどうか。UI がこれを見て案内を変えられる
+    send(res, 200, { ok: true, service: 'creatoryard-api', mail: mailer.enabled })
     return
   }
 
@@ -229,6 +239,56 @@ async function handle(req, res) {
 
   if (req.method === 'GET' && p === '/api/auth/me') {
     send(res, 200, { account: accounts.authenticate(req) })
+    return
+  }
+
+  if (req.method === 'POST' && p === '/api/auth/reset') {
+    if (!mailer.enabled) {
+      // 送れないのに受け付けたふりはしない。ここは存在を漏らさない
+      // （ハンドルを見る前に返している）
+      send(res, 503, {
+        error:
+          'このサイトではメール送信が設定されていないため、パスワード再設定を受け付けられません。運営（Issue か X の @sidra_studio）までご連絡ください。',
+      })
+      return
+    }
+    const body = await readJson(req)
+    const request = accounts.requestReset({ handle: body.handle })
+    if (request) {
+      const origin = (process.env.CY_SITE_ORIGIN ?? '').replace(/\/+$/, '') || 'http://localhost:3000'
+      const link = `${origin}/reset/?t=${encodeURIComponent(request.token)}`
+      mailer.sendInBackground({
+        to: request.contact,
+        subject: 'CreatorYard パスワード再設定',
+        text: [
+          `${body.handle} さんのパスワード再設定が要求されました。`,
+          '',
+          '次のリンクを開いて新しいパスワードを設定してください。',
+          link,
+          '',
+          `このリンクは ${request.ttlMinutes} 分で使えなくなります。1 回だけ使えます。`,
+          '',
+          '心当たりがない場合は、このメールを破棄してください。',
+          'リンクを開かなければパスワードは変わりません。',
+        ].join('\n'),
+      })
+    }
+    // 実在しないハンドル・宛先なしでも同じ応答。ここで区別すると
+    // 「どのハンドルが存在するか」を総当たりで調べられる
+    send(res, 200, {
+      accepted: true,
+      message:
+        '受け付けました。登録時にメールアドレスを設定している場合は、再設定用のリンクを送ります。数分待っても届かない場合は、登録した連絡先を確認してください。',
+    })
+    return
+  }
+
+  if (req.method === 'POST' && p === '/api/auth/reset/confirm') {
+    const body = await readJson(req)
+    const account = accounts.completeReset({ token: body.token, password: body.password })
+    // ここで新しいトークンを出す。再設定したのにログインし直させる理由がない
+    const token = accounts.issueToken(account)
+    send(res, 200, { account, ...token })
     return
   }
 

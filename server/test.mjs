@@ -68,6 +68,48 @@ test('退会するとログインできず、ハンドルはしばらく再登�
   assert.throws(() => accounts.register({ handle: 'leaver', password: 'long-enough-pass' }), AuthError)
 })
 
+test('パスワード再設定: トークンは 1 回だけ・宛先なしは対象外', () => {
+  let clock = 5_000_000
+  const accounts = freshAccounts('auth-reset', { now: () => clock })
+  accounts.register({ handle: 'hasmail', password: 'first-password-1', contact: 'me@example.com' })
+  accounts.register({ handle: 'nomail', password: 'first-password-1' })
+
+  // 宛先の無いアカウントには出さない（呼び出し側は応答を揃える）
+  assert.equal(accounts.requestReset({ handle: 'nomail' }), null)
+  assert.equal(accounts.requestReset({ handle: 'no-such-user' }), null)
+
+  const request = accounts.requestReset({ handle: 'hasmail' })
+  assert.ok(request.token.startsWith('hasmail.'))
+  assert.equal(request.contact, 'me@example.com')
+
+  // 直後の再要求は間隔制限で出さない（受信箱を埋めさせない）
+  assert.equal(accounts.requestReset({ handle: 'hasmail' }), null)
+
+  // 発行済みトークンは再設定で切れる
+  const { token: oldLogin } = accounts.issueToken(
+    accounts.login({ handle: 'hasmail', password: 'first-password-1' }),
+  )
+  const account = accounts.completeReset({ token: request.token, password: 'second-password-2' })
+  assert.equal(account.handle, 'hasmail')
+  assert.throws(() => accounts.verifyToken(oldLogin), AuthError)
+  accounts.login({ handle: 'hasmail', password: 'second-password-2' })
+
+  // 同じトークンは 2 回使えない
+  assert.throws(
+    () => accounts.completeReset({ token: request.token, password: 'third-password-3' }),
+    AuthError,
+  )
+
+  // 期限切れは使えない
+  clock += 61_000
+  const expired = accounts.requestReset({ handle: 'hasmail' })
+  clock += 31 * 60 * 1000
+  assert.throws(
+    () => accounts.completeReset({ token: expired.token, password: 'fourth-password-4' }),
+    AuthError,
+  )
+})
+
 test('ログイン失敗が続くと一時的に締まる', () => {
   let clock = 1_000_000
   const accounts = freshAccounts('auth-lockout', { now: () => clock })
@@ -316,6 +358,10 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   // 認証なしの書き込みは 401
   const noAuth = await call('POST', '/api/stories', { body: { title: 'x', body: 'y'.repeat(20) } })
   assert.equal(noAuth.status, 401)
+
+  // メール未設定の環境では、再設定は「使えない」と正直に答える
+  const resetOff = await call('POST', '/api/auth/reset', { body: { handle: 'httpwriter' } })
+  assert.equal(resetOff.status, 503)
 
   // 画像: アップロード → Story に添付 → 配信 → 外すと消える
   const imgRes = await fetch(`${base}/api/story-image`, {

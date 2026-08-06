@@ -10,18 +10,16 @@
  * 総当たりされるため、鍵導出関数でなければ意味がない。Node 標準に
  * 入っているので依存を増やさずに済む。
  *
- * GAMEYARD 版との差分:
- *   - パスワード再設定（requestReset / completeReset）を持ってこなかった。
- *     CreatorYard にはまだメール送信の設定（SMTP）がなく、送れない再設定は
- *     「使えない」と答えるだけの死んだ経路になる。メールを設置する段で
- *     GAMEYARD 版から再移植する（トークンは SHA-256 のみ保存、という
- *     設計ごと持ってくること）。
- *   - メールアドレス検査（isMailAddress）は mailer.mjs ごとは持ってこず、
- *     ここに最小限を書いた。連絡先の形式検査だけが目的のため。
+ * パスワード再設定も GAMEYARD 版のまま。再設定トークンは平文で保存せず
+ * SHA-256 だけを置く（store/ が読まれてもそこから再設定できないように）。
+ * メール送信の設定（SMTP）が無い環境では、API が「使えない」と明示する
+ * （mailer.mjs 参照。届かないメールを待たせるよりましなので隠さない）。
  */
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+
+import { isMailAddress } from './mailer.mjs'
 
 export class AuthError extends Error {
   constructor(message, status = 401) {
@@ -40,17 +38,20 @@ const MAX_PASSWORD = 200
 /** ログイン失敗の追跡数。無制限に持つとメモリを攻撃面にされる。 */
 const MAX_TRACKED_FAILURES = 10_000
 
-const ADDRESS_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+/**
+ * 再設定トークンの寿命。
+ * 短くしたいが、メールが遅れる環境もあるので 30 分にした。長くすると、
+ * 受信箱に残ったリンクが後から使える時間が伸びる。
+ */
+const RESET_TTL_SEC = 30 * 60
+/**
+ * 同じハンドルへの再設定要求の間隔。
+ * 制限しないと、他人のハンドルを指定して受信箱を埋められる（本人以外でも
+ * 要求は出せるため）。
+ */
+const RESET_MIN_INTERVAL_SEC = 60
 
-export function isMailAddress(value) {
-  if (typeof value !== 'string') return false
-  const trimmed = value.trim()
-  // 254 は SMTP の実務上の上限。長すぎるものは受け取り側で弾かれる。
-  if (trimmed.length < 3 || trimmed.length > 254) return false
-  // 制御文字が 1 つでもあれば、検査に通す前に落とす
-  if (/[\u0000-\u001f\u007f]/.test(trimmed)) return false
-  return ADDRESS_RE.test(trimmed)
-}
+export { isMailAddress }
 
 /**
  * 連絡先を伏せた形にする。
@@ -296,6 +297,87 @@ export class Accounts {
     return this.#publicAccount(account)
   }
 
+  /**
+   * パスワード再設定の要求（GAMEYARD 版のまま）。
+   *
+   * 返り値で「送るべきか」を呼び出し側に伝えるが、呼び出し側は結果に
+   * かかわらず同じ応答を返す約束になっている。ここで「そのハンドルは
+   * ありません」と言うと、ハンドルの実在を総当たりで調べられる。
+   *
+   * トークンは平文で保存しない。保存するのは SHA-256 だけにして、
+   * store/ が読まれてもそこから再設定できないようにする。パスワード
+   * ハッシュに scrypt を使っているのに、再設定トークンが平文で置いて
+   * あれば、そちらが最も弱い場所になる。
+   */
+  requestReset({ handle }) {
+    if (typeof handle !== 'string' || !HANDLE_RE.test(handle)) return null
+    const account = this.#read(handle)
+    if (!account) return null
+    // 宛先が無い / メールアドレスでないアカウントは再設定できない。
+    if (!isMailAddress(account.contact)) return null
+
+    const now = this.now()
+    const last = account.reset?.requestedAt ? Date.parse(account.reset.requestedAt) : 0
+    if (Number.isFinite(last) && now - last < RESET_MIN_INTERVAL_SEC * 1000) {
+      // 直前に出したものが生きているので、新しくは出さない。
+      // 呼び出し側から見れば「送らない」だけで、応答は変わらない。
+      return null
+    }
+
+    const secret = crypto.randomBytes(32).toString('base64url')
+    account.reset = {
+      hash: crypto.createHash('sha256').update(secret).digest('base64'),
+      requestedAt: new Date(now).toISOString(),
+      expiresAt: new Date(now + RESET_TTL_SEC * 1000).toISOString(),
+    }
+    this.#write(handle, account)
+    // ハンドルを前置きしておくと、確認時に全アカウントを走査せずに引ける。
+    // ハンドルは本人が知っている情報なので、これ自体は秘密ではない。
+    return {
+      token: `${handle}.${secret}`,
+      contact: account.contact,
+      expiresAt: account.reset.expiresAt,
+      ttlMinutes: Math.round(RESET_TTL_SEC / 60),
+    }
+  }
+
+  /**
+   * 再設定の実行。
+   *
+   * トークンは 1 回だけ使える。使い終わったら消す。残すと、受信箱に
+   * 残ったリンクで期限内に何度でも変えられる。
+   */
+  completeReset({ token, password }) {
+    Accounts.validatePassword(password)
+    const invalid = new AuthError(
+      'この再設定リンクは使えません。期限が切れているか、すでに使われています。',
+      400,
+    )
+    if (typeof token !== 'string') throw invalid
+    const dot = token.indexOf('.')
+    if (dot <= 0) throw invalid
+    const handle = token.slice(0, dot)
+    const secret = token.slice(dot + 1)
+    if (!HANDLE_RE.test(handle) || !secret) throw invalid
+
+    const account = this.#read(handle)
+    if (!account?.reset?.hash) throw invalid
+    if (Date.parse(account.reset.expiresAt) <= this.now()) {
+      delete account.reset
+      this.#write(handle, account)
+      throw invalid
+    }
+
+    const expected = Buffer.from(account.reset.hash, 'base64')
+    const actual = crypto.createHash('sha256').update(secret).digest()
+    if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
+      throw invalid
+    }
+
+    this.#applyNewPassword(handle, account, password)
+    return this.#publicAccount(account)
+  }
+
   /** ログイン中の変更。現在のパスワードを必ず確認する。 */
   changePassword({ handle, currentPassword, newPassword, clientKey = 'change-password' }) {
     this.login({ handle, password: currentPassword, clientKey })
@@ -319,6 +401,9 @@ export class Accounts {
     account.password = hashPassword(password)
     account.passwordChangedAt = new Date(this.now()).toISOString()
     account.tokenEpoch = Number(account.tokenEpoch ?? 0) + 1
+    // 使い終わった（または要求中の）再設定トークンも消す。残すと、
+    // パスワードを変えた後も受信箱のリンクで再び変えられる
+    delete account.reset
     this.#write(handle, account)
     // 失敗回数も忘れる。本人が入れ直した直後に締め出さない。
     this.#clearFailures(`h:${handle}`)

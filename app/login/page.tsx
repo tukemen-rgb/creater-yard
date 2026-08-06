@@ -63,6 +63,7 @@ export default function LoginPage() {
       </form>
       <p className="notice">
         アカウントがまだの人は <Link prefetch={false} href="/signup/">新規登録</Link> へ。
+        パスワードを忘れた人は <Link prefetch={false} href="/reset/">再設定</Link> へ。
       </p>
     </div>
   )
