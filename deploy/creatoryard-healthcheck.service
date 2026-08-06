@@ -1,0 +1,8 @@
+# 死活確認の実行体。creatoryard-healthcheck.timer から呼ばれる。
+[Unit]
+Description=CreatorYard healthcheck
+
+[Service]
+Type=oneshot
+ExecStart=/opt/creatoryard/deploy/healthcheck.sh
+EnvironmentFile=/etc/creatoryard/creatoryard.env

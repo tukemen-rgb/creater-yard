@@ -192,7 +192,6 @@ function WriteInner() {
           />
           {image && (
             <span className="form__image-preview">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={imageUrl(image)} alt="" width={image.width} height={image.height} />
               <button
                 type="button"

@@ -29,7 +29,6 @@ export function StoryArticle({ story }: { story: Story }) {
       {story.image && (
         // Next の Image は最適化サーバー前提なので使わない（静的優先の構成。
         // next.config の images.unoptimized と同じ判断）
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           className="story__image"
           src={imageUrl(story.image)}

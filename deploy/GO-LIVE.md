@@ -63,9 +63,11 @@ rsync -a --delete out/ /var/www/creatoryard/static/
 SITE_MODE=server npm run build
 
 # systemd
-cp deploy/creatoryard-{api,web,backup}.service deploy/creatoryard-backup.timer /etc/systemd/system/
+cp deploy/creatoryard-{api,web,backup,healthcheck}.service \
+   deploy/creatoryard-{backup,healthcheck}.timer /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now creatoryard-api creatoryard-web creatoryard-backup.timer
+systemctl enable --now creatoryard-api creatoryard-web \
+   creatoryard-backup.timer creatoryard-healthcheck.timer
 ```
 
 ## 4. nginx と TLS

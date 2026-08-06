@@ -48,6 +48,8 @@ npm run api      # Story API（:8798。依存ゼロの Node サーバー）
 npm run lint     # ESLint + 型検査
 npm run build    # 静的書き出し（out/）
 npm run test:server  # サーバー側の通し試験（node:test）
+npm run verify   # 公開手前まで一発（lint→試験→両ビルド→出力検証）
+npm run seed     # 開発用のデモデータ投入（API 経由・localhost 限定）
 ```
 
 開発中はサイト（:3000）と API（:8798）が別ポートになるので、API 側を
