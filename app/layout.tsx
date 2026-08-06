@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import './globals.css'
+import { NavAuth } from '../components/nav-auth'
 
 export const metadata: Metadata = {
   title: {
@@ -24,7 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="brand__tag">つくる人を、育てる。</span>
             </Link>
             <nav className="site-nav" aria-label="メインナビゲーション">
+              <Link prefetch={false} href="/stories/">Story</Link>
+              <Link prefetch={false} href="/tags/">タグ</Link>
               <a href="https://play-game-yard.com/">GAMEYARD</a>
+              <NavAuth />
             </nav>
           </div>
         </header>

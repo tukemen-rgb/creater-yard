@@ -1,0 +1,58 @@
+'use client'
+
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+
+import { api, ApiError, type TagIndex } from '../../lib/api'
+
+/**
+ * タグ索引。ツール軸とつまずき・トピック軸の 2 軸（SPEC §1）。
+ * 件数はサイト全体の合計値で、検索流入の面がどこに育っているかを示す。
+ */
+export default function TagsPage() {
+  const [index, setIndex] = useState<TagIndex | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    api<TagIndex>('/api/tags.json')
+      .then(setIndex)
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
+  }, [])
+
+  return (
+    <div className="page">
+      <h1>タグから探す</h1>
+      <p className="page__lede">
+        あなたの遠回りが、誰かの近道になる。ツール名と「どこでつまずいたか」で記録を引けます。
+      </p>
+      {error && <p className="notice notice--error">{error}</p>}
+      {!error && !index && <p className="notice">読み込み中…</p>}
+      {index && (
+        <>
+          <section className="tag-section">
+            <h2>ツール</h2>
+            {index.tools.length === 0 && <p className="notice">まだタグがありません。</p>}
+            <p className="story-card__tags">
+              {index.tools.map(({ tag, count }) => (
+                <Link prefetch={false} key={tag} className="tag" href={`/stories/?tool=${encodeURIComponent(tag)}`}>
+                  {tag}（{count}）
+                </Link>
+              ))}
+            </p>
+          </section>
+          <section className="tag-section">
+            <h2>つまずき・トピック</h2>
+            {index.topics.length === 0 && <p className="notice">まだタグがありません。</p>}
+            <p className="story-card__tags">
+              {index.topics.map(({ tag, count }) => (
+                <Link prefetch={false} key={tag} className="tag tag--topic" href={`/stories/?topic=${encodeURIComponent(tag)}`}>
+                  {tag}（{count}）
+                </Link>
+              ))}
+            </p>
+          </section>
+        </>
+      )}
+    </div>
+  )
+}

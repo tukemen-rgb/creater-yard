@@ -145,3 +145,239 @@ a:hover {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+/* ---- ページ共通 ---- */
+
+.page {
+  padding-block: 32px;
+}
+.page--narrow {
+  max-width: 560px;
+}
+.page h1 {
+  font-size: 1.6rem;
+  margin-block: 0 8px;
+}
+.page__lede {
+  color: var(--text-muted);
+  margin-block-start: 0;
+}
+
+.hero__actions {
+  display: flex;
+  gap: 12px;
+  margin-block: 20px;
+}
+
+.notice {
+  padding: 10px 14px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+.notice--error {
+  border-color: #7a3a2a;
+  color: #f0b5a0;
+}
+
+/* ---- Story カード・本文 ---- */
+
+.story-card {
+  padding: 18px 20px;
+  margin-block: 14px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.story-card__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.story-card__title a {
+  color: var(--text);
+}
+.story-card__meta {
+  margin-block: 4px 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.story-card__excerpt {
+  margin-block: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+.story-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 12px 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+.tag:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.tag--topic {
+  color: var(--text);
+}
+
+.badge {
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  vertical-align: middle;
+}
+.badge--draft {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+
+.story__back {
+  font-size: 0.9rem;
+}
+.story__title {
+  margin-block: 4px 4px;
+}
+.story__meta {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-block-start: 0;
+}
+.story__body {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  margin-block: 24px;
+  font-size: 1.02rem;
+}
+.story__tools,
+.story__game {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-block: 24px;
+}
+.pager__state {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.tag-section {
+  margin-block: 24px;
+}
+.tag-section h2 {
+  font-size: 1.1rem;
+}
+
+/* ---- フォーム ---- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.form__field input,
+.form__field textarea {
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+}
+.form__field input:focus,
+.form__field textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.form__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.button {
+  display: inline-block;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.button:hover {
+  text-decoration: none;
+  filter: brightness(1.08);
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.button--ghost {
+  background: transparent;
+  color: var(--accent);
+}
+.button--danger {
+  background: transparent;
+  border-color: #7a3a2a;
+  color: #f0b5a0;
+}
+
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+}
+.linklike:hover {
+  text-decoration: underline;
+}
+
+.account-box {
+  margin-block: 32px;
+  padding: 20px 24px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.account-box h2 {
+  margin-block-start: 0;
+  font-size: 1.1rem;
+}
+.account-box--danger {
+  border-color: #7a3a2a;
+}
+
+.site-nav__primary {
+  color: var(--accent);
+  font-weight: 600;
+}
