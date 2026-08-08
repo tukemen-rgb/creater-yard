@@ -9,7 +9,70 @@
 
 ---
 
-## 2026-08-08 21:22 JST 一覧・個人ページ（SPEC 実装順③）— 状態: 実装済み（A: 3a9cecf / B: 8d3a924 / C: 825c814。**SPEC 実装順③完了**）
+## 2026-08-09 00:22 JST つまずきタグ UI（SPEC 実装順④・MVP 最後の決定済み）— 状態: 未実装（段階 A から）
+
+出典: 調停 23:50。材料: proposals 17:12（自由入力＋正規化・各軸 5 個・
+事前リストなし）・00:12（datalist 候補・件数を出さない・/api/tags.json）・
+事例 8・9・19。
+
+### 設計の決め
+
+- **タグページの URL は軸で分けない**: `/tags/<tag>/`。1 つの語で
+  ツール軸・つまずき軸の両方を横断して引く（URL 資産が一本化され、
+  21:12 で予約した将来のタグ別 feed `/tags/<tag>/feed.xml` とも揃う）
+- **正規化は保存時に store で行う**: 前後空白除去・連続空白の圧縮・
+  ASCII 英字のみ小文字化（日本語はそのまま）・軸内の重複除去。
+  表示は保存された形をそのまま出す
+- **件数・人気順はどこにも出さない**（候補も名前だけ）
+
+### 段階割り
+
+- **段階 A: store の正規化＋タグ一覧 API＋試験**
+  - stories.mjs: normalizeTag を入れ、create/update 時に適用
+  - api.mjs: GET `/api/tags.json`（公開 Story の既出タグ。
+    `{ tool: [...], topic: [...] }` の名前のみ・五十音/辞書順）
+  - GET `/api/stories.json?tag=<tag>`（両軸横断の絞り込み。50 字以内・
+    制御文字と `/` を含むものは 400）
+- **段階 B: /write のタグ入力＋表示**
+  - /write に 2 欄（ツール・つまずきトピック。読点/コンマ区切りの素の
+    input＋datalist 候補 = /api/tags.json から）
+  - Story ページ・一覧・個人ページにタグを表示（`/tags/<tag>/` へのリンク）
+- **段階 C: タグページ `/tags/` シェル**（pathname 解析・?tag= fallback、
+  nginx 例に rewrite 追加）＋ブラウザ実物確認
+
+### 変更対象ファイル
+
+A: `server/lib/stories.mjs`・`server/api.mjs`・`server/stories.test.mjs`・
+`server/api.test.mjs`
+B: `app/write/page.tsx`・`lib/write-api.ts`・`app/s/page.tsx`・
+`app/stories/page.tsx`・`app/w/page.tsx`
+C: `app/tags/page.tsx`（新規）・`docs/nginx.example.conf`
+
+### データモデル
+
+変更なし（tags.tool / tags.topic は最初から保存形式にある。正規化だけ追加）
+
+### 経路・画面
+
+上記のとおり。タグページの並びも新着順のみ
+
+### 試験計画
+
+- A: 正規化（空白・大文字・重複）/ tags.json が公開分の語彙だけ返す
+  （下書きのみのタグが出ない）/ ?tag= の横断絞り込み / 不正な tag 400
+- B・C: ブラウザ実物（datalist 候補・タグリンク・タグページ表示）
+- 毎段階 lint・build・既存試験 32 件が緑
+
+### セキュリティ（脅威と対策）
+
+- タグはプレーンテキスト扱い・表示は React エスケープ（feed に載せる場合も
+  XML エスケープ済みの既存経路のみ）
+- ?tag= と /tags/ の入力は長さ 50 以内・制御文字/スラッシュ拒否
+  （パス走査と URL 汚染を防ぐ）
+- 下書きのみに存在するタグは tags.json に出さない（下書きの内容を
+  語彙経由で漏らさない）
+- 件数の集計・公開はしない（数字の競争面を作らない）。個人計測なし・
+  依存追加なし 一覧・個人ページ（SPEC 実装順③）— 状態: 実装済み（A: 3a9cecf / B: 8d3a924 / C: 825c814。**SPEC 実装順③完了**）
 
 出典: 調停 20:50（次は実装順③。主論点=静的/server の置き方）。
 材料: proposals 19:12（RSS）・21:12（新着順のみ・URL の形）・事例 15・16。
