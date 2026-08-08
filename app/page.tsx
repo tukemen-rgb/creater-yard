@@ -35,7 +35,7 @@ export default function Home() {
         </ul>
         <p className="plan__note">
           順位表・称号・数字の競争は、ここにはありません（GAMEYARD と同じ
-          決まりです）。
+          決まりです）。<a href="/stories/">新着の制作記録を見る</a>
         </p>
       </section>
     </div>

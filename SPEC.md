@@ -43,6 +43,9 @@ MVP に**入れない**もの（理由つき）:
 
 - Next.js App Router。`SITE_MODE=static|server` の 2 モード（GAMEYARD と同型）
 - 公開済み Story は静的に書き出して配信、書く側だけ軽い API
+  （**MVP の間は静的シェル＋API fetch で配る。** Story は実行時に増え、
+  静的書き出しの鮮度は再ビルド体制に依存するため、SEO 向けの静的焼き込みは
+  公開運用の再ビルド体制とセットで導入する — designs 2026-08-08 21:22）
 - 実行時依存 3 つ（next/react/react-dom）。DB は持たずファイル保存から始める
   （GAMEYARD の store 方式。規模が来たら考える — 来ることが先）
 - 配色はアンバー系（工房・電球色。BRAND.md）。レイアウト文法は GAMEYARD と共通

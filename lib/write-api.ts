@@ -110,6 +110,16 @@ export function createStory(input: StoryInput): Promise<Story> {
   return authedJson('/api/stories', 'POST', input)
 }
 
+export type StoryList = { stories: Story[]; total: number; page: number; perPage: number }
+
+/** 公開 Story の一覧（認証不要・新着順）。 */
+export async function listStories(page = 1): Promise<StoryList> {
+  if (!isConfigured()) throw new Error('準備中です。')
+  const res = await fetch(`${WRITE_API_BASE}/api/stories.json?page=${page}`)
+  if (!res.ok) throw new Error('一覧を取得できませんでした。')
+  return res.json()
+}
+
 export function updateStory(id: string, input: StoryInput): Promise<Story> {
   return authedJson(`/api/stories/${id}`, 'PUT', input)
 }
