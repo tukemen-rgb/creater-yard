@@ -12,6 +12,19 @@
 
 ---
 
+## 21. robots.txt（Google の一次資料） — 役割の誤解が多い基本設定
+- 出典: https://developers.google.com/search/docs/crawling-indexing/robots/intro
+  （2026-08-09 確認）
+- 事実: robots.txt は「クローラがどの URL にアクセスできるか」を伝える
+  ファイルで、主目的はサーバー負荷の管理。ルート直下に置く。**検索結果から
+  ページを隠す用途には使えない**（他サイトからリンクされていれば
+  ブロック対象でも結果に出得る。隠すなら noindex かパスワード保護）。
+  全クローラが遵守するわけでもない。
+- 学び: 公開準備では「全部クロール許可＋sitemap の場所を書くだけ」の
+  最小 robots.txt が正解（隠したいものはそもそも公開側に無い設計に
+  してある — 下書きは API 認可で守られており robots に頼らない）。
+  「見つかる面」は OGP・RSS・sitemap・robots の 4 点セットになった。
+
 ## 20. sitemaps.org プロトコル — 検索エンジンに面を伝える最小要件
 - 出典: https://www.sitemaps.org/protocol.html （2026-08-09 確認）
 - 事実: 必須は `<urlset>`・`<url>`・`<loc>`。1 ファイル上限は URL 5 万件・
