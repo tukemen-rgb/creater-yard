@@ -9,6 +9,96 @@
 
 ---
 
+## 2026-08-09 03:22 JST 公開運用（静的焼き込み・見つかる面 4 点・環境変数）— 状態: 未実装（**実装の着手は社長判断待ち**）
+
+出典: 調停 02:50（MVP 完了→公開準備フェーズ。設計だけ進め、実行は人が決める）。
+材料: proposals 22:12（Story 固有 OGP）・01:12（sitemap）・02:12（robots）、
+事例 17・18・20・21。**ドメイン名は書かない**（決定待ち。すべて環境変数）。
+
+### この設計が要る理由
+
+MVP は「静的シェル＋API fetch」で配っている（21:22 の決定・SPEC §3 注記済み）。
+この方式では **SNS クローラと検索エンジンに中身が見えない**（どちらも JS を
+実行しない前提で設計する）。集客チャネル決定の「タグ SEO」と「X」を効かせるには、
+公開済み Story を**ビルド時に焼き込む**経路が要る。焼き込みは鮮度が
+再ビルド体制に依存するので、両者はセットでしか設計できない。
+
+### 段階割り（社長の決定が出てから着手）
+
+- **段階 A: 焼き込みの生成物**（ドメイン非依存・決定前でも実装可能）
+  - `SITE_MODE=static` のビルドで、公開 Story を `generateStaticParams` で
+    `/s/<id>/`・`/w/<handle>/`・`/tags/<tag>/` として焼く。データ源は
+    **API ではなく `data/stories/` を直接読む**（ビルド時にサーバーが
+    上がっていなくても焼ける。GAMEYARD と同型）
+  - 各ページで Story 固有の OGP（og:title / og:description=本文冒頭 /
+    og:url / og:type=article）を head に出す（proposals 22:12 の持ち越し分）
+  - `sitemap.xml`（Story は lastmod=updatedAt・タグ・個人・固定ページ。
+    ルート直下）と `robots.txt`（全許可＋`Sitemap:` 行のみ）を生成
+  - **焼いた静的ページと、既存のシェル＋fetch は共存させる**。静的側が
+    無い id（焼き込み後に増えた分）は nginx の try_files でシェルに落ちる
+- **段階 B: 再ビルド体制**（VPS 側の運用。**社長の実行判断が要る**）
+  - 投稿・更新のたびに全焼きし直すのは重い。**日 1 回の定期ビルド＋
+    手動トリガ**で始める（GAMEYARD の release パイプラインと同じ考え方）。
+    間の鮮度はシェル＋fetch が担保する
+  - 手順書を `docs/release.md` に置く（ビルド→検証→切替→巻き戻し）
+- **段階 C: SMTP**（パスワード再設定。**契約は社長判断**）
+  - 未設定なら「再設定は使えません」と正直に答える現状のまま。
+    設定されたら有効になる形にする（GAMEYARD の mailer と同型）
+
+### 変更対象ファイル（段階 A）
+
+`app/s/page.tsx`・`app/w/page.tsx`・`app/tags/page.tsx`（静的パラメータと
+metadata の生成を追加。client 部分はそのまま）、`lib/stories-static.ts`（新規・
+ビルド時に data/stories を読む）、`app/sitemap.ts`・`app/robots.ts`（Next の
+規約ファイル）、`docs/nginx.example.conf`（try_files の順序）、`SPEC.md`
+
+### データモデル
+
+変更なし（既存の `data/stories/*.json` をビルド時に読むだけ）
+
+### 経路・画面
+
+URL は現行のまま（`/s/<id>/`・`/w/<handle>/`・`/tags/<tag>/`）。
+**購読 URL・タグ URL は変えない**（永続契約。proposals 21:12）
+
+### 環境変数の一覧（運用が設定する。コードに実値を焼かない）
+
+| 変数 | 使う場所 | 意味 | 未設定時 |
+| --- | --- | --- | --- |
+| `SITE_ORIGIN` | server/lib/feed.mjs | 公開オリジン（feed の link・sitemap の loc） | localhost:3000（確認用） |
+| `NEXT_PUBLIC_WRITE_API` | lib/write-api.ts | 書く側 API の基底 URL | 「準備中」と表示 |
+| `WRITE_API_ORIGIN` | server/api.mjs | CORS で許す本体オリジン | `*` |
+| `AUTH_SECRET` | server/lib/auth.mjs | トークン署名鍵（32 文字以上） | 0600 のファイルを自動生成 |
+| `SITE_MODE` | next.config.mjs | static / server | static |
+| `PORT` | server/api.mjs | API の待ち受け | 3010 |
+
+**公開時は `SITE_ORIGIN` と `WRITE_API_ORIGIN` を実ドメインで固定する**
+（CORS の `*` のままにしない）。`AUTH_SECRET` は環境変数で明示的に与える。
+
+### 試験計画
+
+- 段階 A: 焼いた HTML に Story 固有の og:title が入る / sitemap に
+  公開 Story だけが載る（**下書きが載らない**）/ robots.txt が全許可＋
+  Sitemap 行 / 焼き込み後に増えた Story もシェル経由で開ける
+- lint・build（静的）・既存試験 35 件が緑
+
+### セキュリティ（脅威と対策）
+
+- **下書きを焼かない**。ビルド時のデータ源でも `visibility === 'public'`
+  だけを通す（store の境界を静的側でも同じ関数で使う）
+- robots.txt で隠す運用をしない（隠す必要のあるページを公開側に作らない。
+  事例 21）。sitemap にも公開分だけを載せる
+- 焼き込みで生成する OGP の description は本文冒頭のプレーンテキスト。
+  HTML を組み立てず Next の metadata API に渡す（エスケープを自前で書かない）
+- CORS を本番で実オリジンに固定（`*` のままにしない）
+- 検査・認証・上限の緩和なし。依存追加なし。計測なし・決済なし
+
+### 人が決めるまで着手しないもの（この設計は提案止まり）
+
+**公開（本番反映）・ドメイン取得・SMTP 契約・再ビルドの実行**。
+段階 A（ドメイン非依存の生成物）だけは決定前でも実装できるが、
+③は調停の指示が出てから取る。
+
 ## 2026-08-09 00:22 JST つまずきタグ UI（SPEC 実装順④・MVP 最後の決定済み）— 状態: 実装済み（A: b9cc6cd / B: 59962d5 / C: edca0de。**SPEC 実装順①〜④＝MVP の決定済み実装がすべて完了**）
 
 出典: 調停 23:50。材料: proposals 17:12（自由入力＋正規化・各軸 5 個・
