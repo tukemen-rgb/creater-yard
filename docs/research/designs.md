@@ -25,6 +25,27 @@ MVP は「静的シェル＋API fetch」で配っている（21:22 の決定・S
 
 ### 段階割り（社長の決定が出てから着手）
 
+### 一次資料で確定した前提（2026-08-09 05:22 補記・事例 22）
+
+Next.js 公式（Static Exports）に照らして 3 点を確定した。**選択ではなく制約**。
+
+1. **ISR は `output:'export'` では使えない**。「投稿のたびに部分再生成」は
+   選べないので、段階 B の「定期ビルド＋手動トリガ」は前提として書く
+2. **`dynamicParams: true` が使えない** → 焼き込み後に投稿された Story は
+   静的側に存在しない。**nginx の try_files を「静的ファイル →
+   シェル」の順にする**（下記）。これを忘れると新着 Story が 404 になる
+3. sitemap / robots は **`export const dynamic = 'force-static'` を付けた
+   GET の Route Handler** として焼ける（`app/sitemap.ts`・`app/robots.ts`）。
+   rewrites / redirects / headers は Next 側で書けないので nginx が担当（現行どおり）
+
+```nginx
+# 焼き込み導入時の置き換え（現行は try_files /s/index.html =404）
+location ~ ^/s/[a-f0-9]{16}/?$ {
+    # 焼いた静的ページがあればそれ、無ければシェルに落として fetch で表示
+    try_files $uri $uri/index.html /s/index.html;
+}
+```
+
 - **段階 A: 焼き込みの生成物**（ドメイン非依存・決定前でも実装可能）
   - `SITE_MODE=static` のビルドで、公開 Story を `generateStaticParams` で
     `/s/<id>/`・`/w/<handle>/`・`/tags/<tag>/` として焼く。データ源は
