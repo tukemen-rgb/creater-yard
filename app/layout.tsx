@@ -10,6 +10,17 @@ export const metadata: Metadata = {
   },
   description:
     'ゲームを作る人が、制作の記録を残し、知見を分かち合い、仲間とつながる場所。GAMEYARD の姉妹サービス。',
+  // サイト共通の OGP（designs 21:22 段階 B）。og:url と og:image は
+  // ドメインとブランド素材が決まってから足す（どちらも人待ち）。
+  // Story 固有の OGP は静的焼き込み（公開運用）の設計で扱う
+  openGraph: {
+    title: 'CreatorYard — つくる人を、育てる。',
+    description:
+      'ゲームを作る人が、制作の記録を残す場所。完成していなくていい。数字で競わない。',
+    type: 'website',
+    siteName: 'CreatorYard',
+    locale: 'ja_JP',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

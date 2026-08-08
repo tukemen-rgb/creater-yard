@@ -178,10 +178,11 @@ export class Stories {
     return story
   }
 
-  /** 公開のみ・新着順。ページ送りは page（1 始まり）。 */
-  listPublic({ page = 1, perPage = 20 } = {}) {
+  /** 公開のみ・新着順。ページ送りは page（1 始まり）。author はハンドルで絞る。 */
+  listPublic({ page = 1, perPage = 20, author = null } = {}) {
     const all = this.#readAll()
       .filter((story) => story.visibility === 'public')
+      .filter((story) => !author || story.authorHandle === author)
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
     const start = (Math.max(1, page) - 1) * perPage
     return {

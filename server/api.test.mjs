@@ -177,6 +177,29 @@ test('Story: 下書きは他人・未ログインから 404、本人からは見
   assert.equal(stolen.status, 404)
 })
 
+test('Story: author 絞り込みは本人の公開分だけ返し、不正な形式は 400', async () => {
+  const a = await registerWriter('authorfilter1')
+  const b = await registerWriter('authorfilter2')
+  await post(
+    '/api/stories',
+    { title: 'a の公開', body: 'b', visibility: 'public' },
+    bearer(a.token),
+  )
+  await post('/api/stories', { title: 'a の下書き', body: 'b' }, bearer(a.token))
+  await post(
+    '/api/stories',
+    { title: 'b の公開', body: 'b', visibility: 'public' },
+    bearer(b.token),
+  )
+
+  const list = await (await fetch(`${base}/api/stories.json?author=authorfilter1`)).json()
+  assert.equal(list.stories.length, 1)
+  assert.equal(list.stories[0].title, 'a の公開')
+
+  const bad = await fetch(`${base}/api/stories.json?author=../etc`)
+  assert.equal(bad.status, 400)
+})
+
 test('Story: 自分の一覧は下書きを含み、要ログイン', async () => {
   const { token } = await registerWriter('storywriter4')
   await post('/api/stories', { title: '下書きの分', body: 'b' }, bearer(token))

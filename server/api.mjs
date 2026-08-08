@@ -156,8 +156,15 @@ export function createApiServer({ dir, now } = {}) {
         return
       }
       if (route === 'GET /api/stories.json') {
-        const page = Number(new URL(req.url, 'http://local').searchParams.get('page') ?? 1)
-        send(200, stories.listPublic({ page: Number.isFinite(page) ? page : 1 }))
+        const params = new URL(req.url, 'http://local').searchParams
+        const page = Number(params.get('page') ?? 1)
+        const author = params.get('author')
+        // 絞り込みはハンドル形式だけ受ける。自由文字列を store まで通さない
+        if (author !== null && !/^[a-z0-9][a-z0-9_-]{2,31}$/.test(author)) {
+          send(400, { error: 'author の形式が不正です。' })
+          return
+        }
+        send(200, stories.listPublic({ page: Number.isFinite(page) ? page : 1, author }))
         return
       }
       const getStory = /^GET \/api\/stories\/([a-f0-9]{16})\.json$/.exec(route)

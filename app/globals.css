@@ -295,3 +295,11 @@ a:hover {
   opacity: 0.4;
   cursor: default;
 }
+
+/* Story 本文（段階 B）。改行を保ち、HTML は解釈しない */
+.story-body {
+  margin-top: 24px;
+  max-width: 44rem;
+  white-space: pre-wrap;
+  line-height: 1.9;
+}
