@@ -75,3 +75,41 @@ export async function me(): Promise<Account | null> {
 export function logout() {
   setToken(null)
 }
+
+export type StoryInput = {
+  title: string
+  body: string
+  tools?: string[]
+  hurdle?: { text: string; status: 'open' | 'resolved' }
+  gameyardUrl?: string
+  visibility: 'public' | 'draft'
+}
+
+export type Story = StoryInput & {
+  id: string
+  authorHandle: string
+  createdAt: string
+  updatedAt: string
+}
+
+async function authedJson(path: string, method: string, payload: unknown): Promise<Story> {
+  const token = getToken()
+  if (!token) throw new Error('ログインが必要です。')
+  if (!isConfigured()) throw new Error('書く機能は準備中です。')
+  const res = await fetch(`${WRITE_API_BASE}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  })
+  const body = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(body?.error ?? '通信に失敗しました。')
+  return body.story
+}
+
+export function createStory(input: StoryInput): Promise<Story> {
+  return authedJson('/api/stories', 'POST', input)
+}
+
+export function updateStory(id: string, input: StoryInput): Promise<Story> {
+  return authedJson(`/api/stories/${id}`, 'PUT', input)
+}

@@ -198,3 +198,42 @@ a:hover {
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
+
+/* Story 投稿フォーム（段階 C）。auth-form を広げて使う */
+.write-form {
+  max-width: 44rem;
+}
+.write-form textarea {
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+}
+.write-form__templates {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.write-form__templates button {
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.write-form__inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text);
+  font-size: 0.95rem;
+}
