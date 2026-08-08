@@ -37,7 +37,11 @@
   静的シェル `/s/`・`/w/` を置き、client 側で pathname から id/handle を
   取って fetch（開発は next dev がそのまま解決。本番 nginx は
   `/s/…`→`/s/index.html` の rewrite。例を docs/nginx.example.conf に置く）。
-  本文・つまずき・ツールの表示はエスケープされたプレーンテキスト
+  本文・つまずき・ツールの表示はエスケープされたプレーンテキスト。
+  OGP は **layout にサイト共通の 4 つ（og:title/type/url/image）を置くだけ**。
+  Story 固有の OGP はシェル方式では構造的に出せないため（SNS クローラは
+  JS を実行しない）、静的焼き込み設計（公開運用）の必須要件に回す
+  （proposals 22:12・事例 17 を反映）
 - **段階 C: RSS**。API 側に `/api/feeds/stories.xml`（全体）と
   `/api/feeds/w/<handle>.xml`（書き手ごと）。**公開 URL は proposals 21:12 の
   形（`/stories/feed.xml`・`/w/<handle>/feed.xml`）を nginx の proxy で対応**
