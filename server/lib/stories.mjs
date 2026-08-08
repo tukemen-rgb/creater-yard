@@ -65,14 +65,32 @@ function normalizeList(value, name, maxItems, maxLength) {
   return items
 }
 
+/**
+ * タグ 1 語の正規化（designs 00:22）。表記ゆれで語彙が薄く分散するのを防ぐ。
+ * 小文字化は ASCII だけ（日本語のタグはそのまま）。全部を NFKC 等まで
+ * やらないのは、書いた形と表示が変わりすぎると本人が戸惑うため。
+ */
+export function normalizeTag(value) {
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[A-Z]+/g, (chars) => chars.toLowerCase())
+}
+
+function normalizeTagList(value, name, maxItems, maxLength) {
+  const normalized = normalizeList(value, name, maxItems, maxLength).map(normalizeTag)
+  // 正規化で同じ語になったものは黙って 1 つにする（エラーにしない）
+  return [...new Set(normalized)]
+}
+
 function normalizeInput(input) {
   const story = {
     title: requireText(input.title, 'タイトル', LIMITS.title),
     body: requireText(input.body, '本文', LIMITS.body),
     tools: normalizeList(input.tools, '使ったツール', LIMITS.tools, LIMITS.tool),
     tags: {
-      tool: normalizeList(input.tags?.tool, 'ツールのタグ', LIMITS.tagsPerAxis, LIMITS.tag),
-      topic: normalizeList(input.tags?.topic, 'つまずきのタグ', LIMITS.tagsPerAxis, LIMITS.tag),
+      tool: normalizeTagList(input.tags?.tool, 'ツールのタグ', LIMITS.tagsPerAxis, LIMITS.tag),
+      topic: normalizeTagList(input.tags?.topic, 'つまずきのタグ', LIMITS.tagsPerAxis, LIMITS.tag),
     },
     gameyardUrl: '',
     visibility: input.visibility === 'public' ? 'public' : 'draft',
@@ -178,11 +196,21 @@ export class Stories {
     return story
   }
 
-  /** 公開のみ・新着順。ページ送りは page（1 始まり）。author はハンドルで絞る。 */
-  listPublic({ page = 1, perPage = 20, author = null } = {}) {
+  /**
+   * 公開のみ・新着順。ページ送りは page（1 始まり）。author はハンドル、
+   * tag は 2 軸を横断して絞る（軸を分けないのは designs 00:22 の決め）。
+   */
+  listPublic({ page = 1, perPage = 20, author = null, tag = null } = {}) {
+    const wanted = tag ? normalizeTag(tag) : null
     const all = this.#readAll()
       .filter((story) => story.visibility === 'public')
       .filter((story) => !author || story.authorHandle === author)
+      .filter(
+        (story) =>
+          !wanted ||
+          (story.tags?.tool ?? []).includes(wanted) ||
+          (story.tags?.topic ?? []).includes(wanted),
+      )
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
     const start = (Math.max(1, page) - 1) * perPage
     return {
@@ -198,6 +226,22 @@ export class Stories {
     return this.#readAll()
       .filter((story) => story.authorId === authorId)
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  }
+
+  /**
+   * 公開 Story の既出タグ語彙（名前のみ・辞書順）。件数は持たない
+   * （数字の競争面を作らない）。下書きだけに在るタグは含めない —
+   * 下書きの中身を語彙経由で漏らさないため。
+   */
+  publicTagVocabulary() {
+    const tool = new Set()
+    const topic = new Set()
+    for (const story of this.#readAll()) {
+      if (story.visibility !== 'public') continue
+      for (const tag of story.tags?.tool ?? []) tool.add(tag)
+      for (const tag of story.tags?.topic ?? []) topic.add(tag)
+    }
+    return { tool: [...tool].sort(), topic: [...topic].sort() }
   }
 
   #readAll() {

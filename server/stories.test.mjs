@@ -117,6 +117,48 @@ test('つまずきは状態つきで持て、既定は未解決', () => {
   assert.equal(resolved.hurdle.status, 'resolved')
 })
 
+test('タグは保存時に正規化され、軸内の重複は 1 つになる', () => {
+  const { stories } = setup()
+  const story = stories.create({
+    author: writer,
+    input: {
+      title: 't',
+      body: 'b',
+      tags: { tool: ['  Godot ', 'godot', 'Unity   2022'], topic: ['当たり判定'] },
+    },
+  })
+  assert.deepEqual(story.tags.tool, ['godot', 'unity 2022'])
+  assert.deepEqual(story.tags.topic, ['当たり判定'])
+})
+
+test('タグの横断絞り込みと語彙（公開分のみ・件数なし）', () => {
+  const { stories, clock } = setup()
+  stories.create({
+    author: writer,
+    input: { title: 'ツール側', body: 'b', tags: { tool: ['godot'] }, visibility: 'public' },
+  })
+  clock.value += 1000
+  stories.create({
+    author: writer,
+    input: { title: 'トピック側', body: 'b', tags: { topic: ['godot'] }, visibility: 'public' },
+  })
+  stories.create({
+    author: writer,
+    input: { title: '下書き', body: 'b', tags: { tool: ['secret-tool'] } },
+  })
+
+  // 1 語で両軸を横断して引ける
+  const hits = stories.listPublic({ tag: 'Godot' })
+  assert.equal(hits.total, 2)
+
+  // 語彙は公開分だけ。下書きだけのタグは漏れない
+  const vocab = stories.publicTagVocabulary()
+  assert.deepEqual(vocab.tool, ['godot'])
+  assert.ok(!vocab.tool.includes('secret-tool'))
+  // 件数を持たない（名前の配列だけ）
+  assert.equal(typeof vocab.tool[0], 'string')
+})
+
 test('公開一覧は新着順でページ送りできる', () => {
   const { stories, clock } = setup()
   for (let i = 1; i <= 3; i++) {

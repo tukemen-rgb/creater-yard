@@ -13,7 +13,8 @@
  *   GET  /api/auth/me        トークンの確認
  *   POST /api/stories            Story 作成（要ログイン。既定は下書き）
  *   PUT  /api/stories/<id>       更新・公開/下書き切替（要ログイン・本人のみ）
- *   GET  /api/stories.json       公開 Story の一覧（新着順・?page=）
+ *   GET  /api/stories.json       公開 Story の一覧（新着順・?page= ?author= ?tag=）
+ *   GET  /api/tags.json          公開 Story の既出タグ語彙（名前のみ・件数なし）
  *   GET  /api/stories/<id>.json  Story 1 件（下書きは本人のみ。他人には 404）
  *   GET  /api/mine/stories       自分の Story（下書き含む。要ログイン）
  *
@@ -165,7 +166,18 @@ export function createApiServer({ dir, now } = {}) {
           send(400, { error: 'author の形式が不正です。' })
           return
         }
-        send(200, stories.listPublic({ page: Number.isFinite(page) ? page : 1, author }))
+        // tag は 50 字以内・制御文字とスラッシュを拒否（designs 00:22）
+        const tag = params.get('tag')
+        // eslint-disable-next-line no-control-regex
+        if (tag !== null && (tag.length === 0 || tag.length > 50 || /[\x00-\x1f/\\]/.test(tag))) {
+          send(400, { error: 'tag の形式が不正です。' })
+          return
+        }
+        send(200, stories.listPublic({ page: Number.isFinite(page) ? page : 1, author, tag }))
+        return
+      }
+      if (route === 'GET /api/tags.json') {
+        send(200, stories.publicTagVocabulary())
         return
       }
       const getStory = /^GET \/api\/stories\/([a-f0-9]{16})\.json$/.exec(route)

@@ -113,6 +113,28 @@ test('無い経路は 404', async () => {
   assert.equal(res.status, 404)
 })
 
+test('タグ: ?tag= の横断絞り込み・tags.json の語彙・不正な tag は 400', async () => {
+  const reg = await post('/api/auth/register', { handle: 'tagwriter1', password: 'correct-horse-1' })
+  const auth = { Authorization: `Bearer ${reg.body.token}` }
+  await post(
+    '/api/stories',
+    { title: 'タグ付き公開', body: 'b', tags: { tool: ['Godot'] }, visibility: 'public' },
+    auth,
+  )
+  await post('/api/stories', { title: '下書き', body: 'b', tags: { tool: ['hidden-tool'] } }, auth)
+
+  // 正規化された語（godot）で引ける・大文字で問い合わせても同じ
+  const hits = await (await fetch(`${base}/api/stories.json?tag=Godot`)).json()
+  assert.ok(hits.stories.some((s) => s.title === 'タグ付き公開'))
+
+  const vocab = await (await fetch(`${base}/api/tags.json`)).json()
+  assert.ok(vocab.tool.includes('godot'))
+  assert.ok(!vocab.tool.includes('hidden-tool'))
+
+  const bad = await fetch(`${base}/api/stories.json?tag=${encodeURIComponent('a/b')}`)
+  assert.equal(bad.status, 400)
+})
+
 test('RSS: 全体フィードが必須要素を持ち、公開分だけ・エスケープ済みで出る', async () => {
   const reg = await post('/api/auth/register', { handle: 'feedwriter1', password: 'correct-horse-1' })
   const auth = { Authorization: `Bearer ${reg.body.token}` }
