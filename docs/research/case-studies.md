@@ -12,6 +12,20 @@
 
 ---
 
+## 18. RSS 2.0 仕様と autodiscovery — 段階 C の実装が守るべき最小要件
+- 出典: https://www.rssboard.org/rss-specification /
+  https://www.rssboard.org/rss-autodiscovery （2026-08-08 確認）
+- 事実: channel の必須は title・link・description の 3 つ。item は全要素
+  任意だが **title か description の少なくとも一方が必須**。日時は RFC 822
+  形式（例: `Sat, 07 Sep 2002 00:00:01 GMT`）。autodiscovery は HTML の
+  `<head>` に `<link rel="alternate" type="application/rss+xml" href="…">`
+  （rel・type は小文字）。1 ページ 1 リンクが推奨で、複数あるときは
+  最初がメインフィード。
+- 学び: RSS を自前で組む際の正誤の基準がこの 2 ページで足りる。
+  autodiscovery の link は layout に 1 本（全体フィード）、個人ページには
+  その書き手のフィードを置くのが素直（ページごとに「最初のリンク」を
+  そのページのメインにする）。
+
 ## 17. Open Graph protocol — シェアカードは head の静的な meta が前提
 - 出典: https://ogp.me/ （2026-08-08 確認）
 - 事実: ウェブページを SNS 上のリッチなカードにするための仕組み。必須の

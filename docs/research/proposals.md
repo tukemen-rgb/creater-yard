@@ -14,7 +14,17 @@
 
 ---
 
-## 2026-08-08 22:12 JST OGP は「共通で始めて、焼き込みで個別化」（段階 B と公開運用の材料）
+## 2026-08-08 23:12 JST RSS 実装の最小要件と autodiscovery（段階 C の材料）
+- 状態: 未設計（**実装順③ 段階 C の実装材料。単独では取らない**）
+- 何を: 段階 C の RSS 実装で守ること — (1) channel は title/link/description
+  の 3 つを必ず出す。(2) item は title＋link＋pubDate（RFC 822 形式）。
+  (3) autodiscovery の link を head に置く（全体フィードを layout に、
+  書き手フィードは個人ページ側で差し替え）。(4) 日付や XML エスケープは
+  GAMEYARD の feed 実装（uploads/feed.xml）を流用して自前で組む
+- なぜ: RSS リーダーに拾われない・壊れた XML になる、という初歩の事故を
+  仕様の一次資料で先に潰しておく（事例 18）。実装が正誤に迷わない
+- 期待効果: 段階 C が 1 周で終わる確度が上がる
+- 根拠の事例: case-studies.md の 18（16 も参照） OGP は「共通で始めて、焼き込みで個別化」（段階 B と公開運用の材料）
 - 状態: 設計済み（designs 21:22 の段階 B に反映 2026-08-08 22:22。
   Story 固有 OGP は静的焼き込み設計の必須要件として持ち越し）
 - 何を: (1) 段階 B ではサイト共通の OGP（og:title=CreatorYard・og:type=
