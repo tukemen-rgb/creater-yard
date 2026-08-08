@@ -9,7 +9,63 @@
 
 ---
 
-## 2026-08-08 16:22 JST アカウント段階 B の改訂（単独 API サーバー方式）— 状態: 実装済み b516fea（api:test 8 件緑。次は段階 C: 画面）
+## 2026-08-08 17:22 JST アカウント段階 C の詳細（画面＋API の CORS 補正）— 状態: 未実装
+
+段階 C（/register・/login）の実装前に、流用元の実物を確認して 2 点を確定する。
+
+### 16:22 からの補正: CORS は「付けない」ではなく GAMEYARD と同型にする
+
+GAMEYARD の api.mjs は `Access-Control-Allow-Origin:
+process.env.SCAN_API_ORIGIN ?? '*'` と OPTIONS preflight を実装している
+（本体と API が別オリジンの構成が前提。トークンを localStorage に置く理由も
+scan-client.ts のコメントに「別オリジンでは cookie の SameSite の扱いが
+面倒になるため」と明記）。16:22 の「CORS ヘッダは付けない」は流用元と
+食い違い、開発時（next dev :3000 → api :3010）のブラウザ確認も通らない。
+**`WRITE_API_ORIGIN ?? '*'` の同型に改める**（Bearer 方式で cookie を
+使わないため、credentials なしの CORS は流用元と同水準の露出）。
+本番でオリジンを固定するのは環境変数の設定＝運用であり、コードの判断ではない。
+
+### 変更対象ファイル
+
+1. `server/api.mjs` — CORS ヘッダ＋OPTIONS 対応（GAMEYARD 同型）
+2. `server/api.test.mjs` — preflight と CORS ヘッダの試験を追加
+3. `lib/write-api.ts`（新規）— `NEXT_PUBLIC_WRITE_API ?? ''` を基底 URL に、
+   register/login/me とトークンの保存（localStorage、鍵 `cy.token`）。
+   基底が未設定なら「書く機能は準備中」と正直に返す（GAMEYARD の
+   「設定されていません」方式）
+4. `app/register/page.tsx`・`app/login/page.tsx`（新規・client component）—
+   ハンドル＋パスワードの 2 項目のみ。文言に「メールは不要（あとから設定
+   でき、用途はパスワード再設定だけ）」を明記（proposals 15:12・隠さない文化）
+
+### データモデル
+
+変更なし（data/users はそのまま）
+
+### 経路・画面
+
+- `/register/`・`/login/` は静的書き出しに含まれる（client component なので
+  export で問題ない）。API 未設定のビルドでは「準備中」を表示
+- 成功時は `/login/` → 簡単な「ログイン中: <handle>」表示（me の確認を兼ねる。
+  専用のマイページは Story 実装の番で）
+
+### 試験計画
+
+- api.test.mjs 追加分: OPTIONS が 204 相当で Allow ヘッダを返す /
+  register 応答に Access-Control-Allow-Origin が付く
+- `npm run lint`・`npm run build`（静的）・auth/api 試験が緑
+- **ブラウザ実物確認**: `npm run api` ＋
+  `NEXT_PUBLIC_WRITE_API=http://localhost:3010 npm run dev` で
+  登録→ログイン→「ログイン中」表示まで通す
+
+### セキュリティ（脅威と対策）
+
+- CORS は上記のとおり流用元と同水準（credentials なし・Bearer のみ）。
+  16:22 の他の決まり（8KB 上限・nosniff・バックオフ一元化）は変えない
+- トークンは localStorage（流用元と同じ選択・理由もコメントで引き継ぐ）。
+  XSS への土台対策は「第三者 JS なし・入力のエスケープ」のまま
+- パスワードは type=password・autocomplete 属性を正しく付ける
+  （new-password / current-password）。値をログ・URL に出さない
+- 検査・認証・上限を緩めない。依存追加なし。計測なし・決済なし アカウント段階 B の改訂（単独 API サーバー方式）— 状態: 実装済み b516fea（api:test 8 件緑。次は段階 C: 画面）
 
 15:22 の段階 B（Next Route Handlers＋httpOnly cookie 案）を**着手前に改訂**する。
 理由は 2 つ。(1) このリポジトリの既定ビルドは `output: 'export'`
