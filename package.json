@@ -8,6 +8,7 @@
     "build:server": "SITE_MODE=server next build",
     "start:server": "SITE_MODE=server next start",
     "lint": "eslint . && npm run typecheck && echo 'lint OK（ESLint + 型検査）'",
+    "auth:test": "node --test server/auth.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
