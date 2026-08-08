@@ -9,7 +9,59 @@
 
 ---
 
-## 2026-08-08 15:22 JST アカウント（SPEC 実装順①）— 状態: 段階 A 実装済み 16b3edf（auth:test 8 件緑。次は段階 B: API）
+## 2026-08-08 16:22 JST アカウント段階 B の改訂（単独 API サーバー方式）— 状態: 未実装
+
+15:22 の段階 B（Next Route Handlers＋httpOnly cookie 案）を**着手前に改訂**する。
+理由は 2 つ。(1) このリポジトリの既定ビルドは `output: 'export'`
+（next.config.mjs 確認済み）で、POST の Route Handler は静的書き出しと
+衝突する。(2) 流用元 GAMEYARD の実物（`server/api.mjs`）は **Next とは別の
+単独 node:http サーバー＋Bearer トークン**であり、cookie を使っていない。
+静的ホスティングの安さとサーバー検査の両立のための分離、という設計意図も
+コメントに明記されている。流用元と同構成に合わせる。
+
+### 変更対象ファイル（段階 B）
+
+1. `server/api.mjs`（新規）— node:http の単独サーバー。依存追加なし
+2. `server/api.test.mjs`（新規）＋ package.json に
+   `"api:test": "node --test server/api.test.mjs"`
+3. `.gitignore` — `data/` と `.auth-secret` を追加（④の申し送り。実装より先に）
+
+### 経路（段階 B で作るのは 4 本だけ）
+
+| 経路 | 内容 |
+| --- | --- |
+| GET `/api/health` | 死活。UI が事前確認に使う |
+| POST `/api/auth/register` | 登録（handle・password の 2 項目。proposals 15:12） |
+| POST `/api/auth/login` | ログイン。`{ token, expiresAt, account }` を返す |
+| GET `/api/auth/me` | Bearer トークンの確認 |
+
+- 認証は `Authorization: Bearer <token>`（GAMEYARD の authenticate() と同じ）。
+  cookie を使わないので CSRF はブラウザの自動送信経由では成立しない
+- 画面（段階 C）は**静的ページ＋fetch** で API を叩く（GAMEYARD と同型。
+  server モードの Next は MVP では使わない）。`npm run build` は静的のまま緑
+
+### データモデル
+
+段階 A の `data/users/<handle>.json` をそのまま使う（変更なし）
+
+### 試験計画
+
+- api.test.mjs: 一時ポートで起動し fetch で叩く。登録→ログイン→me の流れ /
+  重複登録 409 / 誤パスワード 401（文言が不在時と同一）/ me の署名改ざん 401 /
+  JSON でない body・大きすぎる body の拒否
+- `npm run lint`・`npm run build`（静的）・`auth:test` が緑のまま
+
+### セキュリティ（脅威と対策）
+
+- body は JSON のみ・上限 8KB（読み過ぎない。上限は後から緩めない）
+- Content-Type 検査。応答は application/json 固定＋`X-Content-Type-Options: nosniff`
+- 失敗の指数バックオフ・列挙対策は段階 A の Accounts をそのまま通す
+  （API 層で二重に文言を作らない。clientKey にはソケットのアドレスを渡す）
+- CORS ヘッダは付けない（同一オリジン配信が前提。付けるときは人の判断）
+- トークンの保存先（ブラウザ側）は段階 C の論点として明記して先送りしない
+  ＝ localStorage（GAMEYARD と同じ）。XSS 対策は「第三者 JS を入れない・
+  本文のエスケープ」という土台の決まりで受ける
+- 検査・認証・上限を緩めない。依存追加なし。決済・計測なし アカウント（SPEC 実装順①）— 状態: 段階 A 実装済み 16b3edf（auth:test 8 件緑。次は段階 B: API）
 
 出典: 調停 14:50 の指示（決定済みの実装順を優先）＋ proposals 15:12
 （登録 2 項目・メール後から）。流用元: GAMEYARD `server/lib/auth.mjs`
