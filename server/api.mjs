@@ -11,6 +11,11 @@
  *   POST /api/auth/register  書き手アカウント作成（handle・password のみ）
  *   POST /api/auth/login     ログイン（Bearer トークンを返す）
  *   GET  /api/auth/me        トークンの確認
+ *   POST /api/stories            Story 作成（要ログイン。既定は下書き）
+ *   PUT  /api/stories/<id>       更新・公開/下書き切替（要ログイン・本人のみ）
+ *   GET  /api/stories.json       公開 Story の一覧（新着順・?page=）
+ *   GET  /api/stories/<id>.json  Story 1 件（下書きは本人のみ。他人には 404）
+ *   GET  /api/mine/stories       自分の Story（下書き含む。要ログイン）
  *
  * 認証は Authorization: Bearer。cookie を使わないので、ブラウザの自動送信を
  * 突く形の CSRF はここでは成立しない。
@@ -19,6 +24,7 @@ import http from 'node:http'
 import path from 'node:path'
 
 import { Accounts, AuthError } from './lib/auth.mjs'
+import { Stories, StoryError } from './lib/stories.mjs'
 
 /** JSON body の上限。認証系の入力に 8KB を超える正当な理由はない。 */
 const MAX_BODY_BYTES = 8 * 1024
@@ -65,10 +71,30 @@ function readJsonBody(req) {
 }
 
 export function createApiServer({ dir, now } = {}) {
-  const accounts = new Accounts({
-    dir: dir ?? path.join(process.cwd(), 'data', 'users'),
+  const usersDir = dir ?? path.join(process.cwd(), 'data', 'users')
+  const accounts = new Accounts({ dir: usersDir, ...(now ? { now } : {}) })
+  // stories は users の隣（data/stories）。試験でも同じ相対関係になる
+  const stories = new Stories({
+    dir: path.join(path.dirname(usersDir), 'stories'),
     ...(now ? { now } : {}),
   })
+
+  /** Bearer の確認。無ければ 401。 */
+  const authenticate = (req) => {
+    const match = /^Bearer\s+(.+)$/i.exec(req.headers.authorization ?? '')
+    if (!match) throw new AuthError('この操作にはログインが必要です。')
+    return accounts.verifyToken(match[1].trim())
+  }
+
+  /** ログインしていれば本人、していなければ null（公開分だけ見える）。 */
+  const viewerOf = (req) => {
+    if (!req.headers.authorization) return null
+    try {
+      return authenticate(req)
+    } catch {
+      return null
+    }
+  }
 
   return http.createServer(async (req, res) => {
     const send = (status, body) => {
@@ -113,14 +139,45 @@ export function createApiServer({ dir, now } = {}) {
         return
       }
       if (route === 'GET /api/auth/me') {
-        const match = /^Bearer\s+(.+)$/i.exec(req.headers.authorization ?? '')
-        if (!match) throw new AuthError('この操作にはログインが必要です。')
-        send(200, { account: accounts.verifyToken(match[1].trim()) })
+        send(200, { account: authenticate(req) })
+        return
+      }
+      if (route === 'POST /api/stories') {
+        const account = authenticate(req)
+        const body = await readJsonBody(req)
+        send(201, { story: stories.create({ author: account, input: body }) })
+        return
+      }
+      const putStory = /^PUT \/api\/stories\/([a-f0-9]{16})$/.exec(route)
+      if (putStory) {
+        const account = authenticate(req)
+        const body = await readJsonBody(req)
+        send(200, { story: stories.update({ id: putStory[1], authorId: account.id, input: body }) })
+        return
+      }
+      if (route === 'GET /api/stories.json') {
+        const page = Number(new URL(req.url, 'http://local').searchParams.get('page') ?? 1)
+        send(200, stories.listPublic({ page: Number.isFinite(page) ? page : 1 }))
+        return
+      }
+      const getStory = /^GET \/api\/stories\/([a-f0-9]{16})\.json$/.exec(route)
+      if (getStory) {
+        const story = stories.getVisible(getStory[1], viewerOf(req)?.id ?? null)
+        if (!story) {
+          send(404, { error: 'Story が見つかりません。' })
+          return
+        }
+        send(200, { story })
+        return
+      }
+      if (route === 'GET /api/mine/stories') {
+        const account = authenticate(req)
+        send(200, { stories: stories.listMine(account.id) })
         return
       }
       send(404, { error: '見つかりません。' })
     } catch (err) {
-      if (err instanceof AuthError) {
+      if (err instanceof AuthError || err instanceof StoryError) {
         send(err.status, { error: err.message })
         return
       }

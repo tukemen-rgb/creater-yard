@@ -112,3 +112,76 @@ test('無い経路は 404', async () => {
   const res = await fetch(`${base}/api/nope`)
   assert.equal(res.status, 404)
 })
+
+async function registerWriter(handle) {
+  const reg = await post('/api/auth/register', { handle, password: 'correct-horse-1' })
+  return { token: reg.body.token, account: reg.body.account }
+}
+
+function bearer(token) {
+  return { Authorization: `Bearer ${token}` }
+}
+
+test('Story: 作成→公開→一覧・1 件取得の流れが通る', async () => {
+  const { token } = await registerWriter('storywriter1')
+  const created = await post(
+    '/api/stories',
+    { title: '1 日目', body: '敵の動きを作った', tools: ['Godot'] },
+    bearer(token),
+  )
+  assert.equal(created.status, 201)
+  assert.equal(created.body.story.visibility, 'draft')
+
+  const id = created.body.story.id
+  const published = await fetch(`${base}/api/stories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...bearer(token) },
+    body: JSON.stringify({ title: '1 日目', body: '敵の動きを作った', visibility: 'public' }),
+  })
+  assert.equal(published.status, 200)
+
+  const list = await fetch(`${base}/api/stories.json`)
+  const listBody = await list.json()
+  assert.ok(listBody.stories.some((s) => s.id === id))
+
+  const one = await fetch(`${base}/api/stories/${id}.json`)
+  assert.equal(one.status, 200)
+})
+
+test('Story: 認証なしの作成は 401', async () => {
+  const res = await post('/api/stories', { title: 't', body: 'b' })
+  assert.equal(res.status, 401)
+})
+
+test('Story: 下書きは他人・未ログインから 404、本人からは見える', async () => {
+  const mine = await registerWriter('storywriter2')
+  const other = await registerWriter('storywriter3')
+  const draft = await post('/api/stories', { title: '下書き', body: 'b' }, bearer(mine.token))
+  const id = draft.body.story.id
+
+  assert.equal((await fetch(`${base}/api/stories/${id}.json`)).status, 404)
+  assert.equal(
+    (await fetch(`${base}/api/stories/${id}.json`, { headers: bearer(other.token) })).status,
+    404,
+  )
+  assert.equal(
+    (await fetch(`${base}/api/stories/${id}.json`, { headers: bearer(mine.token) })).status,
+    200,
+  )
+  // 他人の更新も 404（存在を明かさない）
+  const stolen = await fetch(`${base}/api/stories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...bearer(other.token) },
+    body: JSON.stringify({ title: 'x', body: 'y' }),
+  })
+  assert.equal(stolen.status, 404)
+})
+
+test('Story: 自分の一覧は下書きを含み、要ログイン', async () => {
+  const { token } = await registerWriter('storywriter4')
+  await post('/api/stories', { title: '下書きの分', body: 'b' }, bearer(token))
+  const mine = await fetch(`${base}/api/mine/stories`, { headers: bearer(token) })
+  assert.equal(mine.status, 200)
+  assert.equal((await mine.json()).stories.length, 1)
+  assert.equal((await fetch(`${base}/api/mine/stories`)).status, 401)
+})
