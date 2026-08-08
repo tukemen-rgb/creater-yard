@@ -78,6 +78,11 @@ Playwright のメモは GAMEYARD 固有で、ここには当てはまらない�
 - コンテナが新しいと `node_modules` が無く、lint がグローバルの ESLint 10 で
   落ちる（`@eslint/eslintrc` が見つからない）。**先に `npm ci` を実行する**
   （2026-08-08 に③で実際に踏んだ）
+- ブラウザ確認は Playwright のグローバル版を使う（リポジトリに依存を足さない）。
+  `/opt/node22/lib/node_modules/playwright` を作業ディレクトリ外の
+  node_modules に symlink し、`chromium.launch({ executablePath:
+  '/opt/pw-browsers/chromium' })` で起動する（2026-08-08 に③で実際に踏んだ。
+  `@playwright/test` は入っていない。import は `'playwright'` から）
 
 ## 記録
 
