@@ -9,6 +9,8 @@
     "start:server": "SITE_MODE=server next start",
     "lint": "eslint . && npm run typecheck && echo 'lint OK（ESLint + 型検査）'",
     "auth:test": "node --test server/auth.test.mjs",
+    "api:test": "node --test server/api.test.mjs",
+    "api": "node server/api.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
