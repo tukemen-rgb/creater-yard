@@ -5,3 +5,7 @@ next-env.d.ts
 *.log
 .DS_Store
 tsconfig.tsbuildinfo
+
+# 実行時に生成されるもの（コミットしない）
+data/
+.auth-secret
