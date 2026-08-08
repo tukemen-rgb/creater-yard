@@ -12,6 +12,16 @@
 
 ---
 
+## 20. sitemaps.org プロトコル — 検索エンジンに面を伝える最小要件
+- 出典: https://www.sitemaps.org/protocol.html （2026-08-09 確認）
+- 事実: 必須は `<urlset>`・`<url>`・`<loc>`。1 ファイル上限は URL 5 万件・
+  50MB（圧縮前）。lastmod は W3C Datetime（YYYY-MM-DD で可）。置き場所が
+  対象範囲を決める（ルート直下に置けばサイト全体を掲載できる）。
+- 学び: タグ SEO（ACQUISITION A1）を面として効かせるには、Story・タグ・
+  個人ページの URL を sitemap で検索エンジンに伝える必要がある。上限
+  5 万件は当面問題にならない。lastmod に Story の updatedAt がそのまま
+  使える。**静的焼き込み（公開運用）設計の必須要件**として持っておく。
+
 ## 19. HTML の datalist — 依存なしで作れるタグ入力の候補提示
 - 出典: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
   （2026-08-08 確認）
