@@ -9,7 +9,83 @@
 
 ---
 
-## 2026-08-08 14:22 JST Story の書式「3 枠テンプレ＋つまずきの解決状態」— 状態: 実装済み bce09ee（SPEC 追記分。フォーム・store は Story 実装の番で）
+## 2026-08-08 15:22 JST アカウント（SPEC 実装順①）— 状態: 未実装（段階 A から）
+
+出典: 調停 14:50 の指示（決定済みの実装順を優先）＋ proposals 15:12
+（登録 2 項目・メール後から）。流用元: GAMEYARD `server/lib/auth.mjs`
+（読み取り済み。scrypt・署名トークン・自前実装・依存追加なし）。
+
+### 段階割り（1 段階 = ③の 1 周に収まる大きさ）
+
+- **段階 A: 認証の中核ライブラリ＋単体試験**（次の③）
+  - `server/lib/auth.mjs` を GAMEYARD から移植し、CreatorYard に不要な
+    部分（連絡先自由記述など）を落とす。`server/auth.test.mjs` ＋
+    package.json に `"auth:test": "node --test server/auth.test.mjs"`
+  - 流用する決まり: scrypt（N=16384, r=8, p=1, keylen=64, maxmem 明示）、
+    salt 32B、timingSafeEqual、ハンドル `^[a-z0-9][a-z0-9_-]{2,31}$`、
+    パスワード 10〜200 字、署名トークン TTL 30 日、AUTH_SECRET は
+    環境変数か 0600 のファイル、ログイン失敗の追跡上限（メモリを
+    攻撃面にしない）
+- **段階 B: 登録・ログイン・ログアウトの API**（その次の③）
+  - Next Route Handlers（`app/api/auth/register|login|logout`）。
+    **server モードのみ**（静的側には存在しない。SPEC §3「書く側だけ軽い API」）
+  - cookie は httpOnly ＋ SameSite=Lax ＋（本番）Secure。CSRF は
+    SameSite＋POST 限定＋Origin 確認で始める（GAMEYARD と同水準）
+- **段階 C: 画面**（さらに次の③。ブラウザで実物確認まで）
+  - `/register` `/login` 最小フォーム（登録はハンドル＋パスワードの
+    2 項目だけ。proposals 15:12）。メールは設定画面で後から任意登録
+    （設定画面自体は Story 実装後でよい）
+
+### 変更対象ファイル
+
+段階 A: `server/lib/auth.mjs`（新規・移植）, `server/auth.test.mjs`（新規）,
+`package.json`（scripts に auth:test。依存追加はしない）
+段階 B: `app/api/auth/*/route.ts`（新規）
+段階 C: `app/register/page.tsx`, `app/login/page.tsx`（新規）
+
+### データモデル（ファイル保存。DB なし）
+
+```jsonc
+// data/users/<handle>.json（原子的書き込み。GAMEYARD の store 方式）
+{
+  "handle": "…",                 // 一意キー＝ファイル名
+  "password": { "salt": "…", "hash": "…", "kdf": "scrypt", "N": 16384, "r": 8, "p": 1, "keylen": 64 },
+  "email": "",                   // 任意。登録時は常に空。用途はパスワード再設定のみ
+  "createdAt": "…"
+}
+```
+
+### 経路・画面
+
+- POST `/api/auth/register` / `/api/auth/login` / `/api/auth/logout`
+  （server モードのみ。静的ビルドには含めない）
+- `/register` `/login`（段階 C）。文言に「メールは不要。後から設定でき、
+  用途はパスワード再設定だけ」を明記（隠さない文化）
+
+### 試験計画
+
+- 段階 A: 登録→検証が通る / 誤パスワードが落ちる / ハンドル形式違反・
+  重複が落ちる / トークンの署名改ざんが落ちる / TTL 切れが落ちる
+- 段階 B: API 経由の登録→ログイン→ログアウトの流れ（flow 試験の原型）
+- 段階 C: ブラウザで実物確認（登録→ログイン→cookie 確認）
+- 毎段階 `npm run lint`＋`npm run build` 緑を維持（静的ビルドに
+  server 専用物が混ざっていないことの確認を兼ねる）
+
+### セキュリティ（脅威と対策）
+
+- パスワード総当たり → scrypt（鍵導出関数）＋失敗追跡（上限つき）。
+  単純ハッシュにしない
+- セッション偽造 → 署名トークン（AUTH_SECRET 32 文字以上 or 0600 ファイル）、
+  timingSafeEqual、httpOnly cookie
+- CSRF → SameSite=Lax＋POST 限定＋Origin 確認
+- 列挙 → ログイン失敗時に「ハンドルが存在するか」を応答で区別しない
+- メール到達確認は入れない（GAMEYARD の決定を引き継ぐ。連絡先が本人の
+  ものである保証はなく、再設定は本人が正しく書いた場合だけ有効）。
+  メール未登録での復旧は「再設定不可」と画面に先に明示（HN 型の
+  運営窓口は Discord 開設後に検討 = 人待ち側）
+- SMTP は未設定のまま始める（GAMEYARD 同様「使えない」と正直に答える）。
+  CreatorYard 用 SMTP を用意するかは公開準備時の社長判断
+- 検査・認証・上限を緩めない。依存追加なし。個人計測なし・決済なし Story の書式「3 枠テンプレ＋つまずきの解決状態」— 状態: 実装済み bce09ee（SPEC 追記分。フォーム・store は Story 実装の番で）
 
 出典: proposals.md 2026-08-08 14:12（事例 1・2）。コードはまだ無い段階なので、
 **今回③が実装するのは SPEC.md への書式追記のみ**（文書 commit）。フォームと
