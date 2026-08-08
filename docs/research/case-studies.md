@@ -12,6 +12,17 @@
 
 ---
 
+## 19. HTML の datalist — 依存なしで作れるタグ入力の候補提示
+- 出典: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
+  （2026-08-08 確認）
+- 事実: `<datalist>` は `<option>` の集合を持ち、`<input list="...">` と
+  id で結びつけると入力欄に候補を出せる標準要素。MDN の対応状況は
+  「Limited availability」（全ブラウザで動くわけではない）と明記。
+- 学び: タグ入力の補完を**依存ゼロ**で足せる。非対応ブラウザでは
+  ただの input に落ちるだけで入力自体は壊れない（敷居を上げない劣化）。
+  つまずきタグ UI（実装順④）は「素の input＋datalist 候補」で始めるのが
+  方針（依存を増やさない）と噛み合う。
+
 ## 18. RSS 2.0 仕様と autodiscovery — 段階 C の実装が守るべき最小要件
 - 出典: https://www.rssboard.org/rss-specification /
   https://www.rssboard.org/rss-autodiscovery （2026-08-08 確認）
