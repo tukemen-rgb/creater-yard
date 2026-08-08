@@ -45,7 +45,13 @@
 - **段階 C: RSS**。API 側に `/api/feeds/stories.xml`（全体）と
   `/api/feeds/w/<handle>.xml`（書き手ごと）。**公開 URL は proposals 21:12 の
   形（`/stories/feed.xml`・`/w/<handle>/feed.xml`）を nginx の proxy で対応**
-  させ、対応表を docs に残す（購読 URL は永続契約）。ブラウザ実物確認
+  させ、対応表を docs に残す（購読 URL は永続契約）。ブラウザ実物確認。
+  実装要件（proposals 23:12・事例 18 を反映）: channel は
+  title/link/description の 3 つ必須・item は title＋link＋pubDate
+  （RFC 822 形式）・XML エスケープは GAMEYARD の feed 実装を流用・
+  autodiscovery の `<link rel="alternate" type="application/rss+xml">` を
+  layout（全体フィード）に置く。個人ページ用の差し替えは
+  シェル方式では head を動的にできないため、全体フィード 1 本のみで始める
 
 ### 変更対象ファイル
 

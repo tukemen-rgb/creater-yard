@@ -15,7 +15,9 @@
 ---
 
 ## 2026-08-08 23:12 JST RSS 実装の最小要件と autodiscovery（段階 C の材料）
-- 状態: 未設計（**実装順③ 段階 C の実装材料。単独では取らない**）
+- 状態: 設計済み（designs 21:22 の段階 C に反映 2026-08-08 23:22。
+  autodiscovery は全体フィード 1 本から。個人ページ用はシェル方式の制約で
+  静的焼き込み設計へ持ち越し）
 - 何を: 段階 C の RSS 実装で守ること — (1) channel は title/link/description
   の 3 つを必ず出す。(2) item は title＋link＋pubDate（RFC 822 形式）。
   (3) autodiscovery の link を head に置く（全体フィードを layout に、
