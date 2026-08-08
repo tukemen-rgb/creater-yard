@@ -12,6 +12,24 @@
 
 ---
 
+## 22. Next.js Static Exports の制約（公式ドキュメント） — 焼き込み設計の前提
+- 出典: https://nextjs.org/docs/app/guides/static-exports （2026-08-09 確認）
+- 事実: `output: 'export'` は route ごとに HTML を `out/` に生成する。
+  **サポートされない機能**に **ISR（Incremental Static Regeneration）**、
+  `dynamicParams: true` の動的ルート、`generateStaticParams()` の無い動的ルート、
+  Request に依存する Route Handler、cookies、rewrites / redirects / headers、
+  既定 loader の画像最適化、Server Actions が明記されている。
+  Route Handler は **GET のみ**で、`export const dynamic = 'force-static'` を
+  付ければ静的ファイル（JSON/TXT 等）として焼ける。公式に nginx の
+  `try_files $uri $uri.html $uri/ =404` の例が載っている。
+- 学び: 公開運用設計（designs 03:22）の前提が一次資料で裏付けられた。
+  (1) **ISR が使えない**ので「投稿のたびに部分再生成」は選べず、
+  定期ビルド＋手動トリガという判断が正しい。(2) `dynamicParams: true` が
+  使えないため、**焼き込み後に増えた Story は静的側に存在しない**
+  → nginx の try_files でシェルに落とす経路が必須（設計の補強点）。
+  (3) sitemap / robots は force-static の Route Handler で焼ける。
+  (4) rewrites / headers は Next 側で書けないので nginx が担当（現行どおり）。
+
 ## 21. robots.txt（Google の一次資料） — 役割の誤解が多い基本設定
 - 出典: https://developers.google.com/search/docs/crawling-indexing/robots/intro
   （2026-08-09 確認）
