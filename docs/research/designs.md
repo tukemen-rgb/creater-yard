@@ -9,7 +9,73 @@
 
 ---
 
-## 2026-08-08 18:22 JST Story 投稿・下書き（SPEC 実装順②）— 状態: 実装済み（A: 3fb70d3 / B: 17cdd08 / C: 41e48eb・ブラウザ実物確認済み。**SPEC 実装順②完了**）
+## 2026-08-08 21:22 JST 一覧・個人ページ（SPEC 実装順③）— 状態: 未実装（段階 A から）
+
+出典: 調停 20:50（次は実装順③。主論点=静的/server の置き方）。
+材料: proposals 19:12（RSS）・21:12（新着順のみ・URL の形）・事例 15・16。
+
+### 主論点への答え: MVP は「静的シェル＋API fetch」で配る
+
+- Story は実行時に増える。`output:'export'` の焼き込みは**ビルド時に
+  存在した分しか含められず**、鮮度は再ビルド体制（公開運用の VPS 側の
+  仕事）に依存する。MVP の間は **静的シェル＋client fetch** の 1 本で始める
+  （GAMEYARD も投稿一覧・RSS は動的 API から配っている実物を確認済み）
+- SEO 用の静的焼き込み（generateStaticParams で公開 Story を焼く）は
+  **公開運用の再ビルド体制とセットで別設計**にする（タグ SEO=A1 に効くのは
+  その段。いま作ると再ビルドが無くて腐る）
+- この選択は SPEC §3「公開済み Story は静的に書き出して配信」と MVP の間
+  だけずれるため、**SPEC §3 に「MVP の間はシェル＋API で配り、静的書き出しは
+  公開運用の再ビルド体制とセットで導入する」の 1 行を追記**する（段階 A）。
+  検査・認証・上限・決済・計測とは無関係の構成注記であり要判断にはしない
+  （気になる場合は Issue #1 でどうぞ、と④のレポートに添える）
+
+### 段階割り
+
+- **段階 A: 一覧 `/stories/`**（静的シェル＋fetch・新着順のみ・ページ送り・
+  空のときの文言）＋トップからの導線リンク＋SPEC §3 の注記追記
+- **段階 B: Story ページと個人ページ**。URL は `/s/<id>`・`/w/<handle>`。
+  静的シェル `/s/`・`/w/` を置き、client 側で pathname から id/handle を
+  取って fetch（開発は next dev がそのまま解決。本番 nginx は
+  `/s/…`→`/s/index.html` の rewrite。例を docs/nginx.example.conf に置く）。
+  本文・つまずき・ツールの表示はエスケープされたプレーンテキスト
+- **段階 C: RSS**。API 側に `/api/feeds/stories.xml`（全体）と
+  `/api/feeds/w/<handle>.xml`（書き手ごと）。**公開 URL は proposals 21:12 の
+  形（`/stories/feed.xml`・`/w/<handle>/feed.xml`）を nginx の proxy で対応**
+  させ、対応表を docs に残す（購読 URL は永続契約）。ブラウザ実物確認
+
+### 変更対象ファイル
+
+A: `app/stories/page.tsx`（新規）・`app/page.tsx`（導線 1 行）・`SPEC.md`
+B: `app/s/page.tsx`・`app/w/page.tsx`（新規）・`docs/nginx.example.conf`（新規）
+C: `server/api.mjs`（feed 2 経路）・`server/api.test.mjs`
+
+### データモデル
+
+変更なし（listPublic / getVisible / listMine をそのまま使う。個人ページは
+公開分のみ＝`/api/stories.json` に author 絞りを足す最小変更
+`?author=<handle>` を段階 B で追加）
+
+### 経路・画面
+
+上記のとおり。並びは**新着順のみ**（人気順・急上昇を作らない。決定の適用）。
+閲覧数の取得・表示もしない
+
+### 試験計画
+
+- A: 一覧の表示・ページ送り・空状態（ブラウザ）。lint/build 緑
+- B: `?author=` の絞り（api.test）・存在しない id/handle の 404 表示・
+  下書きが一覧にも個人ページにも出ない（既存試験＋ブラウザ）
+- C: feed の XML が valid・公開分のみ含む・下書き混入なし（api.test）
+
+### セキュリティ（脅威と対策）
+
+- 表示は全てエスケープ済みプレーンテキスト（React の既定エスケープ。
+  dangerouslySetInnerHTML を使わない）
+- 一覧・feed は公開分のみを返す既存の境界（listPublic）だけを通す。
+  下書きの秘匿は store 層の保証をそのまま使い、画面側で新しい境界を作らない
+- `?author=` はハンドル形式（HANDLE_RE 相当）だけ受ける
+- feed に含めるのはタイトル・本文冒頭・日時・リンクのみ。閲覧の計測なし
+- 依存追加なし（RSS は GAMEYARD 同様に自前で組む） Story 投稿・下書き（SPEC 実装順②）— 状態: 実装済み（A: 3fb70d3 / B: 17cdd08 / C: 41e48eb・ブラウザ実物確認済み。**SPEC 実装順②完了**）
 
 出典: 調停 17:50（決定済みの未着手を取る）。材料: SPEC §1（3 枠テンプレ・
 つまずき欄＋状態は追記済み bce09ee）、proposals 18:12（ローカル自動保存）、
