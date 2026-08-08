@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   // サイト共通の OGP（designs 21:22 段階 B）。og:url と og:image は
   // ドメインとブランド素材が決まってから足す（どちらも人待ち）。
   // Story 固有の OGP は静的焼き込み（公開運用）の設計で扱う
+  // RSS の自動発見（rel=alternate は head に置く必要がある。事例 18）。
+  // 公開 URL /stories/feed.xml は nginx が API へ対応させる
+  alternates: {
+    types: { 'application/rss+xml': '/stories/feed.xml' },
+  },
   openGraph: {
     title: 'CreatorYard — つくる人を、育てる。',
     description:

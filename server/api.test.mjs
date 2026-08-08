@@ -113,6 +113,48 @@ test('無い経路は 404', async () => {
   assert.equal(res.status, 404)
 })
 
+test('RSS: 全体フィードが必須要素を持ち、公開分だけ・エスケープ済みで出る', async () => {
+  const reg = await post('/api/auth/register', { handle: 'feedwriter1', password: 'correct-horse-1' })
+  const auth = { Authorization: `Bearer ${reg.body.token}` }
+  await post(
+    '/api/stories',
+    { title: 'タグ <script> を書いた日', body: '本文 & 続き', visibility: 'public' },
+    auth,
+  )
+  await post('/api/stories', { title: 'feed に出ない下書き', body: 'b' }, auth)
+
+  const res = await fetch(`${base}/api/feeds/stories.xml`)
+  assert.equal(res.status, 200)
+  assert.match(res.headers.get('content-type'), /application\/rss\+xml/)
+  const xml = await res.text()
+  // channel の必須 3 要素（事例 18）
+  assert.match(xml, /<channel>\s*<title>/)
+  assert.match(xml, /<link>/)
+  assert.match(xml, /<description>/)
+  // エスケープされ、生の <script> が混ざらない
+  assert.ok(xml.includes('タグ &lt;script&gt; を書いた日'))
+  assert.ok(!xml.includes('<script>'))
+  assert.ok(xml.includes('本文 &amp; 続き'))
+  // 下書きは出ない
+  assert.ok(!xml.includes('feed に出ない下書き'))
+  // pubDate は RFC 822 系（toUTCString の形）
+  assert.match(xml, /<pubDate>[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4}/)
+})
+
+test('RSS: 書き手フィードは本人の公開分だけ、形式外のハンドルは 404', async () => {
+  const a = await post('/api/auth/register', { handle: 'feedwriter2', password: 'correct-horse-1' })
+  await post(
+    '/api/stories',
+    { title: 'feedwriter2 の公開', body: 'b', visibility: 'public' },
+    { Authorization: `Bearer ${a.body.token}` },
+  )
+  const xml = await (await fetch(`${base}/api/feeds/w/feedwriter2.xml`)).text()
+  assert.ok(xml.includes('feedwriter2 の公開'))
+  assert.ok(!xml.includes('タグ &lt;script&gt;'))
+  const bad = await fetch(`${base}/api/feeds/w/${encodeURIComponent('../etc')}.xml`)
+  assert.equal(bad.status, 404)
+})
+
 async function registerWriter(handle) {
   const reg = await post('/api/auth/register', { handle, password: 'correct-horse-1' })
   return { token: reg.body.token, account: reg.body.account }

@@ -24,6 +24,7 @@ import http from 'node:http'
 import path from 'node:path'
 
 import { Accounts, AuthError } from './lib/auth.mjs'
+import { buildStoriesFeed, SITE_ORIGIN } from './lib/feed.mjs'
 import { Stories, StoryError } from './lib/stories.mjs'
 
 /** JSON body の上限。認証系の入力に 8KB を超える正当な理由はない。 */
@@ -175,6 +176,41 @@ export function createApiServer({ dir, now } = {}) {
           return
         }
         send(200, { story })
+        return
+      }
+      const sendFeed = (xml) => {
+        res.writeHead(200, {
+          'Content-Type': 'application/rss+xml; charset=utf-8',
+          'X-Content-Type-Options': 'nosniff',
+          ...CORS_HEADERS,
+        })
+        res.end(xml)
+      }
+      if (route === 'GET /api/feeds/stories.xml') {
+        // 直近 30 件だけ。feed は「新着を知る」ためのもので全量アーカイブではない
+        const { stories: latest } = stories.listPublic({ page: 1, perPage: 30 })
+        sendFeed(
+          buildStoriesFeed({
+            title: 'CreatorYard — 新着の制作記録',
+            link: `${SITE_ORIGIN}/stories/`,
+            description: 'ゲームを作る人の制作記録（Creator Story）の新着。',
+            stories: latest,
+          }),
+        )
+        return
+      }
+      const feedByAuthor = /^GET \/api\/feeds\/w\/([a-z0-9][a-z0-9_-]{2,31})\.xml$/.exec(route)
+      if (feedByAuthor) {
+        const author = feedByAuthor[1]
+        const { stories: latest } = stories.listPublic({ page: 1, perPage: 30, author })
+        sendFeed(
+          buildStoriesFeed({
+            title: `${author} の制作記録 — CreatorYard`,
+            link: `${SITE_ORIGIN}/w/${author}/`,
+            description: `${author} の Creator Story の新着。`,
+            stories: latest,
+          }),
+        )
         return
       }
       if (route === 'GET /api/mine/stories') {
