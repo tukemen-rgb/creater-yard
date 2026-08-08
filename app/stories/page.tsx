@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react'
 
+import { StoryTags } from '../../components/StoryTags'
 import { isConfigured, listStories, type StoryList } from '../../lib/write-api'
 
 export default function StoriesPage() {
@@ -68,6 +69,7 @@ export default function StoriesPage() {
             {story.tools && story.tools.length > 0 && (
               <p className="story-list__tools">使ったツール: {story.tools.join(' / ')}</p>
             )}
+            <StoryTags story={story} />
           </li>
         ))}
       </ul>

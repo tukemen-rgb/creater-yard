@@ -8,6 +8,7 @@
  */
 import { useEffect, useState } from 'react'
 
+import { StoryTags } from '../../components/StoryTags'
 import { isConfigured, WRITE_API_BASE, type Story } from '../../lib/write-api'
 
 function handleFromLocation(): string | null {
@@ -75,6 +76,7 @@ export default function WriterPage() {
             <p className="story-list__excerpt">
               {story.body.length > 120 ? `${story.body.slice(0, 120)}…` : story.body}
             </p>
+            <StoryTags story={story} />
           </li>
         ))}
       </ul>

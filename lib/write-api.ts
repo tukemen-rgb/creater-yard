@@ -80,6 +80,7 @@ export type StoryInput = {
   title: string
   body: string
   tools?: string[]
+  tags?: { tool: string[]; topic: string[] }
   hurdle?: { text: string; status: 'open' | 'resolved' }
   gameyardUrl?: string
   visibility: 'public' | 'draft'
@@ -111,6 +112,18 @@ export function createStory(input: StoryInput): Promise<Story> {
 }
 
 export type StoryList = { stories: Story[]; total: number; page: number; perPage: number }
+
+/** 公開 Story の既出タグ語彙（名前のみ・件数なし）。datalist の候補に使う。 */
+export async function fetchTagVocabulary(): Promise<{ tool: string[]; topic: string[] }> {
+  if (!isConfigured()) return { tool: [], topic: [] }
+  try {
+    const res = await fetch(`${WRITE_API_BASE}/api/tags.json`)
+    return res.ok ? res.json() : { tool: [], topic: [] }
+  } catch {
+    // 候補が出ないだけで入力は成立する（datalist の劣化と同じ扱い）
+    return { tool: [], topic: [] }
+  }
+}
 
 /** 公開 Story の一覧（認証不要・新着順）。 */
 export async function listStories(page = 1): Promise<StoryList> {

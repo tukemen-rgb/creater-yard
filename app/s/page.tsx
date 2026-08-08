@@ -9,6 +9,7 @@
  */
 import { useEffect, useState } from 'react'
 
+import { StoryTags } from '../../components/StoryTags'
 import { isConfigured, WRITE_API_BASE, type Story } from '../../lib/write-api'
 
 function storyIdFromLocation(): string | null {
@@ -83,6 +84,7 @@ export default function StoryPage() {
           作品: <a href={story.gameyardUrl}>{story.gameyardUrl}</a>
         </p>
       )}
+      <StoryTags story={story} />
       <p className="plan__note">
         <a href="/stories/">新着一覧へ</a>
       </p>

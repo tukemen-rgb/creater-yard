@@ -10,7 +10,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 
-import { createStory, isConfigured, me } from '../../lib/write-api'
+import { createStory, fetchTagVocabulary, isConfigured, me } from '../../lib/write-api'
 
 const DRAFT_KEY = 'cy.write.draft'
 
@@ -18,6 +18,8 @@ type FormState = {
   title: string
   body: string
   tools: string
+  tagTool: string
+  tagTopic: string
   hurdleText: string
   hurdleResolved: boolean
   gameyardUrl: string
@@ -28,10 +30,20 @@ const EMPTY: FormState = {
   title: '',
   body: '',
   tools: '',
+  tagTool: '',
+  tagTopic: '',
   hurdleText: '',
   hurdleResolved: false,
   gameyardUrl: '',
   visibility: 'draft',
+}
+
+/** 読点・コンマ区切りの入力をタグ配列へ。正規化の本体は store 側 */
+function splitTags(value: string): string[] {
+  return value
+    .split(/[、,]/)
+    .map((t) => t.trim())
+    .filter(Boolean)
 }
 
 const TEMPLATE = {
@@ -56,6 +68,7 @@ export default function WritePage() {
   const [error, setError] = useState('')
   const [saved, setSaved] = useState<{ id: string; visibility: string } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [vocab, setVocab] = useState<{ tool: string[]; topic: string[] }>({ tool: [], topic: [] })
   const restored = useRef(false)
 
   useEffect(() => {
@@ -65,6 +78,7 @@ export default function WritePage() {
       setForm(loadDraft())
     }
     me().then((account) => setHandle(account?.handle ?? null))
+    fetchTagVocabulary().then(setVocab)
   }, [])
 
   useEffect(() => {
@@ -132,10 +146,8 @@ export default function WritePage() {
             const story = await createStory({
               title: form.title,
               body: form.body,
-              tools: form.tools
-                .split(/[、,]/)
-                .map((t) => t.trim())
-                .filter(Boolean),
+              tools: splitTags(form.tools),
+              tags: { tool: splitTags(form.tagTool), topic: splitTags(form.tagTopic) },
               ...(form.hurdleText.trim()
                 ? {
                     hurdle: {
@@ -203,6 +215,34 @@ export default function WritePage() {
             onChange={(e) => set({ tools: e.target.value })}
             placeholder="Godot、Aseprite、Claude"
           />
+        </label>
+        <label>
+          つまずきタグ（ツール名。読点かコンマ区切り・5 個まで）
+          <input
+            value={form.tagTool}
+            onChange={(e) => set({ tagTool: e.target.value })}
+            list="tag-tool-options"
+            placeholder="godot、aseprite"
+          />
+          <datalist id="tag-tool-options">
+            {vocab.tool.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
+        </label>
+        <label>
+          つまずきタグ（トピック。読点かコンマ区切り・5 個まで）
+          <input
+            value={form.tagTopic}
+            onChange={(e) => set({ tagTopic: e.target.value })}
+            list="tag-topic-options"
+            placeholder="当たり判定、セーブ機能"
+          />
+          <datalist id="tag-topic-options">
+            {vocab.topic.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
         </label>
         <label>
           GAMEYARD の作品 URL（任意）
