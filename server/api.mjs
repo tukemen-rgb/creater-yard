@@ -23,6 +23,18 @@ import { Accounts, AuthError } from './lib/auth.mjs'
 /** JSON body の上限。認証系の入力に 8KB を超える正当な理由はない。 */
 const MAX_BODY_BYTES = 8 * 1024
 
+/**
+ * CORS。本体（静的配信）と API が別オリジンになる構成のため必要
+ * （GAMEYARD と同型。トークンを localStorage に置くのも同じ理由）。
+ * 本番でオリジンを固定するのは WRITE_API_ORIGIN の設定＝運用の仕事。
+ * cookie を使わない（credentials なし）ので '*' でも露出は流用元と同水準。
+ */
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': process.env.WRITE_API_ORIGIN ?? '*',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     const type = String(req.headers['content-type'] ?? '')
@@ -63,8 +75,15 @@ export function createApiServer({ dir, now } = {}) {
       res.writeHead(status, {
         'Content-Type': 'application/json; charset=utf-8',
         'X-Content-Type-Options': 'nosniff',
+        ...CORS_HEADERS,
       })
       res.end(JSON.stringify(body))
+    }
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, CORS_HEADERS)
+      res.end()
+      return
     }
 
     const route = `${req.method} ${new URL(req.url, 'http://local').pathname}`

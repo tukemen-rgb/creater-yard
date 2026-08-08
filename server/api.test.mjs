@@ -100,6 +100,14 @@ test('大きすぎる body は拒否する', async () => {
   if (res) assert.equal(res.status, 413)
 })
 
+test('OPTIONS（preflight）が通り、応答に CORS ヘッダが付く', async () => {
+  const pre = await fetch(`${base}/api/auth/register`, { method: 'OPTIONS' })
+  assert.equal(pre.status, 204)
+  assert.ok(pre.headers.get('access-control-allow-methods').includes('POST'))
+  const health = await fetch(`${base}/api/health`)
+  assert.equal(health.headers.get('access-control-allow-origin'), '*')
+})
+
 test('無い経路は 404', async () => {
   const res = await fetch(`${base}/api/nope`)
   assert.equal(res.status, 404)

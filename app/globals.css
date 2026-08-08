@@ -145,3 +145,56 @@ a:hover {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+/* 登録・ログインのフォーム（段階 C）。plan と同じ面の作りに揃える */
+.auth-form {
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 16px;
+  max-width: 28rem;
+}
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.auth-form input {
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+}
+.auth-form button {
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.auth-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.auth-form__error {
+  margin: 0;
+  color: #f28b82;
+  font-size: 0.9rem;
+}
+.auth-form__secondary {
+  margin-top: 16px;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
