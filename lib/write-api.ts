@@ -136,3 +136,20 @@ export async function listStories(page = 1): Promise<StoryList> {
 export function updateStory(id: string, input: StoryInput): Promise<Story> {
   return authedJson(`/api/stories/${id}`, 'PUT', input)
 }
+
+/**
+ * 自分の Story（下書きを含む・updatedAt の新しい順）。要ログイン。
+ * 他人の分はサーバーが返さないので、この結果を編集の入口に使うと
+ * 認可がそのまま閉じる（designs 2026-08-09 13:21）。
+ */
+export async function listMine(): Promise<Story[]> {
+  const token = getToken()
+  if (!token) throw new Error('ログインが必要です。')
+  if (!isConfigured()) throw new Error('書く機能は準備中です。')
+  const res = await fetch(`${WRITE_API_BASE}/api/mine/stories`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const body = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(body?.error ?? '取得に失敗しました。')
+  return body.stories
+}

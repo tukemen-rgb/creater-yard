@@ -272,3 +272,67 @@ test('Story: 自分の一覧は下書きを含み、要ログイン', async () =
   assert.equal((await mine.json()).stories.length, 1)
   assert.equal((await fetch(`${base}/api/mine/stories`)).status, 401)
 })
+
+// ここから下は designs 2026-08-09 13:21（下書きの読み出しと編集）の認可試験。
+// ⑤ 12:51 が「他人の Story を開けないことの確認」を必須と指示した分。
+
+test('自分の一覧に他人の Story は入らない', async () => {
+  const a = await registerWriter('mineowner1')
+  const b = await registerWriter('mineother1')
+  await post('/api/stories', { title: 'a の下書き', body: 'b' }, bearer(a.token))
+  await post('/api/stories', { title: 'b の下書き', body: 'b' }, bearer(b.token))
+
+  const listA = await (await fetch(`${base}/api/mine/stories`, { headers: bearer(a.token) })).json()
+  const titles = listA.stories.map((s) => s.title)
+  assert.deepEqual(titles, ['a の下書き'])
+})
+
+test('他人の Story は PUT できず、403 ではなく 404（存在を教えない）', async () => {
+  const a = await registerWriter('putowner1')
+  const b = await registerWriter('putother1')
+  const created = await post(
+    '/api/stories',
+    { title: 'a のもの', body: 'ほんぶん', visibility: 'draft' },
+    bearer(a.token),
+  )
+  const id = created.body.story.id
+
+  const res = await fetch(`${base}/api/stories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...bearer(b.token) },
+    body: JSON.stringify({ title: '乗っ取り', body: 'x', visibility: 'public' }),
+  })
+  assert.equal(res.status, 404)
+
+  // 中身が変わっていないことも確かめる（404 を返しつつ書き換わっていたら意味がない）
+  const still = await (
+    await fetch(`${base}/api/mine/stories`, { headers: bearer(a.token) })
+  ).json()
+  assert.equal(still.stories[0].title, 'a のもの')
+  assert.equal(still.stories[0].visibility, 'draft')
+})
+
+test('自分の Story の PUT は id・作成日時を変えず、updatedAt だけ進める', async () => {
+  const { token } = await registerWriter('putowner2')
+  const created = await post(
+    '/api/stories',
+    { title: 'まえ', body: 'ほんぶん', visibility: 'draft' },
+    bearer(token),
+  )
+  const before = created.body.story
+
+  const res = await fetch(`${base}/api/stories/${before.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...bearer(token) },
+    body: JSON.stringify({ title: 'あと', body: 'なおした', visibility: 'public' }),
+  })
+  assert.equal(res.status, 200)
+  const after = (await res.json()).story
+
+  assert.equal(after.id, before.id)
+  assert.equal(after.authorHandle, before.authorHandle)
+  assert.equal(after.createdAt, before.createdAt)
+  assert.equal(after.title, 'あと')
+  assert.equal(after.visibility, 'public')
+  assert.ok(after.updatedAt >= before.updatedAt)
+})
