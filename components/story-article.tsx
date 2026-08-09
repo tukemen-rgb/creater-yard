@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import { formatDate, imageUrl, type Story } from '../lib/api'
+import { CopyOwnStoryLink } from './copy-own-story-link'
 import { EditLink } from './edit-link'
 import { SaveStory } from './save-story'
 
@@ -39,6 +40,9 @@ export function StoryArticle({ story }: { story: Story }) {
         />
       )}
       <div className="story__body">{story.body}</div>
+      {story.status === 'public' && (
+        <CopyOwnStoryLink id={story.id} authorHandle={story.authorHandle} />
+      )}
       {story.status === 'public' && <SaveStory id={story.id} />}
       {story.tools.length > 0 && (
         <p className="story__tools">使ったツール: {story.tools.join(' / ')}</p>
