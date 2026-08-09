@@ -25,6 +25,7 @@ function WriteInner() {
   const router = useRouter()
   const params = useSearchParams()
   const editId = params.get('id') ?? ''
+  const followsFirstStory = !editId && params.get('from') === 'first-story'
 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -111,7 +112,9 @@ function WriteInner() {
     <div className="page page--narrow">
       <h1>{editId ? 'Story を直す' : 'Story を書く'}</h1>
       <p className="page__lede">
-        完成していなくていい。今日つまずいたこと、試したこと、それだけで 1 本になります。
+        {followsFirstStory
+          ? '前の Story から変わったこと、次に試したこと。それだけで続きの 1 本になります。'
+          : '完成していなくていい。今日つまずいたこと、試したこと、それだけで 1 本になります。'}
       </p>
       {error && <p className="notice notice--error">{error}</p>}
       <form
@@ -138,7 +141,11 @@ function WriteInner() {
             onChange={(e) => setBody(e.target.value)}
             rows={14}
             maxLength={8000}
-            placeholder="何を作ろうとして、どこでつまずいて、どう抜けたか（抜けられていなくても）。"
+            placeholder={
+              followsFirstStory
+                ? '前回から変わったこと、試したこと、まだ残っていること。'
+                : '何を作ろうとして、どこでつまずいて、どう抜けたか（抜けられていなくても）。'
+            }
           />
         </label>
         <label className="form__field">
