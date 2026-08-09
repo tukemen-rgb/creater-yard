@@ -12,6 +12,7 @@
     "api:test": "node --test server/api.test.mjs",
     "stories:test": "node --test server/stories.test.mjs",
     "static:test": "node --test server/stories-static.test.mjs",
+    "og:test": "node --test server/og.test.mjs",
     "api": "node server/api.mjs",
     "typecheck": "tsc --noEmit"
   },
