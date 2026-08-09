@@ -5,7 +5,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { absoluteUrl, fileUrl, handleUrl, ogDescription, storyUrl, tagUrl } from '../lib/og.ts'
+import {
+  absoluteUrl,
+  alternatesFor,
+  fileUrl,
+  handleFeedPath,
+  handleUrl,
+  ogDescription,
+  SITE_OG,
+  storyUrl,
+  tagUrl,
+} from '../lib/og.ts'
 
 test('句点までを 1 文として取る', () => {
   assert.equal(ogDescription('敵の動きを作った。次は音。'), '敵の動きを作った。')
@@ -134,4 +144,33 @@ test('handleUrl / storyUrl / fileUrl も SITE_ORIGIN が無ければ null', () =
     assert.equal(storyUrl('0123456789abcdef'), null)
     assert.equal(fileUrl('/sitemap.xml'), null)
   })
+})
+
+// designs 2026-08-10 06:33（A-6）の分。
+// Next.js の metadata は shallow merge なので、子で alternates / openGraph を
+// 書くと親の入れ子が丸ごと消える（事例 41）。共有分の出どころを 1 つにした
+// ことの確認。**ここが崩れると RSS の自動発見が焼いたページから消える。**
+
+test('alternatesFor: canonical が無ければ鍵ごと出さない', () => {
+  const a = alternatesFor(null)
+  assert.deepEqual(a.types, { 'application/rss+xml': '/stories/feed.xml' })
+  assert.ok(!('canonical' in a), 'canonical の鍵が在る')
+})
+
+test('alternatesFor: canonical と RSS の両方が入る', () => {
+  const a = alternatesFor('https://creatoryard.io/s/x/')
+  assert.equal(a.canonical, 'https://creatoryard.io/s/x/')
+  assert.deepEqual(a.types, { 'application/rss+xml': '/stories/feed.xml' })
+})
+
+test('alternatesFor: 個人ページは本人のフィードを指せる', () => {
+  const a = alternatesFor('https://creatoryard.io/w/hana/', handleFeedPath('hana'))
+  assert.deepEqual(a.types, { 'application/rss+xml': '/w/hana/feed.xml' })
+})
+
+test('SITE_OG に siteName と locale が在る（type は入れない）', () => {
+  assert.equal(SITE_OG.siteName, 'CreatorYard')
+  assert.equal(SITE_OG.locale, 'ja_JP')
+  // layout は website、Story は article。共有に混ぜると黙って変わる
+  assert.ok(!('type' in SITE_OG), 'type が共有分に入っている')
 })

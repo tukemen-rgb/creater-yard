@@ -30,15 +30,47 @@ export function ogDescription(body: string): string {
 }
 
 /**
- * `og:url` の組み立て。
+ * すべてのページで共有する Open Graph の項目（designs 2026-08-10 06:33 A-6）。
  *
- * 仕様が「恒久的な ID として使われる」と書いている項目なので、
- * **一つの形に統一する**。このサイトは `trailingSlash: true` なので
- * 実体が `/s/<id>/` にあり、**末尾スラッシュ有り**に寄せる。
+ * **Next.js の metadata は shallow merge**（公式が明記・事例 41）。
+ * 子で `openGraph` を書くと、layout が書いた入れ子は**丸ごと消える**。
+ * 実際 A-3 で `og:locale` が焼いたページから消えていた。
  *
- * `SITE_ORIGIN` が未設定なら null。**それらしい嘘の URL を焼くより、
- * 出ないほうが直しやすい**（既定値を置かないのは designs 22:33 の決め）。
+ * だから**共有分の出どころをここ 1 か所にして、layout もここから取る**。
+ * 各ページで手書きすると、layout に項目が増えたとき取りこぼす。
+ *
+ * `type` は**入れない**。layout は `website`、Story は `article` で
+ * 意図して違う。共有に混ぜると、どちらかが黙って変わる。
  */
+export const SITE_OG = {
+  siteName: 'CreatorYard',
+  locale: 'ja_JP',
+} as const
+
+/** RSS の自動発見の既定の指し先（サイト全体の新着）。 */
+export const SITE_FEED = '/stories/feed.xml'
+
+/**
+ * `alternates` を組む（designs 2026-08-10 06:33 A-6）。
+ *
+ * **RSS の自動発見（`types`）を必ず含める**のが要点。ここを通さずに
+ * `{ canonical }` だけ書くと、layout の `types` が消える。
+ *
+ * `canonical` は `SITE_ORIGIN` が無ければ渡さない（鍵ごと出さない）。
+ * `feed` は個人ページだけ本人のものを指す。
+ */
+export function alternatesFor(canonical: string | null, feed: string = SITE_FEED) {
+  return {
+    types: { 'application/rss+xml': feed },
+    ...(canonical ? { canonical } : {}),
+  }
+}
+
+/** 個人ページの RSS。nginx が /api/feeds/w/<handle>.xml へ通す。 */
+export function handleFeedPath(handle: string): string {
+  return `/w/${handle}/feed.xml`
+}
+
 /**
  * タグページの URL。**encode はここ 1 か所でやる**（designs 00:34）。
  *
@@ -77,6 +109,16 @@ export function fileUrl(path: string): string | null {
   return `${origin}${path.startsWith('/') ? path : `/${path}`}`
 }
 
+/**
+ * `og:url` の組み立て。
+ *
+ * 仕様が「恒久的な ID として使われる」と書いている項目なので、
+ * **一つの形に統一する**。このサイトは `trailingSlash: true` なので
+ * 実体が `/s/<id>/` にあり、**末尾スラッシュ有り**に寄せる。
+ *
+ * `SITE_ORIGIN` が未設定なら null。**それらしい嘘の URL を焼くより、
+ * 出ないほうが直しやすい**（既定値を置かないのは designs 22:33 の決め）。
+ */
 function siteOrigin(): string {
   return (process.env.SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
 }
