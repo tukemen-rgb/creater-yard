@@ -8,7 +8,7 @@ import { api, ApiError, type StoryListing } from '../../lib/api'
 import { StoryCard } from '../../components/story-card'
 
 /**
- * 公開 Story の一覧（新着順）。?tool= / ?topic= で絞り込み、?page= で送る。
+ * 公開 Story の一覧（新着を起点に作者を一巡）。?tool= / ?topic= で絞り込み、?page= で送る。
  * 静的書き出しのため、一覧はブラウザから API を読む。
  */
 function StoriesInner() {
@@ -39,6 +39,9 @@ function StoriesInner() {
         つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。
         {' '}
         <Link prefetch={false} href="/tags/">タグから探す</Link>
+      </p>
+      <p className="notice">
+        新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
       </p>
       {filterLabel && (
         <p className="notice">
