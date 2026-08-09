@@ -90,6 +90,31 @@ function normalizeTags(list, label) {
   return out
 }
 
+/**
+ * 新しい Story を起点に、各作者の最新 1 件を一巡してから 2 件目へ進む。
+ * 閲覧数ランキングや運営推薦を持たず、少数の投稿でも 1 人が一覧の先頭を
+ * 占有しないための決定的な並び順。作者内の新着順は変えない。
+ */
+function interleaveAuthors(records) {
+  const queues = new Map()
+  for (const record of records) {
+    const queue = queues.get(record.authorHandle) ?? []
+    queue.push(record)
+    queues.set(record.authorHandle, queue)
+  }
+  const mixed = []
+  let remaining = records.length
+  while (remaining > 0) {
+    for (const queue of queues.values()) {
+      const record = queue.shift()
+      if (!record) continue
+      mixed.push(record)
+      remaining -= 1
+    }
+  }
+  return mixed
+}
+
 function normalizeTools(list) {
   if (list == null) return []
   if (!Array.isArray(list)) throw new StoryError('使ったツールはリストで指定してください。')
@@ -295,7 +320,7 @@ export class StoryStore {
   }
 
   /**
-   * 公開分の一覧。新着順（公開時刻の降順）。
+   * 公開分の一覧。新着を起点に作者を一巡させる。
    * tool / topic / handle で絞り込める。ページ送りは 1 始まり。
    */
   listPublic({ page = 1, tool = '', topic = '', handle = '' } = {}) {
@@ -306,7 +331,11 @@ export class StoryStore {
     if (toolTag) records = records.filter((r) => (r.toolTags ?? []).includes(toolTag))
     if (topicTag) records = records.filter((r) => (r.topicTags ?? []).includes(topicTag))
     if (byHandle) records = records.filter((r) => r.authorHandle === byHandle)
-    records.sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt)))
+    records.sort(
+      (a, b) =>
+        String(b.publishedAt).localeCompare(String(a.publishedAt)) || String(a.id).localeCompare(String(b.id)),
+    )
+    records = interleaveAuthors(records)
 
     const perPage = STORY_LIMITS.perPage
     const totalPages = Math.max(1, Math.ceil(records.length / perPage))
