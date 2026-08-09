@@ -121,6 +121,24 @@ export default function WritePage() {
         <p className="hero__lede">
           書きかけの控えは消しました。続きはいつでも書き足せます。
         </p>
+        {/*
+          公開のときだけ道筋を出す。下書きは /s/<id>/ でも /w/<handle>/ でも
+          見えない（前者はシェルが Authorization を送らず、後者は公開分だけを
+          引く）ので、出すと壊れたリンクになる（designs 12:21）。
+        */}
+        {saved.visibility === 'public' && (
+          <p className="plan__note">
+            <a href={`/s/${saved.id}/`}>公開した記録を見る</a>
+            {handle && handle !== 'loading' && (
+              <>
+                {' ／ '}
+                <a href={`/w/${handle}/`}>自分のページ</a>
+              </>
+            )}
+            {' ／ '}
+            <a href="/stories/">新着一覧</a>
+          </p>
+        )}
         <button type="button" className="auth-form__secondary" onClick={() => setSaved(null)}>
           もう 1 本書く
         </button>
