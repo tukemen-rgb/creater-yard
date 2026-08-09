@@ -12,6 +12,41 @@
 
 ---
 
+## 40. **200 を返して「見つかりません」と書くと soft 404 になる** — A-5 のフォールバックがそれに当たる
+
+- 出典: https://developers.google.com/search/docs/crawling-indexing/http-network-errors
+  （2026-08-10 確認）
+- 出典: https://developers.google.com/search/docs/advanced/crawling/soft-404-errors
+  （2026-08-10 確認）
+- 事実:
+  - `200 (success)` を返したとき「the indexing systems **may** index the
+    content, but that's **not guaranteed**」
+  - 「if the content suggests an error for Google Search, **an empty page
+    or an error message**, Search Console will show a **`soft 404`**
+    error.」
+  - **確かめられなかったこと**: Google の推奨する直し方。2 つのページとも
+    定義と結果までで、対処は外部の記事へのリンクになっていた。
+    **推測で埋めない**（リンク先は本文が取れなかった）
+- 事実（このリポジトリ）: A-5 で入れる
+  `try_files $uri $uri/index.html /s/index.html` は、
+  **焼かれていない `/s/<16 桁 hex>/` すべてにシェルを 200 で返す**。
+  シェルは fetch に失敗すると「見つかりません」を出す。
+  **つまり存在しない id が soft 404 になる**
+- 学び:
+  - **これは A-5 の欠陥ではなく、静的書き出し＋フォールバックの構造上の
+    性質。**nginx はファイルの有無しか見ないので、
+    「まだ焼かれていない新しい Story」と「存在しない id」を**区別できない**。
+    区別するには nginx から API に問い合わせることになり、
+    静的配信の利点を捨てることになる
+  - **シェルに `noindex` は付けられない。**シェルは「新しい Story を
+    出す」ためのものでもあるので、常に `noindex` にすると
+    **焼かれる前の Story が検索に出なくなる**
+  - したがって効く手は 1 つ ——
+    **フォールバックに落ちている時間を短く保つこと**。
+    これは**段階 B の再ビルド間隔の設計そのもの**
+  - **被害は限定的**。A-4 でシェル 3 枚を sitemap から外したので、
+    Google が自発的に踏むのは**誰かがリンクした URL だけ**
+
 ## 39. Google は sitemap の `priority` と `changefreq` を**無視する**と明言している
 
 - 出典: https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
