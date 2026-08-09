@@ -12,6 +12,38 @@
 
 ---
 
+## 39. Google は sitemap の `priority` と `changefreq` を**無視する**と明言している
+
+- 出典: https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
+  （2026-08-10 確認）
+- 事実:
+  - 「**Google ignores `<priority>` and `<changefreq>` values.**」
+    ＝ 書いても読まれない
+  - 「Google uses the `<lastmod>` value **if it's consistently and
+    verifiably**（for example by comparing to the last modification of
+    the page）**accurate**.」
+    ＝ **正確なときだけ使う**。当てにならないと分かれば使われなくなる
+  - 「All formats limit a single sitemap to **50MB (uncompressed) or
+    50,000 URLs**.」
+  - 「**Use fully-qualified, absolute URLs** in your sitemaps.
+    Google will attempt to crawl your URLs **exactly as listed**.」
+    相対 URL（`/mypage.html`）は使うな、と明記
+- 学び:
+  - **A-4 で `priority` と `changefreq` を書かない。**Next の
+    `sitemap.ts` は `priority` と `changeFrequency` を受け取れるが、
+    **読まれないものを埋めると「手入れした」ように見えて実態が無い**。
+    数字を並べる誘惑もある（`priority: 0.8` など）が、**根拠が無い**
+  - `lastmod` の既存の決め（**`updatedAt` を使う・ビルド時刻を使わない・
+    固定ページには出さない**）は、この記述と一致している。
+    **ビルド時刻を入れると「毎回全ページが更新された」ことになり、
+    consistently accurate ではなくなる**ので、使われなくなる方向に働く
+  - **絶対 URL が必須**。CreatorYard は `SITE_ORIGIN` が無いと
+    絶対 URL を作れない（`absoluteUrl` が `null` を返す）。
+    **相対 URL で誤魔化す道は塞がっている** → 提案 27 へ
+  - 上限 **50,000 URL**。CreatorYard の URL 数は
+    「Story ＋ ハンドル ＋ タグ ＋ 固定ページ」。撤退条件の規模
+    （30 本）では遠いが、**分割が必要になる線が数字で分かった**
+
 ## 38. Google は正規 URL の指定手段に**強さの順**を付けている — タグページは URL が増えやすい
 
 - 出典: https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls
