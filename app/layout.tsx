@@ -11,6 +11,12 @@ export const metadata: Metadata = {
   },
   description:
     'ゲームを作る人が、制作の記録を残し、知見を分かち合い、仲間とつながる場所。GAMEYARD の姉妹サービス。',
+  // 初回パイロット中は、URLを知る読者が未登録で読める状態を保ちつつ、
+  // 検索結果への恒久的な露出は止める。実利用確認後に別判断で解除する。
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
