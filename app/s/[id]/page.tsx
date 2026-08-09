@@ -52,6 +52,9 @@ export async function generateMetadata({
   return {
     title: story.title,
     description,
+    // canonical は og:url と同じ値（designs 00:34・提案 26）。両方とも
+    // absoluteUrl から取ることで、ずれる余地を残さない
+    ...(url ? { alternates: { canonical: url } } : {}),
     openGraph: {
       // 題名にサイト名を混ぜない（Meta の推奨）。ブランドは siteName が運ぶ
       title: story.title,

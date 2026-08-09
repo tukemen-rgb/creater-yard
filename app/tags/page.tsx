@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from 'react'
 
-import { StoryTags } from '../../components/StoryTags'
+import { StoryList } from '../../components/StoryList'
 import { isConfigured, WRITE_API_BASE, type Story } from '../../lib/write-api'
 
 function tagFromLocation(): string | null {
@@ -64,28 +64,7 @@ export default function TagPage() {
           </p>
         </section>
       )}
-      <ul className="story-list">
-        {stories?.map((story) => (
-          <li key={story.id} className="story-list__item">
-            <h2>
-              <a href={`/s/${story.id}/`}>{story.title}</a>
-            </h2>
-            <p className="story-list__meta">
-              <a href={`/w/${story.authorHandle}/`}>{story.authorHandle}</a> ・{' '}
-              {new Date(story.createdAt).toLocaleDateString('ja-JP')}
-              {story.hurdle && (
-                <span className="story-list__hurdle">
-                  つまずき: {story.hurdle.status === 'resolved' ? '解決' : '未解決'}
-                </span>
-              )}
-            </p>
-            <p className="story-list__excerpt">
-              {story.body.length > 120 ? `${story.body.slice(0, 120)}…` : story.body}
-            </p>
-            <StoryTags story={story} />
-          </li>
-        ))}
-      </ul>
+      {stories && <StoryList stories={stories} />}
     </div>
   )
 }
