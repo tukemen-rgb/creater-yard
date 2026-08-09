@@ -135,6 +135,15 @@ export default function AccountPage() {
           </p>
         )}
         {published.map((story) => <StoryCard key={story.id} story={story} showAuthor={false} />)}
+        {mine !== null && published.length === 1 && drafts.length === 0 && (
+          <p className="notice">
+            最初の Story を公開できました。あとで状況が変わったときは、その変化だけでも
+            2 本目になります。今すぐ書く必要はありません。{' '}
+            <Link prefetch={false} href="/write/?from=first-story">
+              その後を書く
+            </Link>
+          </p>
+        )}
       </section>
 
       <section className="account-box">
