@@ -12,6 +12,35 @@
 
 ---
 
+## 35. metadata は Server Component だけ（Next.js 公式） — 段階 A の前提が 1 つ崩れる
+- 出典: https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+  （2026-08-09 確認・ページ記載の版は 16.3.0）
+- 事実:
+  - **「`metadata` オブジェクトと `generateMetadata` 関数の export は
+    Server Component でのみサポートされる」**と明記されている
+  - 理由も書かれている:「metadata はページのコンポーネントが描画される前に
+    サーバーで解決されなければならないから」。そうすることで
+    **最初の HTML の応答に metadata を含められる**
+  - 公式の回避方法も示されている:「Client Component の機能が要るなら、
+    **`page.tsx` は Server Component のままにして、Client Component の
+    ロジックを別ファイルへ移す**」
+  - metadata は `layout.js` と `page.js` に置ける。
+    **同じ route segment から `metadata` と `generateMetadata` の両方は
+    export できない**
+- 学び:
+  - **CreatorYard の焼き込み対象 3 枚は全部 `'use client'`**
+    （`app/s/page.tsx`・`app/w/page.tsx`・`app/tags/page.tsx` の 1 行目。確認済み）。
+    一方、公開運用設計 段階 A は**この 3 枚に Story 固有の OGP を
+    metadata API で出す**前提で書かれている。**そのままでは両立しない**
+  - 直し方は公式が書いているとおりで、**`page.tsx` をサーバー側に戻し、
+    いまの中身を `_client.tsx` 等へ移して読み込む**。
+    `generateStaticParams` と `generateMetadata` は `page.tsx` に置く
+  - **シェル＋fetch の仕組みは壊さない**（クライアント側は別ファイルに
+    移るだけ）。焼き込み後に増えた Story がシェルに落ちる経路（try_files）も
+    そのまま
+  - これは**実装前に潰せる穴**。③が段階 A に着手した瞬間に踏むので、
+    先に設計へ反映しておく（提案 20:16）
+
 ## 34. #100DaysOfCode（公式） — 続ける仕掛けが「順位」ではなく「宣言と応援」
 - 出典: https://www.100daysofcode.com/ （2026-08-09 確認）
 - 事実:
