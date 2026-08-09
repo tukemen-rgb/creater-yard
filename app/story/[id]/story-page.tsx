@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { StoryArticle } from '../../../components/story-article'
-import { publishedStory } from '../../../lib/stories-read'
+import { nextStoryFromAnotherAuthor, publishedStory } from '../../../lib/stories-read'
 
 /**
  * Story の実 URL（/story/<id>/）。server モードがリクエスト時に組み立てる。
@@ -45,5 +45,6 @@ export default async function StoryPage({ params }: Props) {
   const { id } = await params
   const story = publishedStory(id)
   if (!story) notFound()
-  return <StoryArticle story={story} />
+  const nextStory = nextStoryFromAnotherAuthor(story)
+  return <StoryArticle story={story} nextStory={nextStory} />
 }
