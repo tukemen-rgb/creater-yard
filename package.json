@@ -11,6 +11,7 @@
     "auth:test": "node --test server/auth.test.mjs",
     "api:test": "node --test server/api.test.mjs",
     "stories:test": "node --test server/stories.test.mjs",
+    "static:test": "node --test server/stories-static.test.mjs",
     "api": "node server/api.mjs",
     "typecheck": "tsc --noEmit"
   },
