@@ -124,6 +124,21 @@ export function publishedStory(id: string): Story | null {
   return record && record.status === 'public' ? record : null
 }
 
+/**
+ * 現在の Story より前に公開された、別の作者の Story を最大 1 件返す。
+ *
+ * 閲覧履歴・人気・タグ点数を使わず、公開時刻を古い方へ一方向に進む。
+ * これにより同じ 2 件を往復させず、候補がなければ無理に推薦しない。
+ */
+export function nextStoryFromAnotherAuthor(current: Story): Story | null {
+  const records = publishedRecords()
+  const currentIndex = records.findIndex((record) => record.id === current.id)
+  if (currentIndex < 0) return null
+  return records
+    .slice(currentIndex + 1)
+    .find((record) => record.authorHandle !== current.authorHandle) ?? null
+}
+
 /** その人の公開 Story（Timeline の原型）。 */
 export function creatorStories(handle: string, page = 1): StoryListing {
   return paginate(
