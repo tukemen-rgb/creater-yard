@@ -9,7 +9,7 @@
  */
 import { useEffect, useState } from 'react'
 
-import { StoryTags } from '../../components/StoryTags'
+import { StoryView } from '../../components/StoryView'
 import { isConfigured, WRITE_API_BASE, type Story } from '../../lib/write-api'
 
 function storyIdFromLocation(): string | null {
@@ -61,33 +61,7 @@ export default function StoryPage() {
     )
   }
 
-  return (
-    <div className="hero">
-      <p className="eyebrow">Story</p>
-      <h1>{story.title}</h1>
-      <p className="story-list__meta">
-        <a href={`/w/${story.authorHandle}/`}>{story.authorHandle}</a> ・{' '}
-        {new Date(story.createdAt).toLocaleDateString('ja-JP')}
-        {story.hurdle && (
-          <span className="story-list__hurdle">
-            つまずき: {story.hurdle.status === 'resolved' ? '解決' : '未解決'} —{' '}
-            {story.hurdle.text}
-          </span>
-        )}
-      </p>
-      <article className="story-body">{story.body}</article>
-      {story.tools && story.tools.length > 0 && (
-        <p className="story-list__tools">使ったツール: {story.tools.join(' / ')}</p>
-      )}
-      {story.gameyardUrl && (
-        <p className="story-list__tools">
-          作品: <a href={story.gameyardUrl}>{story.gameyardUrl}</a>
-        </p>
-      )}
-      <StoryTags story={story} />
-      <p className="plan__note">
-        <a href="/stories/">新着一覧へ</a>
-      </p>
-    </div>
-  )
+  // 表示は焼き込む側と同じ部品を使う（designs 22:33）。ここで別に書くと、
+  // 焼かれた Story と焼かれていない Story で見た目が違うことになる
+  return <StoryView story={story} />
 }
