@@ -12,6 +12,40 @@
 
 ---
 
+## 37. Cloudflare の計測 beacon は **UA によって入ったり入らなかったり**する — 姉妹サービスで実際に確認
+
+- 出典: `https://play-game-yard.com/` を 2026-08-09 に自分で取得して検査
+  （公開されている本体。推測ではなく実物）
+- 出典: https://developers.cloudflare.com/web-analytics/get-started/
+  （2026-08-09 確認）
+- 事実:
+  - Cloudflare Web Analytics に登録すると、**プロキシ済み（オレンジ雲）の
+    サイトでは HTML を触らずに beacon が挿入される**（公式に明記。
+    非プロキシのサイトは手で貼るしかない）
+  - GAMEYARD（`play-game-yard.com`）で実際に起きていた。トップページに
+    `https://static.cloudflareinsights.com/beacon.min.js` の
+    `<script type="module">` が入っている
+  - **`curl` の既定 UA では入らない**（143,835 バイト）。
+    **ブラウザ風の UA を付けると入る**（144,194 バイト）。
+    差の 359 バイトがちょうどこの script タグ
+  - Web Analytics の一覧では `play-game-yard.com` と
+    `gameyard-games.com` の 2 件が「**Automatic setup**」で登録済み。
+    どちらも「Created 4 days ago」＝**ドメインを取った直後の流れ**で
+    追加されたと見える
+  - 同じ画面の Rocket Loader は **Off** だった
+- **確かめていないこと**: トップページ以外にも入っているか。
+  `/games/` `/about/` は 0 件だったが、**そのページが実在するかを
+  確かめていない**ので「入っていない」とは書かない
+- 学び:
+  - **「第三者 JS を入れない」は、見に行き方によって守れているように
+    見える。**素の `curl` で確かめて「無い」と結論づけると通り抜ける。
+    **確かめるときはブラウザと同じ UA を付ける**
+  - 罠は「勝手に入る」ではなく「**買った直後の流れで追加してしまう**」。
+    自動で有効になるのではなく、一度押すと以後ずっと入る
+  - CreatorYard は A 案（オレンジ雲）を選んだので、**守るのは
+    「Web Analytics に追加しない」の 1 点**。押さないことが操作になる
+  - GAMEYARD 側をどうするかは**社長の判断**（別サービスの話）
+
 ## 36. OGP の必須項目に **og:image が入っている**（Open Graph 公式＋Meta 公式）— CreatorYard には画像が無い
 
 - 出典: https://ogp.me/ （2026-08-09 確認）
