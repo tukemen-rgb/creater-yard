@@ -42,10 +42,19 @@ MVP に**入れない**もの（理由つき）:
 ## 3. 構成（GAMEYARD と同じ省力型）
 
 - Next.js App Router。`SITE_MODE=static|server` の 2 モード（GAMEYARD と同型）
-- 公開済み Story は静的に書き出して配信、書く側だけ軽い API
-  （**MVP の間は静的シェル＋API fetch で配る。** Story は実行時に増え、
-  静的書き出しの鮮度は再ビルド体制に依存するため、SEO 向けの静的焼き込みは
-  公開運用の再ビルド体制とセットで導入する — designs 2026-08-08 21:22）
+- 公開済み Story は静的に書き出して配信、書く側だけ軽い API。
+  **焼き込みとシェルの 2 つが共存する**（2026-08-10 段階 A で実装）:
+  - **焼く**: 公開 Story（`/s/<id>/`）・個人ページ（`/w/<handle>/`）・
+    タグページ（`/tags/<tag>/`）を、ビルド時に `data/stories/` から
+    読んで HTML にする。**題名・本文・OGP・`rel="canonical"` が
+    最初の HTML に入る**ので、JS を実行しない相手（SNS のクローラ・
+    検索）にも中身が届く。`sitemap.xml` と `robots.txt` も出す
+  - **落とす**: **焼き込みの後に増えたもの**はまだ静的ファイルが無いので、
+    nginx が同じ URL をシェルに落とし、シェルが API から fetch して描く
+    （`docs/nginx.example.conf` の `try_files`）
+  - **焼き直しの間隔は未定。**再ビルド体制は**段階 B**で、
+    **社長の実行判断が要る**。間隔が長いほど「書いたのに焼かれていない」
+    時間が延びる（その間は検索から error page と見られる。事例 40）
 - 実行時依存 3 つ（next/react/react-dom）。DB は持たずファイル保存から始める
   （GAMEYARD の store 方式。規模が来たら考える — 来ることが先）
 - 配色はアンバー系（工房・電球色。BRAND.md）。レイアウト文法は GAMEYARD と共通
