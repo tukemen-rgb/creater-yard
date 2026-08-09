@@ -11,15 +11,30 @@
  * シェル（app/s/page.tsx）は消さない。焼き込みの後に増えた Story は
  * まだ静的ファイルが無く、nginx の try_files がシェルへ落とす。
  */
-import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { StoryView } from '../../../components/StoryView'
 import { absoluteUrl, ogDescription } from '../../../lib/og'
 import { readPublicStories, readPublicStory } from '../../../lib/stories-static'
 
+/**
+ * 公開 Story が 1 件も無いときの受け皿。
+ *
+ * `output: 'export'` は `generateStaticParams` が**空の配列を返すと
+ * ビルドごと落ちる**（「missing generateStaticParams()」と言われる。
+ * 2026-08-09 に実際に踏んで確かめた）。data/ を持たない機械
+ * ＝ clone した直後や CI では公開 Story が 0 件なので、そのままだと
+ * **誰も `npm run build` を通せない**。
+ *
+ * そこで 1 件だけ置き場所を作る。id は乱数 16 桁 hex なので、
+ * すべて 0 の値が実在する Story とぶつかることは実質ない。
+ * 中身は「見つかりません」— どこからもリンクしない。
+ */
+const PLACEHOLDER_ID = '0'.repeat(16)
+
 export function generateStaticParams() {
-  return readPublicStories().map(({ id }) => ({ id }))
+  const ids = readPublicStories().map(({ id }) => ({ id }))
+  return ids.length > 0 ? ids : [{ id: PLACEHOLDER_ID }]
 }
 
 export async function generateMetadata({
@@ -54,8 +69,19 @@ export async function generateMetadata({
 export default async function BakedStoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const story = readPublicStory(id)
-  // generateStaticParams が返した id は必ず取れるはず。取れないなら
-  // 設計の誤りなので握り潰さない
-  if (!story) notFound()
+  // 取れないのは受け皿（公開 0 件）のときだけ。シェルと同じ文言を出す
+  if (!story) return <NotFound />
   return <StoryView story={story} />
+}
+
+function NotFound() {
+  return (
+    <div className="hero">
+      <p className="eyebrow">Story</p>
+      <h1>見つかりません</h1>
+      <p className="hero__lede">
+        この Story は存在しないか、下書きのままです。<a href="/stories/">新着一覧へ戻る</a>
+      </p>
+    </div>
+  )
 }
