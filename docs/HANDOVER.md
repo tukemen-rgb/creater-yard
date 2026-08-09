@@ -46,8 +46,13 @@ Claude は作業のたびに Issue #1 へ報告し、ChatGPT のレビューも�
 
 ## 4. まだ決まっていないこと（人待ち）
 
-- **ドメイン**: creatoryard.com / creator-yard.com は他者が取得済み。
-  空き確認済み: **creatoryard.io / creatoryard.jp / creatoryard.net**
+- ~~**ドメイン**~~ → **`creatoryard.io` に決定**（2026-08-09 社長）。
+  **取得作業はこれから**（Cloudflare Registrar。GAMEYARD の
+  `play-game-yard.com` と同じアカウントで買う）。
+  **サブドメインに寄せる案は退けた** — 2026-08-06 の「別ドメイン・
+  別リポジトリの姉妹サービス」を維持する。理由はセキュリティで、
+  別ドメインだとログイン状態（`localStorage` のトークン）が
+  GAMEYARD と完全に隔離される
 - **Discord 開設**（全集客チャネルの着地点）
 - リポジトリ名の綴り（現 `creater-yard`。ブランドは CreatorYard）
 - 公開時期（MVP が動いてから）
