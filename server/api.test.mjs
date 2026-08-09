@@ -336,3 +336,11 @@ test('自分の Story の PUT は id・作成日時を変えず、updatedAt だ�
   assert.equal(after.visibility, 'public')
   assert.ok(after.updatedAt >= before.updatedAt)
 })
+
+test('CORS の許可メソッドに PUT が入っている（別オリジンから編集できる）', async () => {
+  const res = await fetch(`${base}/api/stories/0000000000000000`, { method: 'OPTIONS' })
+  const methods = res.headers.get('access-control-allow-methods') ?? ''
+  assert.ok(methods.includes('PUT'), `PUT が無い: ${methods}`)
+  assert.ok(methods.includes('POST'))
+  assert.ok(methods.includes('GET'))
+})

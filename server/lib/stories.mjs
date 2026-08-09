@@ -175,15 +175,22 @@ export class Stories {
     if (!current || current.authorId !== authorId) {
       throw new StoryError('Story が見つかりません。', 404)
     }
+    const normalized = normalizeInput(input ?? {})
     const next = {
       ...current,
-      ...normalizeInput(input ?? {}),
+      ...normalized,
       id: current.id,
       authorId: current.authorId,
       authorHandle: current.authorHandle,
       createdAt: current.createdAt,
       updatedAt: new Date(this.now()).toISOString(),
     }
+    // PUT は置き換え（事例 29）。normalizeInput はつまずきが空のとき hurdle の
+    // 鍵を作らないので、そのままだと ...current の古い値が残り、一度書いた
+    // つまずきを消せなくなる（他の項目は置き換わるのに、ここだけ合成）。
+    // normalizeInput 側は触らない — create の挙動を変えないため
+    // （designs 2026-08-09 13:21 段階 B の 14:20 補記）。
+    if (!normalized.hurdle) delete next.hurdle
     this.#write(id, next)
     return next
   }

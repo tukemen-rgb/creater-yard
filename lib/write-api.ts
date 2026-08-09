@@ -93,17 +93,33 @@ export type Story = StoryInput & {
   updatedAt: string
 }
 
+
+/**
+ * 失敗に HTTP の状態を持たせる。画面側が文言ではなく状態で分岐できるように
+ * するため（designs 2026-08-09 13:21 段階 B の 14:20 補記）。
+ * 文字列一致だと、壊れたトークンのときだけ「ログイン」を含まない文言が返り
+ * 案内が出せなくなる。
+ */
+export class ApiError extends Error {
+  readonly status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 async function authedJson(path: string, method: string, payload: unknown): Promise<Story> {
   const token = getToken()
-  if (!token) throw new Error('ログインが必要です。')
-  if (!isConfigured()) throw new Error('書く機能は準備中です。')
+  if (!token) throw new ApiError('ログインが必要です。', 401)
+  if (!isConfigured()) throw new ApiError('書く機能は準備中です。', 503)
   const res = await fetch(`${WRITE_API_BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   })
   const body = await res.json().catch(() => null)
-  if (!res.ok) throw new Error(body?.error ?? '通信に失敗しました。')
+  if (!res.ok) throw new ApiError(body?.error ?? '通信に失敗しました。', res.status)
   return body.story
 }
 
@@ -144,12 +160,12 @@ export function updateStory(id: string, input: StoryInput): Promise<Story> {
  */
 export async function listMine(): Promise<Story[]> {
   const token = getToken()
-  if (!token) throw new Error('ログインが必要です。')
-  if (!isConfigured()) throw new Error('書く機能は準備中です。')
+  if (!token) throw new ApiError('ログインが必要です。', 401)
+  if (!isConfigured()) throw new ApiError('書く機能は準備中です。', 503)
   const res = await fetch(`${WRITE_API_BASE}/api/mine/stories`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   const body = await res.json().catch(() => null)
-  if (!res.ok) throw new Error(body?.error ?? '取得に失敗しました。')
+  if (!res.ok) throw new ApiError(body?.error ?? '取得に失敗しました。', res.status)
   return body.stories
 }

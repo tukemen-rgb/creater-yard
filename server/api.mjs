@@ -39,7 +39,11 @@ const MAX_BODY_BYTES = 8 * 1024
  */
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': process.env.WRITE_API_ORIGIN ?? '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  // PUT は Story の更新（PUT /api/stories/<id>）に要る。経路は前からあったが
+  // 許可メソッドに入っておらず、別オリジンの本体からは編集が一切できなかった
+  // （2026-08-09 段階 B のブラウザ確認で発覚）。認可は従来どおり Bearer と
+  // 著者一致で行う。ここで緩めているのは「どの HTTP メソッドを名乗れるか」だけ
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 

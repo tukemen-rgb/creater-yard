@@ -175,3 +175,112 @@ test('公開一覧は新着順でページ送りできる', () => {
   assert.equal(page2.stories.length, 1)
   assert.equal(page2.stories[0].title, 'no1')
 })
+
+// ここから下は designs 2026-08-09 13:21 段階 B（14:20 補記）の分。
+// PUT は置き換えなので、送らなかった項目は消える。編集画面は全項目を送る。
+
+test('更新: 全項目を送れば公開とタグが保たれる', () => {
+  const { stories } = setup()
+  const made = stories.create({
+    author: writer,
+    input: {
+      title: 'まえ',
+      body: 'ほんぶん',
+      tags: { tool: ['Godot'], topic: ['当たり判定'] },
+      visibility: 'public',
+    },
+  })
+  const next = stories.update({
+    id: made.id,
+    authorId: writer.id,
+    input: {
+      title: 'あと',
+      body: 'なおした',
+      tags: { tool: ['Godot'], topic: ['当たり判定'] },
+      visibility: 'public',
+    },
+  })
+  assert.equal(next.visibility, 'public')
+  assert.deepEqual(next.tags.tool, ['godot'])
+  assert.deepEqual(next.tags.topic, ['当たり判定'])
+  assert.equal(next.title, 'あと')
+})
+
+test('更新: visibility を送らないと下書きに戻る（置き換えの証拠）', () => {
+  const { stories } = setup()
+  const made = stories.create({
+    author: writer,
+    input: { title: 'まえ', body: 'ほんぶん', visibility: 'public' },
+  })
+  const next = stories.update({
+    id: made.id,
+    authorId: writer.id,
+    input: { title: 'あと', body: 'なおした' },
+  })
+  // 画面は全項目を送るのでここには来ない。来たときの挙動を明文化しておく
+  assert.equal(next.visibility, 'draft')
+})
+
+test('更新: つまずきを空にすると消える', () => {
+  const { stories } = setup()
+  const made = stories.create({
+    author: writer,
+    input: {
+      title: 't',
+      body: 'b',
+      hurdle: { text: '当たり判定が抜ける', status: 'open' },
+      visibility: 'public',
+    },
+  })
+  assert.equal(made.hurdle.text, '当たり判定が抜ける')
+
+  const cleared = stories.update({
+    id: made.id,
+    authorId: writer.id,
+    input: { title: 't', body: 'b', hurdle: { text: '', status: 'open' }, visibility: 'public' },
+  })
+  assert.equal(cleared.hurdle, undefined)
+})
+
+test('更新: つまずきを送らない場合も消える（置き換えの一貫性）', () => {
+  const { stories } = setup()
+  const made = stories.create({
+    author: writer,
+    input: { title: 't', body: 'b', hurdle: { text: 'のこる？', status: 'open' }, visibility: 'public' },
+  })
+  const next = stories.update({
+    id: made.id,
+    authorId: writer.id,
+    input: { title: 't', body: 'b', visibility: 'public' },
+  })
+  assert.equal(next.hurdle, undefined)
+})
+
+test('更新: つまずきの解決状態だけを変えられる', () => {
+  const { stories } = setup()
+  const made = stories.create({
+    author: writer,
+    input: { title: 't', body: 'b', hurdle: { text: 'まだ', status: 'open' }, visibility: 'public' },
+  })
+  const next = stories.update({
+    id: made.id,
+    authorId: writer.id,
+    input: {
+      title: 't',
+      body: 'b',
+      hurdle: { text: 'まだ', status: 'resolved' },
+      visibility: 'public',
+    },
+  })
+  assert.equal(next.hurdle.status, 'resolved')
+  assert.equal(next.hurdle.text, 'まだ')
+})
+
+test('更新: 他人は更新できない（404 相当）', () => {
+  const { stories } = setup()
+  const made = stories.create({ author: writer, input: { title: 't', body: 'b' } })
+  const err = capture(() =>
+    stories.update({ id: made.id, authorId: other.id, input: { title: 'x', body: 'y' } }),
+  )
+  assert.equal(err.status, 404)
+})

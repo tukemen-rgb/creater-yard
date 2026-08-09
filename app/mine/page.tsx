@@ -13,19 +13,17 @@
 import { useEffect, useState } from 'react'
 
 import { StoryTags } from '../../components/StoryTags'
-import { isConfigured, listMine, type Story } from '../../lib/write-api'
+import { ApiError, isConfigured, listMine, type Story } from '../../lib/write-api'
 
-/**
- * 「続きを書く」（/write/?id=<id>）は編集モード＝段階 B のもの。
- * 段階 A の時点で出すと、id を無視した白紙の新規フォームに着く壊れたリンクに
- * なるので、**段階 B と同時に足す**。ここでは「在ることが見える」までを担う。
- */
 function StoryRow({ story }: { story: Story }) {
   return (
     <li className="story-list__item">
-      <h3>{story.title}</h3>
+      <h3>
+        <a href={`/write/?id=${story.id}`}>{story.title}</a>
+      </h3>
       <p className="story-list__meta">
-        最終更新 {new Date(story.updatedAt).toLocaleDateString('ja-JP')}
+        最終更新 {new Date(story.updatedAt).toLocaleDateString('ja-JP')} ・{' '}
+        <a href={`/write/?id=${story.id}`}>続きを書く</a>
         {story.visibility === 'public' && (
           <>
             {' ・ '}
@@ -55,13 +53,14 @@ export default function MinePage() {
         setState('ok')
       })
       .catch((err) => {
-        const message = err instanceof Error ? err.message : '取得に失敗しました。'
-        // ログインが必要なだけの場合と、それ以外の失敗を分けて伝える
-        if (message.includes('ログイン')) {
+        // 文言ではなく HTTP の状態で分ける。壊れたトークンのとき
+        // 「認証情報の署名が確認できません。」のような文言が返り、
+        // 文字列一致だとログインへの道が出せなくなる（④ 13:46）
+        if (err instanceof ApiError && err.status === 401) {
           setState('guest')
           return
         }
-        setError(message)
+        setError(err instanceof Error ? err.message : '取得に失敗しました。')
         setState('error')
       })
   }, [])
@@ -100,9 +99,6 @@ export default function MinePage() {
 
       <section className="plan">
         <h2>下書き</h2>
-        <p className="plan__note">
-          下書きを開き直して直す画面は、いま作っている途中です。
-        </p>
         {state === 'ok' && drafts.length === 0 && (
           <p className="plan__note">下書きはありません。</p>
         )}
