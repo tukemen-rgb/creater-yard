@@ -9,6 +9,126 @@
 
 ---
 
+## 2026-08-10 06:33 JST A-6（焼いたページから消えた metadata を戻す）— 状態: **未実装**（③が 06:50 に取る）
+
+⑤ 05:38 の指示。①の事例 41・提案 29。**段階 A の後始末**であって
+新しい機能ではない。
+
+### 何が起きているか
+
+Next.js の metadata は **shallow merge**（公式が明記・事例 41）。
+A-3 で焼く 3 経路に `alternates` と `openGraph` を書いたため、
+**`app/layout.tsx` が持っていた入れ子が丸ごと置き換わった**。
+
+| 消えたもの | 出どころ | 影響 |
+| --- | --- | --- |
+| `<link rel="alternate" type="application/rss+xml">` | layout の `alternates.types` | **Story ページから購読に入れない** |
+| `<meta property="og:locale" content="ja_JP">` | layout の `openGraph.locale` | 言語の手がかりが落ちる |
+
+**焼いたページだけが失っている**（シェルと固定ページには残っている）。
+
+### 変更対象ファイル
+
+| ファイル | 変更 |
+| --- | --- |
+| `lib/og.ts` | **共有分をここに置く**（`SITE_OG`・`alternatesFor`） |
+| `app/layout.tsx` | **`lib/og.ts` から取るように変える**（下記が要点） |
+| `app/s/[id]/page.tsx` | `alternates` と `openGraph` を共有分から組む |
+| `app/w/[handle]/page.tsx` | 同上。**フィードは本人のもの**を指す |
+| `app/tags/[tag]/page.tsx` | 同上 |
+| `server/og.test.mjs` | 単体試験を足す |
+
+### **要点: 共有分の出どころを 1 つにする**
+
+「各ページに書き足す」だけでは**また同じことが起きる**。
+layout に項目が増えたとき、焼く 3 経路への追記を忘れるため。
+
+**`lib/og.ts` を唯一の出どころにして、`app/layout.tsx` も
+そこから取る。**こうすると、共有分を足す場所が 1 か所しか無くなる。
+
+```
+lib/og.ts
+  export const SITE_OG = { siteName: 'CreatorYard', locale: 'ja_JP' }
+  export function alternatesFor(canonical, feedPath = '/stories/feed.xml')
+        → { types: {'application/rss+xml': feedPath}, ...(canonical && {canonical}) }
+
+app/layout.tsx        … SITE_OG と alternatesFor(null) を使う
+app/s/[id]/           … { ...SITE_OG, title, description, type:'article', url }
+app/w/[handle]/       … alternatesFor(url, `/w/${handle}/feed.xml`)
+app/tags/[tag]/       … alternatesFor(url)（サイト全体のフィード）
+```
+
+**`type` は共有分に入れない。**layout は `website`、Story は `article`
+で**意図的に違う**。共有に混ぜると、どちらかが黙って変わる。
+
+### データモデル
+
+**変更なし。**
+
+### 経路・画面
+
+画面の見た目は変わらない。**`<head>` に 2 つ戻るだけ。**
+
+**個人ページのフィードだけは新しい指し先**（`/w/<handle>/feed.xml`）。
+nginx に経路は既にある（`^/w/([a-z0-9…])/feed\.xml$` → API の
+`/api/feeds/w/<handle>.xml`）。
+
+**③は指す前に、そのフィードが本当に配られるかを実物で確かめること。**
+無いものを指すほうが、サイト全体のフィードを指すより悪い。
+確かめる項目:
+
+1. 公開 Story のある人 → **200・RSS が返る**
+2. **下書きしか無い人・居ない人 → 何が返るか**。ここで他人の存在が
+   分かる形（200 と 404 が割れる）なら、**個人フィードは指さず
+   サイト全体のフィードにする**。焼かれるのは公開 Story のある人だけ
+   なので実害は薄いが、**確かめてから決める**
+
+### 試験計画
+
+**単体（`server/og.test.mjs`）:**
+
+- `alternatesFor(null)` → `types` だけ。`canonical` の鍵が**無い**
+- `alternatesFor('https://…/s/x/')` → `types` と `canonical` の両方
+- `alternatesFor(url, '/w/hana/feed.xml')` → `types` の値が差し替わる
+- `SITE_OG` に `locale: 'ja_JP'` と `siteName: 'CreatorYard'` が在る
+
+**焼いたものの検査（④の新しい監査項目でもある）:**
+
+`<head>` の `meta`/`link`/`title` を**鍵の集合**にして、
+**焼いたページとシェルの差を取る**。
+
+| # | 見るもの |
+| --- | --- |
+| 1 | **シェルに在って焼いたページに無いもの: 0 件** |
+| 2 | `og:locale` が焼いた 5 枚すべてに在る |
+| 3 | `rel="alternate"` が焼いた 5 枚すべてに在る |
+| 4 | `/w/hana/` の alternate が**本人のフィード**を指す（指すと決めた場合） |
+| 5 | canonical と `og:url` の一致（既存）は**壊れていない** |
+| 6 | `og:type` が Story は `article`・個人とタグは `website` |
+
+**1 が本体。**「足したもの」ではなく「**消えたもの**」を見る。
+これは④ 03:14・05:13 の検査では見ていなかった観点で、
+**今回それで 2 つ見つかった**。
+
+**規則 13**（素のビルドも通す）・**規則 15**（赤くしたらその周で緑へ）。
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| **個人フィードの指し先で、居ない人・下書きだけの人の存在が分かる** | 指す前に実物で確かめる（上記）。割れるならサイト全体のフィードにする |
+| 無いものを指す（フィードが 503 の構成） | `SITE_ORIGIN` が無いと API はフィードを配らない（A-4 で実装）。**`rel="alternate"` は相対パスなので、指し先が無ければ 404 になるだけ**で、嘘の URL を焼くわけではない |
+| 共有分に秘密が混ざる | 共有分は `siteName` と `locale` だけ。**利用者のデータを入れない** |
+| また同じ取りこぼしが起きる | 出どころを `lib/og.ts` の 1 か所にする。**layout もそこから取る**ので、足す場所が分かれない |
+
+### ③への注意
+
+- **これは後始末。**新しい機能を足さない
+- **`app/layout.tsx` のコメントも直す。**「og:url と og:image は
+  ドメインとブランド素材が決まってから足す」は、**og:url がもう
+  ページ側で出ている**ので古い
+- 段階 B には進まない（社長の実行判断が要る）
+
 ## 2026-08-10 04:33 JST A-5（try_files の差し替えと SPEC の注記）— 状態: **実装済み a82dd64**（lint・build 緑・試験 79 件緑・解決順の検査 7 点すべて合格）。**これで段階 A は完了**
 
 ①の提案 28（soft 404）も扱う。**A-5 では何も作らない**が、
