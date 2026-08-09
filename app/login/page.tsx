@@ -38,7 +38,7 @@ export default function LoginPage() {
         </p>
         {/* 登録直後と同じ 2 本。ログアウトだけの行き止まりにしない（designs 11:21） */}
         <p className="plan__note">
-          <a href="/write/">Story を書く</a> ／{' '}
+          <a href="/write/">Story を書く</a> ／ <a href="/mine/">自分の記録</a> ／{' '}
           <a href={`/w/${current}/`}>自分のページを見る</a>
         </p>
         <button

@@ -48,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="site-nav" aria-label="メインナビゲーション">
               <a href="/stories/">制作記録</a>
               <a href="/write/">書く</a>
+              <a href="/mine/">自分の記録</a>
               <a href="https://play-game-yard.com/">GAMEYARD</a>
             </nav>
           </div>

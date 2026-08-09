@@ -197,22 +197,24 @@ export default function WritePage() {
         <p className="eyebrow">おつかれさまです</p>
         <h1>{saved.visibility === 'public' ? '公開しました' : '下書きに保存しました'}</h1>
         {/*
-          できないことをできると書かない（⑤ 12:51・proposals 13:13 その 1）。
-          編集モードと下書き一覧ができたら、この文言を事実に合わせて戻す。
+          段階 A・B で /mine/ と編集モードができたので、事実に合わせて戻した
+          （designs 13:21 段階 C）。書けることだけを書く。
         */}
         <p className="hero__lede">
           {saved.visibility === 'public'
-            ? '書きかけの控えは消しました。'
-            : '書きかけの控えは消しました。下書きは保存されていますが、開き直す画面はまだありません（用意しています）。'}
+            ? '書きかけの控えは消しました。あとから直せます。'
+            : '書きかけの控えは消しました。下書きは保存されています。'}
         </p>
         {/*
-          公開のときだけ道筋を出す。下書きは /s/<id>/ でも /w/<handle>/ でも
-          見えない（前者はシェルが Authorization を送らず、後者は公開分だけを
-          引く）ので、出すと壊れたリンクになる（designs 12:21）。
+          下書きは /s/<id>/ でも /w/<handle>/ でも見えない（前者はシェルが
+          Authorization を送らず、後者は公開分だけを引く）ので、そこへは
+          リンクしない。代わりに /mine/ と編集モードへ送る（段階 C）。
         */}
-        {saved.visibility === 'public' && (
+        {saved.visibility === 'public' ? (
           <p className="plan__note">
             <a href={`/s/${saved.id}/`}>公開した記録を見る</a>
+            {' ／ '}
+            <a href={`/write/?id=${saved.id}`}>続きを書く</a>
             {handle && handle !== 'loading' && (
               <>
                 {' ／ '}
@@ -221,6 +223,12 @@ export default function WritePage() {
             )}
             {' ／ '}
             <a href="/stories/">新着一覧</a>
+          </p>
+        ) : (
+          // 下書きは /s/ でも /w/ でも見えないが、/mine/ からは開ける
+          <p className="plan__note">
+            <a href={`/write/?id=${saved.id}`}>続きを書く</a> ／{' '}
+            <a href="/mine/">自分の記録</a>
           </p>
         )}
         {editId ? (

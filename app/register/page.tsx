@@ -37,7 +37,7 @@ export default function RegisterPage() {
         </p>
         {/* 一番意図が強い場面なので、次の一手をその場に出す（designs 11:21） */}
         <p className="plan__note">
-          <a href="/write/">最初の 1 本を書く</a> ／{' '}
+          <a href="/write/">最初の 1 本を書く</a> ／ <a href="/mine/">自分の記録</a> ／{' '}
           <a href={`/w/${done}/`}>自分のページを見る</a>
         </p>
       </div>

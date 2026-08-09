@@ -78,6 +78,18 @@ export default function MinePage() {
     )
   }
 
+  if (state === 'loading') {
+    // 読み込み中に「書いたもの」の枠を出さない。取得の前に空の見出しを
+    // 見せると「無い」と誤って伝わる（事例 25 の「紛らわしい空」）。
+    // 未ログインのときも一瞬この枠が見えていた
+    return (
+      <div className="hero">
+        <p className="eyebrow">自分の記録</p>
+        <h1>読み込んでいます…</h1>
+      </div>
+    )
+  }
+
   if (state === 'error') {
     return (
       <div className="hero">
