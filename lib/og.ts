@@ -53,8 +53,36 @@ export function tagUrl(tag: string): string | null {
   return absoluteUrl(`/tags/${encodeURIComponent(tag)}/`)
 }
 
+/** 個人ページの URL。ハンドルは `[a-z0-9_-]` だけなので encode は要らない。 */
+export function handleUrl(handle: string): string | null {
+  return absoluteUrl(`/w/${handle}/`)
+}
+
+/** Story ページの URL。id は 16 桁の hex なので encode は要らない。 */
+export function storyUrl(id: string): string | null {
+  return absoluteUrl(`/s/${id}/`)
+}
+
+/**
+ * ファイルの URL。**末尾スラッシュを付けない**。
+ *
+ * `absoluteUrl` はページ用で、`trailingSlash: true` に合わせて必ず
+ * `/` を足す。同じ関数で `/sitemap.xml` を作ると
+ * `…/sitemap.xml/` になり、**辿れない URL になる**（robots.txt に
+ * 書く先がそれだと、sitemap を見つけてもらえない）。
+ */
+export function fileUrl(path: string): string | null {
+  const origin = siteOrigin()
+  if (!origin) return null
+  return `${origin}${path.startsWith('/') ? path : `/${path}`}`
+}
+
+function siteOrigin(): string {
+  return (process.env.SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
+}
+
 export function absoluteUrl(path: string): string | null {
-  const origin = (process.env.SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
+  const origin = siteOrigin()
   if (!origin) return null
   const tail = path.startsWith('/') ? path : `/${path}`
   return `${origin}${tail.endsWith('/') ? tail : `${tail}/`}`

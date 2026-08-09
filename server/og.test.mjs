@@ -5,7 +5,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { absoluteUrl, ogDescription, tagUrl } from '../lib/og.ts'
+import { absoluteUrl, fileUrl, handleUrl, ogDescription, storyUrl, tagUrl } from '../lib/og.ts'
 
 test('句点までを 1 文として取る', () => {
   assert.equal(ogDescription('敵の動きを作った。次は音。'), '敵の動きを作った。')
@@ -109,4 +109,29 @@ test('tagUrl: / を含むタグは経路を割らない', () => {
 
 test('tagUrl: SITE_ORIGIN が無ければ null', () => {
   withOrigin(null, () => assert.equal(tagUrl('godot'), null))
+})
+
+// designs 2026-08-10 02:33（A-4）の分。
+
+test('handleUrl / storyUrl は末尾スラッシュ有り', () => {
+  withOrigin('https://creatoryard.io', () => {
+    assert.equal(handleUrl('hana'), 'https://creatoryard.io/w/hana/')
+    assert.equal(storyUrl('0123456789abcdef'), 'https://creatoryard.io/s/0123456789abcdef/')
+  })
+})
+
+// ここを absoluteUrl でやると …/sitemap.xml/ になり、robots.txt が
+// 指す先が辿れなくなる（sitemap を見つけてもらえない）
+test('fileUrl は末尾スラッシュを付けない', () => {
+  withOrigin('https://creatoryard.io', () => {
+    assert.equal(fileUrl('/sitemap.xml'), 'https://creatoryard.io/sitemap.xml')
+  })
+})
+
+test('handleUrl / storyUrl / fileUrl も SITE_ORIGIN が無ければ null', () => {
+  withOrigin(null, () => {
+    assert.equal(handleUrl('hana'), null)
+    assert.equal(storyUrl('0123456789abcdef'), null)
+    assert.equal(fileUrl('/sitemap.xml'), null)
+  })
 })
