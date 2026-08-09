@@ -10,7 +10,7 @@ import { SaveStory } from './save-story'
  * （クライアント側）の両方から使う。GAMEYARD の教訓 — テンプレートを
  * 2 つ作ると、片方だけ文言や構造が古くなる事故が起きる。
  */
-export function StoryArticle({ story }: { story: Story }) {
+export function StoryArticle({ story, nextStory }: { story: Story; nextStory?: Story | null }) {
   return (
     <article className="page story">
       <p className="story__back">
@@ -75,6 +75,17 @@ export function StoryArticle({ story }: { story: Story }) {
         <p className="story__game">
           この記録の作品: <a href={story.gameUrl}>{story.gameUrl}</a>（GAMEYARD）
         </p>
+      )}
+      {nextStory && (
+        <section className="account-box" aria-labelledby="next-story-heading">
+          <h2 id="next-story-heading">次に読む、別の作者の Story</h2>
+          <p>
+            <Link prefetch={false} href={`/story/${nextStory.id}/`}>
+              {nextStory.title}
+            </Link>
+          </p>
+          <p className="story-card__meta">書いた人: {nextStory.authorHandle}</p>
+        </section>
       )}
       <p className="story__report">
         <Link prefetch={false} href={`/report/?story=${story.id}`}>
