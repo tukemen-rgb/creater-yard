@@ -12,6 +12,26 @@
 
 ---
 
+## 29. PUT の意味（MDN） — 送った内容で「置き換える」
+- 出典: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/PUT
+  （2026-08-09 確認）
+- 事実:
+  - **PUT は、対象の資源を新しく作るか、その表現を
+    「リクエストの内容で置き換える（replaces）」**
+  - POST との違いは**べき等であること**。「1 回呼ぶのと、続けて何回か
+    呼ぶのとで違いが無い（副作用が無い）」
+  - **このページに PATCH との比較や「部分更新」の記述は無い**
+    （確かめられなかったので、そう書かない）
+- 学び:
+  - CreatorYard の `PUT /api/stories/<id>` は**置き換えの意味で正しい**。
+    そして実装も実際に置き換えになっている — `normalizeInput` が
+    **毎回すべての項目を作る**ので、`{...current, ...normalizeInput(input)}`
+    は事実上の全置き換えになる（`server/lib/stories.mjs` 86–116・173–189 行）
+  - **つまり送らなかった項目は消える。** 編集モード（designs 13:21 段階 B）は
+    **フォームの全項目を必ず送る**必要がある。とくに `visibility` を
+    送り忘れると `'draft'` になり、**公開済みの記録が黙って非公開に戻る**
+    （提案 14:15）
+
 ## 28. localStorage の性質（MDN） — 保存先はオリジンに 1 つ、期限は無い
 - 出典: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
   （2026-08-09 確認）
