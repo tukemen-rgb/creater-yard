@@ -118,8 +118,14 @@ export default function WritePage() {
       <div className="hero">
         <p className="eyebrow">おつかれさまです</p>
         <h1>{saved.visibility === 'public' ? '公開しました' : '下書きに保存しました'}</h1>
+        {/*
+          できないことをできると書かない（⑤ 12:51・proposals 13:13 その 1）。
+          編集モードと下書き一覧ができたら、この文言を事実に合わせて戻す。
+        */}
         <p className="hero__lede">
-          書きかけの控えは消しました。続きはいつでも書き足せます。
+          {saved.visibility === 'public'
+            ? '書きかけの控えは消しました。'
+            : '書きかけの控えは消しました。下書きは保存されていますが、開き直す画面はまだありません（用意しています）。'}
         </p>
         {/*
           公開のときだけ道筋を出す。下書きは /s/<id>/ でも /w/<handle>/ でも
