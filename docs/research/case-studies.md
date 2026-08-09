@@ -12,6 +12,44 @@
 
 ---
 
+## 38. Google は正規 URL の指定手段に**強さの順**を付けている — タグページは URL が増えやすい
+
+- 出典: https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls
+  （2026-08-09 確認）
+- 出典: このリポジトリの `app/tags/page.tsx` 18–19 行・`app/w/page.tsx` 18 行・
+  `docs/nginx.example.conf` 95–100 行（実物を読んだ）
+- 事実（Google）:
+  - 正規 URL を伝える手段は 3 つで、**強さの順に並んでいる**:
+    1. **リダイレクト** —「A strong signal that the target of the
+       redirect should become canonical.」
+    2. **`rel="canonical"`** —「A strong signal that the specified URL
+       should become canonical.」
+    3. **sitemap に載せる** —「**A weak signal** that helps the URLs that
+       are included in a sitemap become canonical.」
+  - 「These are, in order of how strongly they can influence
+    canonicalization」。**組み合わせると強くなる**とも書いてある
+  - 指定しなければ Google が「objectively the best version」を自分で選ぶ。
+    「none of them are required」ともある（**必須ではない**）
+- 事実（このリポジトリの実物）:
+  - **タグページは同じ中身に複数の URL が付く。**nginx の経路は
+    `^/tags/[^/]+/?$` で**何でも通る**。シェル（`app/tags/page.tsx`）は
+    `decodeURIComponent` するだけで**正規化しない**。一方 API 側は
+    `normalizeTag` で ASCII を小文字にするので、**`/tags/Godot/` と
+    `/tags/godot/` は同じ Story を返す**。末尾スラッシュ無しの
+    `/tags/godot` も同じ中身になる（正規表現が `/?` を許している）
+  - **個人ページにはこの問題が無い。**`^/w/[a-z0-9][a-z0-9_-]{2,31}/?$` は
+    小文字しか通さないので、`/w/Hana/` は nginx が 404 にする
+    （末尾スラッシュのゆれだけは残る）
+- 学び:
+  - **A-3 でタグページを焼くと、URL のゆれがそのまま検索側に出る。**
+    焼かれるのは正規化した 1 本だけで、ゆれた URL は try_files で
+    シェルに落ちて**同じ中身を別の URL で出す**
+  - Google の並びに従うなら**リダイレクトが一番強い**が、それは
+    nginx 側＝**段階 B の仕事**。`rel="canonical"` は**焼く側で今すぐ
+    入れられる**（A-3 と同じ回でよい）
+  - **sitemap は弱い信号**。A-4 で sitemap に正規 URL を並べるだけでは
+    足りない、と分かる
+
 ## 37. Cloudflare の計測 beacon は **UA によって入ったり入らなかったり**する — 姉妹サービスで実際に確認
 
 - 出典: `https://play-game-yard.com/` を 2026-08-09 に自分で取得して検査
