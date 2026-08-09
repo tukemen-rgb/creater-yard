@@ -12,6 +12,49 @@
 
 ---
 
+## 41. Next.js の metadata は **shallow merge**。子で `openGraph` を書くと親の中身が丸ごと消える
+
+- 出典: https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+  （2026-08-10 確認・ページ記載の版は 16.3.0。**このリポジトリは 15.5.22**）
+- 出典: このリポジトリの `out/` を実際に比べた結果（**実物が先、文書が裏付け**）
+- 事実（公式の文言）:
+  - 「Metadata objects exported from multiple segments in the same route
+    are **shallowly** merged together… Duplicate keys are **replaced**
+    based on their ordering.」
+  - 「metadata with **nested fields such as `openGraph` and `robots`**
+    that are defined in an earlier segment are **overwritten** by the
+    last segment to define them.」
+  - 公式の例でも、layout の `openGraph.description` が page 側で
+    `openGraph` を書いた時点で消える（「**Note the absence of
+    `openGraph.description`**」と明記されている）
+  - **公式の対処 2 つ**:
+    1. 共有したい入れ子を「**pull them out into a separate variable**」
+       して各ページで spread する
+    2. `generateMetadata` の第 2 引数 `parent` で
+       「**access and extend (rather than replace) parent metadata**」
+- 事実（実物・2026-08-10 に `out/` を比較）:
+  段階 A-3 で各ページに `alternates: { canonical }` を書いた結果、
+  **焼いたページから 2 つ消えていた**:
+
+  | 消えたもの | どこから来ていたか |
+  | --- | --- |
+  | `<link rel="alternate" type="application/rss+xml">` | layout の `alternates.types` |
+  | `<meta property="og:locale" content="ja_JP">` | layout の `openGraph.locale` |
+
+  シェル（`out/s/index.html` など）と固定ページには**残っている**。
+  **焼いたページだけが失っている**。
+- 学び:
+  - **「足したものを見る」検査では捕まらない。**③は canonical を足した
+    ことを、④は canonical と `og:url` の一致を確かめたが、
+    **どちらも消えたものを見ていない**（⑤ 05:38 が見つけた）
+  - **入れ子の鍵を 1 つでも書いたら、その鍵の中身は全部自分で書く**
+    ことになる。`openGraph` に `title` だけ書くつもりでも、
+    親の `locale` や `images` は消える
+  - 対処は公式が示している。**共有分を変数にまとめて spread する**のが、
+    このリポジトリの形（`lib/og.ts` に寄せる）に合う
+  - **版が違う点に注意**: 読んだ文書は 16.3.0 版。**ただし 15.5.22 の
+    実物で同じ挙動を確認している**ので、この事例は実測が根拠
+
 ## 40. **200 を返して「見つかりません」と書くと soft 404 になる** — A-5 のフォールバックがそれに当たる
 
 - 出典: https://developers.google.com/search/docs/crawling-indexing/http-network-errors
