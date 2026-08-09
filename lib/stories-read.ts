@@ -47,7 +47,28 @@ function readRecord(name: string): Story | null {
   }
 }
 
-/** 公開済みの全 Story。新着順（公開時刻の降順）。 */
+/** 新着を起点に、作者ごとの最新 1 件を一巡してから 2 件目へ進む。 */
+function interleaveAuthors(records: Story[]): Story[] {
+  const queues = new Map<string, Story[]>()
+  for (const record of records) {
+    const queue = queues.get(record.authorHandle) ?? []
+    queue.push(record)
+    queues.set(record.authorHandle, queue)
+  }
+  const mixed: Story[] = []
+  let remaining = records.length
+  while (remaining > 0) {
+    for (const queue of queues.values()) {
+      const record = queue.shift()
+      if (!record) continue
+      mixed.push(record)
+      remaining -= 1
+    }
+  }
+  return mixed
+}
+
+/** 公開済みの全 Story。ここでは絞り込み前の新着順を保つ。 */
 function publishedRecords(): Story[] {
   let names: string[]
   try {
@@ -61,7 +82,10 @@ function publishedRecords(): Story[] {
     const record = readRecord(name)
     if (record && record.status === 'public') records.push(record)
   }
-  records.sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt)))
+  records.sort(
+    (a, b) =>
+      String(b.publishedAt).localeCompare(String(a.publishedAt)) || a.id.localeCompare(b.id),
+  )
   return records
 }
 
@@ -90,7 +114,7 @@ export function publishedStories({
   let records = publishedRecords()
   if (toolTag) records = records.filter((r) => r.toolTags.includes(toolTag))
   if (topicTag) records = records.filter((r) => r.topicTags.includes(topicTag))
-  return paginate(records, page)
+  return paginate(interleaveAuthors(records), page)
 }
 
 /** 公開済みの 1 件。下書きは返さない（下書きの閲覧は API＋本人トークンの仕事）。 */
