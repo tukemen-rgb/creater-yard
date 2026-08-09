@@ -58,7 +58,8 @@ MVP に**入れない**もの（理由つき）:
 
 ## 5. 決まっていないこと
 
-- ~~ドメイン~~ → **`creatoryard.io` に決定**（2026-08-09 社長）。
-  **取得はこれから**（Cloudflare Registrar。GAMEYARD と同じアカウント）
+- ~~ドメイン~~ → **`creatoryard.io` を取得済み**（2026-08-09 22:19 JST 社長）。
+  Cloudflare Registrar・GAMEYARD と同じアカウント（ネームサーバーが
+  `play-game-yard.com` と同じ組で、RDAP で確認した）。期限 2027-08-09
 - リポジトリ名の綴り（現 `creater-yard`。ブランドは CreatorYard）— 社長
 - 公開時期 — MVP が動いてから判断

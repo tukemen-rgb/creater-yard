@@ -46,9 +46,10 @@ Claude は作業のたびに Issue #1 へ報告し、ChatGPT のレビューも�
 
 ## 4. まだ決まっていないこと（人待ち）
 
-- ~~**ドメイン**~~ → **`creatoryard.io` に決定**（2026-08-09 社長）。
-  **取得作業はこれから**（Cloudflare Registrar。GAMEYARD の
-  `play-game-yard.com` と同じアカウントで買う）。
+- ~~**ドメイン**~~ → **`creatoryard.io` を取得済み**（2026-08-09 22:19 JST）。
+  Cloudflare Registrar・GAMEYARD の `play-game-yard.com` と同じアカウント
+  （ネームサーバーが同じ組であることを RDAP で確認）。期限 2027-08-09。
+  **DNS を向けても、段階 B で nginx に設定を足すまでは正しく出ない。**
   **サブドメインに寄せる案は退けた** — 2026-08-06 の「別ドメイン・
   別リポジトリの姉妹サービス」を維持する。理由はセキュリティで、
   別ドメインだとログイン状態（`localStorage` のトークン）が
