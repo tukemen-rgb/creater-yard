@@ -12,6 +12,53 @@
 
 ---
 
+## 42. 証明書の取り方は 3 通りある — **Origin CA は「オレンジ雲を外せなくなる」**
+
+⑤ 07:37 の指示 1（段階 B の最初の関門）。
+
+- 出典: https://letsencrypt.org/docs/challenge-types/ （2026-08-10 確認）
+- 出典: https://developers.cloudflare.com/ssl/origin-configuration/origin-ca/
+  （2026-08-10 確認）
+- 事実（Let's Encrypt の HTTP-01）:
+  - 「The HTTP-01 challenge **can only be done on port 80**.」
+  - リダイレクトは**10 段まで追う**（HTTP / HTTPS の 80・443 へ）。
+    つまり **HTTPS への強制リダイレクトがあっても成立する**
+  - `http://<ドメイン>/.well-known/acme-challenge/<TOKEN>` に
+    ファイルを置く方式
+  - ワイルドカード証明書は**取れない**
+  - **確かめられなかったこと**: **CDN・リバースプロキシの裏で通るか**。
+    Let's Encrypt の文書は**そこに触れていない**。
+    **「Cloudflare のオレンジ雲を通る」とは書かれていない**ので、
+    通ると書かない
+- 事実（Let's Encrypt の DNS-01）:
+  - `_acme-challenge.<ドメイン>` に TXT レコードを作る
+  - 「it **only makes sense** to use DNS-01 challenges **if your DNS
+    provider has an API** you can use to automate updates.」
+    → **Cloudflare は API を持つので条件に合う**
+  - ワイルドカードが**取れる**
+  - **警告**: 「**Keeping API credentials on your web server is risky**」。
+    権限を絞った資格情報を使うか、別のサーバーで検証する
+- 事実（Cloudflare Origin CA）:
+  - 目的は「Cloudflare と origin の間の暗号化」
+  - 「**only encrypt traffic between Cloudflare and your origin server,
+    not traffic from client browsers to your origin**」
+  - 「If your origin only receives traffic from **proxied records**」の
+    ための仕組みで、**Cloudflare を止めたりプロキシを切ると
+    訪問者に「信頼できない証明書」の警告が出る**
+  - **有効期限の通知は来ない**（Cloudflare が送らないと明記）
+- 学び:
+  - **Origin CA は縛りを増やす。**CreatorYard は A 案でオレンジ雲を
+    選んだが、**将来 B 案（別サーバー＋灰色雲）へ移る余地**は残して
+    おきたい。Origin CA を入れると、**雲を外した瞬間にサイトが警告を出す**
+  - **期限通知が来ない**のも運用上の落とし穴。Let's Encrypt は
+    期限前に知らせが来るが、Origin CA は自分で覚えておくしかない
+  - **HTTP-01 が通るかは、やってみるまで分からない。**
+    「たぶん通る」で手順を書かない。**まず試し、駄目なら DNS-01**、の
+    順で段階 B の手順に書く
+  - DNS-01 を選ぶなら、**Cloudflare の API トークンは DNS 編集だけに
+    絞る**（Let's Encrypt 自身の警告）。ドメインを移せる権限を
+    サーバーに置かない
+
 ## 41. Next.js の metadata は **shallow merge**。子で `openGraph` を書くと親の中身が丸ごと消える
 
 - 出典: https://nextjs.org/docs/app/api-reference/functions/generate-metadata
