@@ -559,7 +559,7 @@ async function handle(req, res) {
       'content-type': 'application/xml; charset=utf-8',
       'x-content-type-options': 'nosniff',
       // 公開直後の反映が 1 時間遅れても実害はない。毎回全件読む方を避ける
-      'cache-control': 'public, max-age=3600',
+      'cache-control': 'no-store',
     })
     res.end(xml)
     return
