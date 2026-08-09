@@ -14,7 +14,7 @@
 import type { Metadata } from 'next'
 
 import { StoryView } from '../../../components/StoryView'
-import { absoluteUrl, ogDescription } from '../../../lib/og'
+import { absoluteUrl, alternatesFor, ogDescription, SITE_OG } from '../../../lib/og'
 import { readPublicStories, readPublicStory } from '../../../lib/stories-static'
 
 /**
@@ -53,13 +53,15 @@ export async function generateMetadata({
     title: story.title,
     description,
     // canonical は og:url と同じ値（designs 00:34・提案 26）。両方とも
-    // absoluteUrl から取ることで、ずれる余地を残さない
-    ...(url ? { alternates: { canonical: url } } : {}),
+    // absoluteUrl から取ることで、ずれる余地を残さない。
+    // alternatesFor を通すのは RSS の自動発見を落とさないため（A-6）
+    alternates: alternatesFor(url),
     openGraph: {
+      // 共有分（siteName・locale）は必ず先に広げる。書き忘れると消える
+      ...SITE_OG,
       // 題名にサイト名を混ぜない（Meta の推奨）。ブランドは siteName が運ぶ
       title: story.title,
       description,
-      siteName: 'CreatorYard',
       type: 'article',
       // SITE_ORIGIN が無いときは url を出さない（嘘の URL を焼かない）
       ...(url ? { url } : {}),

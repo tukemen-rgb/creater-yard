@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import './globals.css'
+import { alternatesFor, SITE_OG } from '../lib/og'
 
 export const metadata: Metadata = {
   title: {
@@ -10,21 +11,22 @@ export const metadata: Metadata = {
   },
   description:
     'ゲームを作る人が、制作の記録を残し、知見を分かち合い、仲間とつながる場所。GAMEYARD の姉妹サービス。',
-  // サイト共通の OGP（designs 21:22 段階 B）。og:url と og:image は
-  // ドメインとブランド素材が決まってから足す（どちらも人待ち）。
-  // Story 固有の OGP は静的焼き込み（公開運用）の設計で扱う
+  // サイト共通の OGP。**共有分は lib/og.ts が唯一の出どころ**
+  // （designs 2026-08-10 06:33 A-6）。ここに直接書くと、焼くページ側が
+  // openGraph / alternates を書いた時点で消える（shallow merge・事例 41）。
+  // 足したい共有項目は lib/og.ts の SITE_OG に足すこと。
+  //
+  // og:url は焼くページが自分で出す（A-2 以降）。og:image はブランド素材
+  // 待ち（提案 25・要判断）。
   // RSS の自動発見（rel=alternate は head に置く必要がある。事例 18）。
   // 公開 URL /stories/feed.xml は nginx が API へ対応させる
-  alternates: {
-    types: { 'application/rss+xml': '/stories/feed.xml' },
-  },
+  alternates: alternatesFor(null),
   openGraph: {
+    ...SITE_OG,
     title: 'CreatorYard — つくる人を、育てる。',
     description:
       'ゲームを作る人が、制作の記録を残す場所。完成していなくていい。数字で競わない。',
     type: 'website',
-    siteName: 'CreatorYard',
-    locale: 'ja_JP',
   },
 }
 

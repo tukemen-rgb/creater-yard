@@ -14,7 +14,7 @@
 import type { Metadata } from 'next'
 
 import { StoryList } from '../../../components/StoryList'
-import { absoluteUrl } from '../../../lib/og'
+import { absoluteUrl, alternatesFor, handleFeedPath, SITE_OG } from '../../../lib/og'
 import { publicHandles, readPublicStories } from '../../../lib/stories-static'
 
 /**
@@ -46,12 +46,15 @@ export async function generateMetadata({
     title,
     description,
     // canonical は og:url と同じ値。ずれると「og が指す URL と canonical が
-    // 違う」という一番よくない状態になるので、両方 absoluteUrl から取る
-    ...(url ? { alternates: { canonical: url } } : {}),
+    // 違う」という一番よくない状態になるので、両方 absoluteUrl から取る。
+    // **個人ページの RSS 発見は本人のフィード**を指す（A-6）。
+    // 下書きしか無い人・居ない人も 200・0 件で揃うことを確認済みなので、
+    // ここから他人の存在は分からない
+    alternates: alternatesFor(url, handleFeedPath(handle)),
     openGraph: {
+      ...SITE_OG,
       title,
       description,
-      siteName: 'CreatorYard',
       type: 'website',
       ...(url ? { url } : {}),
     },

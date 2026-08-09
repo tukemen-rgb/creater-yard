@@ -12,7 +12,7 @@
 import type { Metadata } from 'next'
 
 import { StoryList } from '../../../components/StoryList'
-import { tagUrl } from '../../../lib/og'
+import { alternatesFor, SITE_OG, tagUrl } from '../../../lib/og'
 import { publicTags, readPublicStories } from '../../../lib/stories-static'
 
 /** 公開タグが 0 件のときの受け皿（app/w/[handle]/ と同じ理由）。 */
@@ -60,11 +60,12 @@ export async function generateMetadata({
   return {
     title,
     description,
-    ...(url ? { alternates: { canonical: url } } : {}),
+    // タグページはサイト全体のフィードを指す（A-6）
+    alternates: alternatesFor(url),
     openGraph: {
+      ...SITE_OG,
       title,
       description,
-      siteName: 'CreatorYard',
       type: 'website',
       ...(url ? { url } : {}),
     },
