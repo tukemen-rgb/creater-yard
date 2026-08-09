@@ -558,7 +558,8 @@ async function handle(req, res) {
     res.writeHead(200, {
       'content-type': 'application/xml; charset=utf-8',
       'x-content-type-options': 'nosniff',
-      // 公開直後の反映が 1 時間遅れても実害はない。毎回全件読む方を避ける
+      // 作者による削除・非公開化を次の取得へ即時反映する。初期規模では
+      // sitemap のキャッシュ効率より、公開解除の予測可能性を優先する。
       'cache-control': 'no-store',
     })
     res.end(xml)
