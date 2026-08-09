@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { formatDate, imageUrl, type Story } from '../lib/api'
 import { EditLink } from './edit-link'
+import { SaveStory } from './save-story'
 
 /**
  * Story 本文の表示。server モードの実 URL ページと、下書きプレビュー
@@ -38,6 +39,7 @@ export function StoryArticle({ story }: { story: Story }) {
         />
       )}
       <div className="story__body">{story.body}</div>
+      {story.status === 'public' && <SaveStory id={story.id} />}
       {story.tools.length > 0 && (
         <p className="story__tools">使ったツール: {story.tools.join(' / ')}</p>
       )}
