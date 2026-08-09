@@ -36,6 +36,11 @@ export default function LoginPage() {
         <p className="hero__lede">
           ハンドル <strong>{current}</strong> でログインしています。
         </p>
+        {/* 登録直後と同じ 2 本。ログアウトだけの行き止まりにしない（designs 11:21） */}
+        <p className="plan__note">
+          <a href="/write/">Story を書く</a> ／{' '}
+          <a href={`/w/${current}/`}>自分のページを見る</a>
+        </p>
         <button
           type="button"
           className="auth-form__secondary"

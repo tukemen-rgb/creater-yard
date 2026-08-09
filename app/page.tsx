@@ -37,6 +37,12 @@ export default function Home() {
           順位表・称号・数字の競争は、ここにはありません（GAMEYARD と同じ
           決まりです）。<a href="/stories/">新着の制作記録を見る</a>
         </p>
+        {/* 読みに来た人が書く側へ回る道。ここが無いと /register/ に
+            サイト内のどこからも辿り着けない（designs 11:21） */}
+        <p className="plan__note">
+          自分の制作記録を残すなら、<a href="/register/">書き手になる</a>。
+          必要なのはハンドルとパスワードだけです。
+        </p>
       </section>
     </div>
   )

@@ -35,6 +35,11 @@ export default function RegisterPage() {
         <p className="hero__lede">
           ハンドル <strong>{done}</strong> で登録しました。このままログイン状態です。
         </p>
+        {/* 一番意図が強い場面なので、次の一手をその場に出す（designs 11:21） */}
+        <p className="plan__note">
+          <a href="/write/">最初の 1 本を書く</a> ／{' '}
+          <a href={`/w/${done}/`}>自分のページを見る</a>
+        </p>
       </div>
     )
   }

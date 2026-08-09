@@ -39,7 +39,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               CreatorYard
               <span className="brand__tag">つくる人を、育てる。</span>
             </Link>
+            {/*
+              ログイン状態で出し分けない。出し分けると layout に 'use client' が
+              要り、全ページがクライアント描画に倒れる（designs 11:21）。
+              未ログインで「書く」を押した人は /write/ の
+              「ログインが必要です」に着き、そこから登録できる。
+            */}
             <nav className="site-nav" aria-label="メインナビゲーション">
+              <a href="/stories/">制作記録</a>
+              <a href="/write/">書く</a>
               <a href="https://play-game-yard.com/">GAMEYARD</a>
             </nav>
           </div>
