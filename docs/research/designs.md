@@ -9,7 +9,7 @@
 
 ---
 
-## 2026-08-10 02:33 JST A-4（sitemap と robots）— 状態: **未実装**（③が 02:50 に取る）
+## 2026-08-10 02:33 JST A-4（sitemap と robots）— 状態: **実装済み 2d30861**（下ごしらえ ee2acb3 / RSS の直し 5d30ddb。lint・build 緑・試験 79 件緑・検査 12 点すべて合格）
 
 ⑤ 01:38 の指示（**受け皿 `_none` を載せない**）と①の提案 27
 （**書かないものを決めてから書く**）を入れる。①の助言どおり
@@ -1029,7 +1029,17 @@ location ~ ^/s/[a-f0-9]{16}/?$ {
     タグは通ってしまい、**日本語だけが壊れる**ので気づきにくい。
     **設計の検査 11（日本語タグの canonical を見る）が捕まえた**
   - 同じ形。OGP はページの性質に合わせる（`og:type=website`）
-- **A-4: `sitemap.ts` と `robots.ts`**
+- **A-4: `sitemap.ts` と `robots.ts`** — **済み（2026-08-10 02:50 ③・`2d30861`）**
+  - 実際に出たもの: 固定 3 枚（`lastmod` なし）＋ Story 2 ＋ 個人 1 ＋ タグ 2 の
+    計 8 件。`priority`・`changefreq`・`_none`・シェル・ログインの道具は 0 件
+  - **2 回焼いて `sitemap.xml` が同一**を確認。Story を 1 件だけ更新すると
+    **その Story と `/w/hana/`・`/tags/godot/` の 3 つだけ**が変わった
+  - **踏んだ穴 1: `absoluteUrl` で `/sitemap.xml` を作ると
+    `…/sitemap.xml/` になる**（`trailingSlash: true` に合わせて必ず `/` を
+    足す口だった）。robots.txt が指す先が辿れなくなるので `fileUrl` を分けた
+  - **踏んだ穴 2: `feed.mjs` の `SITE_ORIGIN` が読み込み時の定数**だった。
+    既定値を外したら既存の RSS 試験が 503 で落ち、そこで気づいた。
+    呼ぶたびに読む関数にそろえた
   - `export const dynamic = 'force-static'`（05:22 補記）
   - **`lastmod` の決めをそのまま守る**（09:20 補記の表・
     **固定ページは `lastmod` を出さない**・**ビルド時刻を使わない**）
