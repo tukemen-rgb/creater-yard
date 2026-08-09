@@ -175,6 +175,25 @@ test('下書きは一覧に出ず、短い本文でも保存できる', () => {
   assert.equal(stories.listByAuthor(AUTHOR.id).length, 2)
 })
 
+test('公開一覧は各作者の最新1件を一巡してから同じ作者の2件目を出す', () => {
+  let clock = 1_000_000
+  const stories = freshStories('story-author-interleave', { now: () => clock })
+  const THIRD = { id: 'author-3', handle: 'author3' }
+
+  stories.create(AUTHOR, { title: '作者1の古い記録', body: 'a'.repeat(20) })
+  clock += 1_000
+  stories.create(AUTHOR, { title: '作者1の新しい記録', body: 'b'.repeat(20) })
+  clock += 1_000
+  stories.create(OTHER, { title: '作者2の記録', body: 'c'.repeat(20) })
+  clock += 1_000
+  stories.create(THIRD, { title: '作者3の記録', body: 'd'.repeat(20) })
+
+  assert.deepEqual(
+    stories.listPublic().stories.map((story) => story.title),
+    ['作者3の記録', '作者2の記録', '作者1の新しい記録', '作者1の古い記録'],
+  )
+})
+
 test('作品リンクは GAMEYARD だけ受ける', () => {
   const stories = freshStories('story-url')
   const ok = stories.create(AUTHOR, {
