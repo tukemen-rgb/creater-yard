@@ -449,6 +449,7 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   process.env.CY_SITE_ORIGIN = 'https://creatoryard.example'
   const map = await fetch(`${base}/sitemap-stories.xml`)
   assert.equal(map.status, 200)
+  assert.equal(map.headers.get('cache-control'), 'no-store')
   const xml = await map.text()
   assert.ok(xml.includes(`https://creatoryard.example/story/${pub.data.story.id}/`))
   assert.ok(xml.includes('https://creatoryard.example/creators/httpwriter/'))
@@ -464,4 +465,13 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   assert.equal(bye.data.removedStories, 2)
   const after1 = await call('GET', '/api/stories.json')
   assert.equal(after1.data.total, 0)
+
+  // 退会・削除後は、次の sitemap 取得から Story と作者 URL を残さない
+  process.env.CY_SITE_ORIGIN = 'https://creatoryard.example'
+  const afterDeleteMap = await fetch(`${base}/sitemap-stories.xml`)
+  assert.equal(afterDeleteMap.status, 200)
+  const afterDeleteXml = await afterDeleteMap.text()
+  assert.ok(!afterDeleteXml.includes(`/story/${pub.data.story.id}/`))
+  assert.ok(!afterDeleteXml.includes('/creators/httpwriter/'))
+  delete process.env.CY_SITE_ORIGIN
 })
