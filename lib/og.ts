@@ -39,6 +39,20 @@ export function ogDescription(body: string): string {
  * `SITE_ORIGIN` が未設定なら null。**それらしい嘘の URL を焼くより、
  * 出ないほうが直しやすい**（既定値を置かないのは designs 22:33 の決め）。
  */
+/**
+ * タグページの URL。**encode はここ 1 か所でやる**（designs 00:34）。
+ *
+ * タグには日本語が入る（「当たり判定」など）。生のまま組み立てると
+ * `og:url` と canonical に生の UTF-8 が乗る。呼ぶ側が encode を
+ * 忘れる余地を残さないよう、タグを受け取る口を分けた。
+ *
+ * `encodeURIComponent` は `/` も `%2F` にするので、`/` を含むタグが
+ * 経路を割ることもない。
+ */
+export function tagUrl(tag: string): string | null {
+  return absoluteUrl(`/tags/${encodeURIComponent(tag)}/`)
+}
+
 export function absoluteUrl(path: string): string | null {
   const origin = (process.env.SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
   if (!origin) return null

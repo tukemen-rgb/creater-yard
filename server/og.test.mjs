@@ -5,7 +5,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { absoluteUrl, ogDescription } from '../lib/og.ts'
+import { absoluteUrl, ogDescription, tagUrl } from '../lib/og.ts'
 
 test('句点までを 1 文として取る', () => {
   assert.equal(ogDescription('敵の動きを作った。次は音。'), '敵の動きを作った。')
@@ -65,4 +65,48 @@ test('SITE_ORIGIN が無ければ null（それらしい嘘の URL を作らな�
     if (before === undefined) delete process.env.SITE_ORIGIN
     else process.env.SITE_ORIGIN = before
   }
+})
+
+// ここから下は designs 2026-08-10 00:34（A-3）の分。
+// タグには日本語が入る。encode を 1 か所に閉じたことの確認。
+
+function withOrigin(origin, fn) {
+  const before = process.env.SITE_ORIGIN
+  try {
+    if (origin === null) delete process.env.SITE_ORIGIN
+    else process.env.SITE_ORIGIN = origin
+    fn()
+  } finally {
+    if (before === undefined) delete process.env.SITE_ORIGIN
+    else process.env.SITE_ORIGIN = before
+  }
+}
+
+test('tagUrl: ASCII のタグ', () => {
+  withOrigin('https://creatoryard.io', () => {
+    assert.equal(tagUrl('godot'), 'https://creatoryard.io/tags/godot/')
+  })
+})
+
+test('tagUrl: 日本語のタグは percent-encode される', () => {
+  withOrigin('https://creatoryard.io', () => {
+    assert.equal(
+      tagUrl('当たり判定'),
+      'https://creatoryard.io/tags/%E5%BD%93%E3%81%9F%E3%82%8A%E5%88%A4%E5%AE%9A/',
+    )
+  })
+})
+
+// / を含むタグがそのまま乗ると、経路が 1 つ増えてしまう（別のページを指す）
+test('tagUrl: / を含むタグは経路を割らない', () => {
+  withOrigin('https://creatoryard.io', () => {
+    assert.equal(tagUrl('a/b'), 'https://creatoryard.io/tags/a%2Fb/')
+  })
+  withOrigin('https://creatoryard.io', () => {
+    assert.equal(tagUrl('../secret'), 'https://creatoryard.io/tags/..%2Fsecret/')
+  })
+})
+
+test('tagUrl: SITE_ORIGIN が無ければ null', () => {
+  withOrigin(null, () => assert.equal(tagUrl('godot'), null))
 })
