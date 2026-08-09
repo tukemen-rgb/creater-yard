@@ -176,6 +176,23 @@ test('公開一覧は新着順でページ送りできる', () => {
   assert.equal(page2.stories[0].title, 'no1')
 })
 
+// listAllPublic は listPublic からページ送りを外しただけのもの。ビルド時の
+// 静的書き出しは全件が要る（1 ページ目だけ焼くと 3 件目が消える）ため、
+// 「ページの外の分も入っている」ことをここで押さえる。
+test('listAllPublic はページの区切り無しに公開分を全部返す', () => {
+  const { stories, clock } = setup()
+  for (let i = 1; i <= 3; i++) {
+    stories.create({ author: writer, input: { title: `no${i}`, body: 'b', visibility: 'public' } })
+    clock.value += 1000
+  }
+  stories.create({ author: writer, input: { title: '下書き', body: 'b' } })
+
+  assert.deepEqual(
+    stories.listAllPublic().map((story) => story.title),
+    ['no3', 'no2', 'no1'],
+  )
+})
+
 // ここから下は designs 2026-08-09 13:21 段階 B（14:20 補記）の分。
 // PUT は置き換えなので、送らなかった項目は消える。編集画面は全項目を送る。
 

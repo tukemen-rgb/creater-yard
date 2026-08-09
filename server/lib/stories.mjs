@@ -204,12 +204,23 @@ export class Stories {
   }
 
   /**
-   * 公開のみ・新着順。ページ送りは page（1 始まり）。author はハンドル、
-   * tag は 2 軸を横断して絞る（軸を分けないのは designs 00:22 の決め）。
+   * 公開のみ・新着順（ページ送り無し）。ビルド時の静的書き出しは
+   * 全件が要る（generateStaticParams）ので、絞り込みの本体をここに置き、
+   * listPublic はこれを切り出すだけにする。
+   *
+   * **公開判定をここ 1 か所に閉じる**のが要点（designs 2026-08-09 03:22
+   * のセキュリティ節）。静的側が data/stories/ を自前で読んで自前で
+   * filter すると、下書きの扱いが 2 通りになり、片方だけ直す事故が起きる。
+   *
+   * 引数の型を JSDoc で書いてあるのは、TypeScript 側（lib/stories-static.ts）が
+   * この .mjs から型を推論するため。既定値 null だけだと `null` 型に狭まり、
+   * ハンドルやタグを渡した時点で型検査が落ちる。
+   *
+   * @param {{ author?: string | null, tag?: string | null }} [options]
    */
-  listPublic({ page = 1, perPage = 20, author = null, tag = null } = {}) {
+  listAllPublic({ author = null, tag = null } = {}) {
     const wanted = tag ? normalizeTag(tag) : null
-    const all = this.#readAll()
+    return this.#readAll()
       .filter((story) => story.visibility === 'public')
       .filter((story) => !author || story.authorHandle === author)
       .filter(
@@ -219,6 +230,14 @@ export class Stories {
           (story.tags?.topic ?? []).includes(wanted),
       )
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  }
+
+  /**
+   * 公開のみ・新着順。ページ送りは page（1 始まり）。author はハンドル、
+   * tag は 2 軸を横断して絞る（軸を分けないのは designs 00:22 の決め）。
+   */
+  listPublic({ page = 1, perPage = 20, author = null, tag = null } = {}) {
+    const all = this.listAllPublic({ author, tag })
     const start = (Math.max(1, page) - 1) * perPage
     return {
       stories: all.slice(start, start + perPage),
