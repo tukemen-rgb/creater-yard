@@ -12,6 +12,45 @@
 
 ---
 
+## 36. OGP の必須項目に **og:image が入っている**（Open Graph 公式＋Meta 公式）— CreatorYard には画像が無い
+
+- 出典: https://ogp.me/ （2026-08-09 確認）
+- 出典: https://developers.facebook.com/docs/sharing/webmasters/ （2026-08-09 確認）
+- 事実（Open Graph 仕様）:
+  - **必須は 4 つ: `og:title` / `og:type` / `og:image` / `og:url`。**
+    `og:description` は**任意**
+  - `og:url` の説明は「The canonical URL of your object that will be
+    used as its permanent ID in the graph」＝**恒久的な ID として使われる**
+  - `og:description` の説明は
+    「**A one to two sentence description of your object.**」＝ 1〜2 文。
+    文字数の上限は書かれていない
+- 事実（Meta の webmasters 文書）:
+  - `og:description` の推奨は
+    「**usually between 2 and 4 sentences**」＝ 2〜4 文。
+    **仕様（1〜2 文）と食い違っている。**どちらも文字数は書いていない
+  - `og:title` は「**サイト名などのブランドを付けない**記事の題名」
+  - `og:url` は「**装飾のない**正規 URL（セッション変数・利用者識別の
+    パラメータ・カウンタを付けない）」
+  - **`og:image` は URL でキャッシュされ、URL が変わらない限り更新されない**
+    （"Images are cached based on the URL and won't be updated unless
+    the URL changes."）
+  - OGP タグが無いページには「internal heuristics」で推測する、とある。
+    **画像が無いときにどう出るかは書かれていない**
+- **確かめられなかったこと**: X（旧 Twitter）のカード仕様。
+  `developer.x.com` は HTTP 402 を返した。**推測で書かない**（事例 23 の学び）
+- 学び:
+  - **②の A-2 設計に `og:image` が入っていない。**仕様上は必須の項目で、
+    CreatorYard は画像を意図して持っていない（`server/lib/stories.mjs`
+    冒頭のとおり、添付は検査を伴うため）。ここは埋める必要がある → 提案へ
+  - **`og:description` に「本文冒頭」を入れる決め打ちは、文字数ではなく
+    文の切れ目で切るべき**。出典が 1〜2 文と 2〜4 文で割れている以上、
+    「n 文字で切る」は根拠が無く、途中で切れた文が外に出る
+  - `og:url` は**恒久的な ID** かつ**装飾のない正規形**。このサイトは
+    `trailingSlash: true` なので `https://creatoryard.io/s/<id>/` の
+    **末尾スラッシュ有りに統一する**（有り無しの 2 通りを作らない）
+  - 画像を後から差し替えるなら**ファイル名を変える**必要がある
+    （URL でキャッシュされるため）
+
 ## 35. metadata は Server Component だけ（Next.js 公式） — 段階 A の前提が 1 つ崩れる
 - 出典: https://nextjs.org/docs/app/api-reference/functions/generate-metadata
   （2026-08-09 確認・ページ記載の版は 16.3.0）
