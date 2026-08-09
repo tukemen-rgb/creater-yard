@@ -25,6 +25,7 @@ import http from 'node:http'
 import path from 'node:path'
 
 import { Accounts, AuthError } from './lib/auth.mjs'
+import { clientKey } from './lib/client-ip.mjs'
 import { buildStoriesFeed, SITE_ORIGIN } from './lib/feed.mjs'
 import { Stories, StoryError } from './lib/stories.mjs'
 
@@ -76,7 +77,16 @@ function readJsonBody(req) {
   })
 }
 
-export function createApiServer({ dir, now } = {}) {
+/**
+ * 逆プロキシのうしろに置くときだけ、訪問者の IP を運ぶヘッダ名を渡す
+ * （例: `x-real-ip`）。**既定は未設定＝ヘッダを信じない。**
+ * 理由は server/lib/client-ip.mjs に書いた（相手が自由に名乗れるため）。
+ */
+export function createApiServer({
+  dir,
+  now,
+  trustedIpHeader = process.env.CY_CLIENT_IP_HEADER ?? null,
+} = {}) {
   const usersDir = dir ?? path.join(process.cwd(), 'data', 'users')
   const accounts = new Accounts({ dir: usersDir, ...(now ? { now } : {}) })
   // stories は users の隣（data/stories）。試験でも同じ相対関係になる
@@ -136,9 +146,12 @@ export function createApiServer({ dir, now } = {}) {
         const account = accounts.login({
           handle: body.handle,
           password: body.password,
-          // バックオフの単位はソケットの相手アドレス。個人の行動計測ではなく
-          // 総当たりを鈍らせるためだけに使い、保存もしない
-          clientKey: req.socket.remoteAddress ?? 'unknown',
+          // バックオフの単位は相手のアドレス。個人の行動計測ではなく
+          // 総当たりを鈍らせるためだけに使い、保存もしない。
+          // 逆プロキシの下では socket が常に 127.0.0.1 になり、鍵が
+          // 全利用者で 1 つになってしまうので、信じると決めたヘッダが
+          // あればそちらを使う（server/lib/client-ip.mjs）
+          clientKey: clientKey(req, trustedIpHeader),
         })
         const token = accounts.issueToken(account)
         send(200, { account, ...token })

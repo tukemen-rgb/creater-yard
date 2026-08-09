@@ -13,6 +13,7 @@
     "stories:test": "node --test server/stories.test.mjs",
     "static:test": "node --test server/stories-static.test.mjs",
     "og:test": "node --test server/og.test.mjs",
+    "clientip:test": "node --test server/client-ip.test.mjs",
     "api": "node server/api.mjs",
     "typecheck": "tsc --noEmit"
   },

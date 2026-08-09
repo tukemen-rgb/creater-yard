@@ -344,3 +344,89 @@ test('CORS の許可メソッドに PUT が入っている（別オリジンか�
   assert.ok(methods.includes('POST'))
   assert.ok(methods.includes('GET'))
 })
+
+// ここから下は designs 2026-08-09 23:45 の分。
+// 逆プロキシ（proxy_pass http://127.0.0.1:3010）の下では socket の相手が
+// 常に 127.0.0.1 になり、IP 単位のバックオフが全利用者で 1 つになる。
+// 誰かが数回わざと失敗させるだけで全員が締め出される、が直前の姿だった。
+
+/** 試験ごとに独立したサーバーを立てる（締めの状態を他の試験に持ち込まない）。 */
+async function freshApi(options = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cy-api-ip-'))
+  const srv = createApiServer({ dir: path.join(dir, 'users'), ...options })
+  await new Promise((resolve) => srv.listen(0, '127.0.0.1', resolve))
+  const at = `http://127.0.0.1:${srv.address().port}`
+  const call = (pathName, body, headers = {}) =>
+    fetch(`${at}${pathName}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+    })
+  return { srv, call }
+}
+
+const PW = 'correct-horse-1'
+
+test('信じるヘッダを設定すると、締めが相手ごとに分かれる', async () => {
+  const { srv, call } = await freshApi({ trustedIpHeader: 'x-real-ip' })
+  try {
+    await call('/api/auth/register', { handle: 'target1', password: PW })
+    await call('/api/auth/register', { handle: 'target2', password: PW })
+
+    // 1.1.1.1 から target1 に 5 回失敗させる
+    for (let i = 0; i < 5; i++) {
+      await call(
+        '/api/auth/login',
+        { handle: 'target1', password: 'wrong-password-1' },
+        { 'X-Real-IP': '1.1.1.1' },
+      )
+    }
+
+    // 別の相手（2.2.2.2）は巻き添えにならない
+    const other = await call(
+      '/api/auth/login',
+      { handle: 'target2', password: PW },
+      { 'X-Real-IP': '2.2.2.2' },
+    )
+    assert.equal(other.status, 200, '無関係の利用者が締め出されている')
+
+    // 失敗させた相手は締められている
+    const same = await call(
+      '/api/auth/login',
+      { handle: 'target2', password: PW },
+      { 'X-Real-IP': '1.1.1.1' },
+    )
+    assert.equal(same.status, 429, '総当たりした相手が締められていない')
+  } finally {
+    srv.close()
+  }
+})
+
+// ここが逆になると穴が開く。信じない設定でヘッダを読んでしまうと、
+// API を直接叩ける相手が毎回違う IP を名乗って締めを素通りできる。
+test('信じるヘッダを設定しなければ、ヘッダを付けても無視される', async () => {
+  const { srv, call } = await freshApi()
+  try {
+    await call('/api/auth/register', { handle: 'target1', password: PW })
+    await call('/api/auth/register', { handle: 'target2', password: PW })
+
+    // 毎回違う IP を名乗りながら 5 回失敗させる
+    for (let i = 0; i < 5; i++) {
+      await call(
+        '/api/auth/login',
+        { handle: 'target1', password: 'wrong-password-1' },
+        { 'X-Real-IP': `9.9.9.${i}` },
+      )
+    }
+
+    // ヘッダを見ていないなら、名乗りを変えても同じ鍵に積まれて締められる
+    const res = await call(
+      '/api/auth/login',
+      { handle: 'target2', password: PW },
+      { 'X-Real-IP': '9.9.9.99' },
+    )
+    assert.equal(res.status, 429, '信じない設定なのにヘッダで締めを回避できている')
+  } finally {
+    srv.close()
+  }
+})
