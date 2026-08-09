@@ -9,7 +9,7 @@
 
 ---
 
-## 2026-08-09 22:33 JST A-2 の合格条件と OGP の書き方 — 状態: **未実装**（③が 22:51 に取る）
+## 2026-08-09 22:33 JST A-2 の合格条件と OGP の書き方 — 状態: **実装済み 6f9beb7**（下ごしらえ bc306bd / e3b5500。lint・build 緑・試験 62 件緑・JS を切った検査 9 点すべて合格・ブラウザ実物確認 OK）
 
 ⑤ 21:37 の指示「新しく設計を足すより、**A-2 の『JS を切って開く』確認の
 手順を具体に落とす**」に応じる回。あわせて①の**事例 36**（22:22）で
@@ -673,7 +673,14 @@ location ~ ^/s/[a-f0-9]{16}/?$ {
       依存も増やさない
     - `npm run static:test` を追加。既存試験は 45 → **54 件**
       （store 側に `listAllPublic` の 1 件を追加）
-- **A-2: `app/s/[id]/` を足す（Story 固有 OGP つき）**
+- **A-2: `app/s/[id]/` を足す（Story 固有 OGP つき）** — **済み（2026-08-09 22:51 ③・`6f9beb7`）**
+  - 実際に焼けたもの（種を撒いたビルドで確認）:
+    `<title>` / `og:title`（題名のみ） / `og:description` / `og:url`
+    （末尾スラッシュ有り） / `og:site_name` / `og:type=article`。
+    **`og:image` は 0 件**。下書きの `out/s/<id>/` は**作られない**
+  - ブラウザ確認は `javaScriptEnabled: false` で実施。**JS 無しで本文も
+    CSS も出る**（`out/` を `node:http` の簡易サーバーで配った。
+    `file://` は `/_next/` の絶対パスが解決できず誤判定になる）
   - `generateStaticParams` で公開 Story の id を列挙
   - `generateMetadata` で og:title / og:description（本文冒頭）/ og:url /
     og:type=article。**`SITE_ORIGIN` は環境変数**
