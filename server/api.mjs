@@ -26,7 +26,7 @@ import path from 'node:path'
 
 import { Accounts, AuthError } from './lib/auth.mjs'
 import { clientKey } from './lib/client-ip.mjs'
-import { buildStoriesFeed, SITE_ORIGIN } from './lib/feed.mjs'
+import { buildStoriesFeed, siteOrigin } from './lib/feed.mjs'
 import { Stories, StoryError } from './lib/stories.mjs'
 
 /** JSON body の上限。認証系の入力に 8KB を超える正当な理由はない。 */
@@ -185,7 +185,6 @@ export function createApiServer({
         }
         // tag は 50 字以内・制御文字とスラッシュを拒否（designs 00:22）
         const tag = params.get('tag')
-        // eslint-disable-next-line no-control-regex
         if (tag !== null && (tag.length === 0 || tag.length > 50 || /[\x00-\x1f/\\]/.test(tag))) {
           send(400, { error: 'tag の形式が不正です。' })
           return
@@ -215,13 +214,20 @@ export function createApiServer({
         })
         res.end(xml)
       }
+      // SITE_ORIGIN が無ければフィードを配らない。RSS の URL は購読の
+      // 永続契約なので、それらしい嘘の URL を配るほうが害が大きい
+      // （designs 2026-08-10 02:33）。設定漏れだと分かる文言で断る
+      if (route.startsWith('GET /api/feeds/') && !siteOrigin()) {
+        send(503, { error: 'フィードは準備中です。' })
+        return
+      }
       if (route === 'GET /api/feeds/stories.xml') {
         // 直近 30 件だけ。feed は「新着を知る」ためのもので全量アーカイブではない
         const { stories: latest } = stories.listPublic({ page: 1, perPage: 30 })
         sendFeed(
           buildStoriesFeed({
             title: 'CreatorYard — 新着の制作記録',
-            link: `${SITE_ORIGIN}/stories/`,
+            link: `${siteOrigin()}/stories/`,
             description: 'ゲームを作る人の制作記録（Creator Story）の新着。',
             stories: latest,
           }),
@@ -235,7 +241,7 @@ export function createApiServer({
         sendFeed(
           buildStoriesFeed({
             title: `${author} の制作記録 — CreatorYard`,
-            link: `${SITE_ORIGIN}/w/${author}/`,
+            link: `${siteOrigin()}/w/${author}/`,
             description: `${author} の Creator Story の新着。`,
             stories: latest,
           }),

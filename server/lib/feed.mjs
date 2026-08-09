@@ -6,11 +6,23 @@
  *   - channel は title / link / description の 3 つ必須
  *   - item は title＋link＋pubDate（RFC 822 系。Date#toUTCString で足りる）
  *
- * サイトのオリジンはドメイン決定待ちのため SITE_ORIGIN 環境変数で受ける
- * （未設定はローカル確認用の値。本番は運用が設定する）。
+ * サイトのオリジンは SITE_ORIGIN 環境変数で受ける。**既定値は置かない。**
+ *
+ * 以前は未設定のとき `http://localhost:3000` にしていたが、外した
+ * （designs 2026-08-10 02:33）。**RSS の URL は購読の永続契約**
+ * （proposals 2026-08-08 21:12）なので、設定を入れ忘れたまま配ると
+ * **購読者の手元に localhost の URL が永久に残る**。読み手の側からは
+ * 直しようがない。空文字なら**フィードを配らない**（api.mjs が 503）。
  */
 
-export const SITE_ORIGIN = (process.env.SITE_ORIGIN ?? 'http://localhost:3000').replace(/\/$/, '')
+/**
+ * 読み込み時の定数ではなく**呼ぶたびに読む**。定数にすると、
+ * 環境変数を後から差し替えた場合（試験・起動順の違い）に効かない。
+ * lib/og.ts の siteOrigin と同じ形にそろえてある。
+ */
+export function siteOrigin() {
+  return (process.env.SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
+}
 
 function escapeXml(value) {
   return String(value ?? '')
@@ -32,8 +44,8 @@ export function buildStoriesFeed({ title, link, description, stories }) {
     .map(
       (story) => `    <item>
       <title>${escapeXml(story.title)}</title>
-      <link>${escapeXml(`${SITE_ORIGIN}/s/${story.id}/`)}</link>
-      <guid isPermaLink="true">${escapeXml(`${SITE_ORIGIN}/s/${story.id}/`)}</guid>
+      <link>${escapeXml(`${siteOrigin()}/s/${story.id}/`)}</link>
+      <guid isPermaLink="true">${escapeXml(`${siteOrigin()}/s/${story.id}/`)}</guid>
       <pubDate>${new Date(story.createdAt).toUTCString()}</pubDate>
       <description>${escapeXml(excerpt(story.body))}</description>
     </item>`,

@@ -10,6 +10,9 @@ let server
 let base
 
 before(async () => {
+  // RSS の試験は絶対 URL を出すので、オリジンが要る。既定値は
+  // 置かない決めになった（designs 2026-08-10 02:33）ので、ここで入れる
+  process.env.SITE_ORIGIN ??= 'https://creatoryard.io'
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cy-api-'))
   server = createApiServer({ dir: path.join(dir, 'users') })
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -428,5 +431,19 @@ test('信じるヘッダを設定しなければ、ヘッダを付けても無�
     assert.equal(res.status, 429, '信じない設定なのにヘッダで締めを回避できている')
   } finally {
     srv.close()
+  }
+})
+
+// designs 2026-08-10 02:33（A-4）。RSS の URL は購読の永続契約なので、
+// SITE_ORIGIN を入れ忘れたまま配ると購読者の手元に嘘の URL が永久に残る。
+test('SITE_ORIGIN が無いときはフィードを配らない', async () => {
+  const before = process.env.SITE_ORIGIN
+  try {
+    delete process.env.SITE_ORIGIN
+    const res = await fetch(`${base}/api/feeds/stories.xml`)
+    assert.equal(res.status, 503, '既定値が復活していないか')
+  } finally {
+    if (before === undefined) delete process.env.SITE_ORIGIN
+    else process.env.SITE_ORIGIN = before
   }
 })
