@@ -9,6 +9,121 @@
 
 ---
 
+## 2026-08-10 00:34 JST A-3（個人ページとタグページを焼く）＋ `rel="canonical"` — 状態: **未実装**（③が次の周で取る）
+
+mediation の最新指示（23:35「A-3 より先に総当たり対策を」）は **23:44 に
+実装まで済んでいる**ので、proposals の最新の未設計＝**提案 26
+（`rel="canonical"`）**を取る。①が「A-3 と同じ回で」と書いているので、
+**A-3 と 1 つの設計にまとめる**。
+
+### 変更対象ファイル
+
+| ファイル | 変更 |
+| --- | --- |
+| `app/w/[handle]/page.tsx` | **新規**。Server Component |
+| `app/tags/[tag]/page.tsx` | **新規**。Server Component |
+| `app/w/page.tsx` / `app/tags/page.tsx` | 表示を切り出した部品に置き換え（シェルは**残す**） |
+| `components/StoryList.tsx` | **新規**。一覧の表示部品（焼く側とシェル側で共有） |
+| `app/s/[id]/page.tsx` | `alternates.canonical` を足すだけ |
+| `lib/og.ts` | タグの URL を作る口を足す（下記） |
+
+### データモデル
+
+**変更なし。**A-1 の `publicHandles()` / `publicTags()` /
+`readPublicStories({ author, tag })` をそのまま使う。
+
+### 経路・画面
+
+| 経路 | 焼く元 | 中身 |
+| --- | --- | --- |
+| `/w/<handle>/` | `publicHandles()` | `readPublicStories({ author: handle })` |
+| `/tags/<tag>/` | `publicTags()` | `readPublicStories({ tag })` |
+
+**見出しと文言はシェルに合わせる**（`/w` は「<handle> の制作記録」・
+「新しい順に並びます。」）。**件数は出さない** — 公開カウンタを作らない
+決めがあるので、「N 件」の類は焼く側でも書かない。
+
+#### 空のときの受け皿（**A-2 で踏んだ穴が 2 回来る**）
+
+`generateStaticParams` が空の配列を返すとビルドごと落ちる
+（A-2 の 361d6ea で確認済み）。**公開 Story が 0 件なら、公開ハンドルも
+公開タグも 0 件**なので、**両方に受け皿が要る**。
+
+- 受け皿は **`_none`**（両方）。先頭の `_` は `HANDLE_RE`
+  （`/^[a-z0-9][a-z0-9_-]{2,31}$/`）の 1 文字目に通らないので、
+  **実在のハンドルとぶつからない**
+- タグ側は `normalizeTag` が `_none` を作り得るが、**受け皿を焼くのは
+  タグが 0 件のときだけ**なので、ぶつかりようがない（在るなら
+  そのタグが焼かれ、受け皿は出ない）
+- 中身は A-2 と同じ「見つかりません」。どこからもリンクしない
+
+#### `rel="canonical"`（提案 26）
+
+3 つの経路すべてに入れる。**値は `og:url` と同じもの**を使う。
+
+- **同じ値を 2 か所に書くので、必ず `lib/og.ts` の `absoluteUrl` から
+  取る。**ずれると「og が指す URL と canonical が違う」という一番
+  よくない状態になる（①の注意）
+- `SITE_ORIGIN` が無ければ**どちらも出さない**（A-2 と同じ決め）
+- **リダイレクトは今回やらない。**Google の並びでは一番強いが
+  nginx の仕事なので**段階 B**（事例 38）
+
+#### タグの URL は**必ず encode する**
+
+タグは日本語が入る（「当たり判定」など）。`absoluteUrl` に生の文字列を
+渡すと、`og:url` と canonical に生の UTF-8 が乗る。
+**`encodeURIComponent(tag)` を通した値で URL を組む。**
+`lib/og.ts` に `tagUrl(tag)` を足し、**そこ 1 か所で encode する**
+（呼ぶ側が encode を忘れる余地を残さない）。
+
+`generateStaticParams` に渡すのは**生のタグ**でよい（Next が
+ファイル名を作るときに encode する）。**URL を作るときだけ encode。**
+ここを混同すると、焼かれる場所と canonical が食い違う。
+
+### 試験計画
+
+**単体（`server/og.test.mjs` に追加）:**
+
+- `tagUrl('godot')` → `https://creatoryard.io/tags/godot/`
+- `tagUrl('当たり判定')` → `.../tags/%E5%BD%93%E3%81%9F%E3%82%8A%E5%88%A4%E5%AE%9A/`
+- `tagUrl` は `SITE_ORIGIN` が無ければ `null`
+- `/` を含むタグが**経路を割らない**（`encodeURIComponent` は `/` を
+  `%2F` にする。**そのまま組み立てないことの確認**）
+
+**焼いたものの検査**（A-2 の 9 点をこの 2 経路にも当てる。加えて）:
+
+| # | 見るもの |
+| --- | --- |
+| 10 | `/w/<handle>/` に **canonical が入り、`og:url` と同じ値**である |
+| 11 | `/tags/<日本語タグ>/` の canonical が **percent-encode されている** |
+| 12 | **件数の数字が焼かれていない**（「N 件」の類が無い） |
+| 13 | 公開 Story が 0 件のビルドで **`_none` が 2 つ焼かれ、ビルドが通る** |
+| 14 | 公開 Story が 1 件以上のビルドで **`_none` が焼かれない** |
+| 15 | **下書きしか書いていない人のハンドルが `/w/` に焼かれない** |
+
+**15 は新しい脅威**なので、種を撒くときに
+「下書きだけ書いた人」を 1 人足す。
+
+**規則 13 に従い、素の `npm run build`（データ無し）も通す。**
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| **下書きしか無い人の存在が `/w/` の URL で漏れる** | `publicHandles()` は `readPublicStories()`（公開のみ）から作る。**検査 15 で毎回確かめる** |
+| **下書きだけに在るタグが `/tags/` の URL で漏れる** | `publicTagVocabulary()` が公開分だけを見る（A-1 で実装済み）。検査 9（`out/` の grep）で確かめる |
+| **タグ名で経路を割られる**（`../` や `/` を含むタグ） | URL は `tagUrl` が `encodeURIComponent` して組む。焼き先は Next が決める。**手で文字列を継がない** |
+| canonical が別サイトを指す | 値は `absoluteUrl`（`SITE_ORIGIN` 起点）からしか作らない。利用者の入力は**経路の部分にしか入らず**、しかも encode される |
+| `SITE_ORIGIN` 未設定で嘘の URL | og:url・canonical とも**出さない**（A-2 と同じ） |
+| 受け皿 `_none` が実在の人とぶつかる | 先頭 `_` は `HANDLE_RE` に通らない。**そもそも 0 件のときしか焼かない** |
+
+### ③への注意
+
+- **1 周で A-3 まで。**A-4（sitemap / robots）に手を伸ばさない
+- シェル 2 枚（`app/w/page.tsx`・`app/tags/page.tsx`）は**消さない**
+- `components/StoryList.tsx` は**状態も効果も持たない**形にする
+  （Server / Client の両方から呼ぶ。`StoryView` と同じ作り）
+
 ## 2026-08-09 23:44 JST 逆プロキシの下で総当たり対策を効かせる — 状態: **実装済み 6b584b0**（直し 361d6ea 込み。lint・build 緑・試験 71 件緑）
 
 ⑤ 23:35 の指示「**A-3 より先にこれを設計する**」に応じた回。②の設計と
