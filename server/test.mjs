@@ -297,6 +297,50 @@ test('画像ストア: 本人だけが添付でき、孤児は時間で消える
   assert.notEqual(store.meta(saved.id), null)
 })
 
+test('つまずき欄: 本文と未解決/解決を持て、本人以外は触れない（SPEC §1）', () => {
+  const stories = freshStories('story-hurdle')
+
+  // 既定は未解決
+  const made = stories.create(AUTHOR, {
+    title: '影が出ない',
+    body: 'ライトのモードを間違えていた。丸一日気づかなかった。',
+    hurdle: { text: 'リアルタイム影が出ない' },
+  })
+  assert.equal(made.hurdle.text, 'リアルタイム影が出ない')
+  assert.equal(made.hurdle.status, 'open')
+
+  // 保存したものが読み出せる（書いたつもりで消えていない）
+  assert.equal(stories.get(made.id).hurdle.status, 'open')
+
+  // 本人は解決へ切り替えられる。**公開状態は巻き添えにならない**
+  const fixed = stories.update(made.id, AUTHOR, {
+    title: made.title,
+    body: made.body,
+    hurdle: { text: made.hurdle.text, status: 'resolved' },
+  })
+  assert.equal(fixed.hurdle.status, 'resolved')
+  assert.equal(fixed.status, 'public', 'hurdle.status を触ってもレコードの公開状態は動かない')
+
+  // 本人以外は編集できない（つまずきも道連れで守られる）
+  assert.throws(
+    () => stories.update(made.id, OTHER, { title: 'x', body: 'よそのStoryを書き換える', hurdle: { text: 'a' } }),
+    StoryError,
+  )
+  assert.equal(stories.get(made.id).hurdle.status, 'resolved')
+
+  // 空で送れば消える（PUT は置き換え）
+  const cleared = stories.update(made.id, AUTHOR, { title: made.title, body: made.body })
+  assert.equal(cleared.hurdle, null)
+
+  // 上限を超えた本文は切り詰める（緩めない）
+  const long = stories.create(AUTHOR, {
+    title: '長いつまずき',
+    body: '本文はここに十分な長さで書いてある。',
+    hurdle: { text: 'あ'.repeat(500) },
+  })
+  assert.equal(long.hurdle.text.length, 200)
+})
+
 // ---- 通報 ----
 
 test('通報: 受付番号が返り、運営が状態を更新できる', async () => {

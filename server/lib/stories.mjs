@@ -37,6 +37,8 @@ export const STORY_LIMITS = {
   tagsPerAxis: 5,
   tagMax: 24,
   gameUrlMax: 300,
+  /** つまずき欄の本文。SPEC §1 の「短文」。緩めるのは人の判断（CLAUDE.md）。 */
+  hurdleMax: 200,
   /** 1 人あたりの保持件数。書き潰しでディスクを埋められないための上限。 */
   maxPerAuthor: 500,
   perPage: 20,
@@ -60,6 +62,21 @@ function cleanText(value, max) {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
     .slice(0, max)
+}
+
+/**
+ * つまずき欄（SPEC.md §1）。任意の短文＋未解決/解決の状態を持てる。
+ *
+ * レコード直下の `status`（公開状態）と名前がぶつかるので、**入れ子のまま**扱う。
+ * 平坦化すると「解決にした」つもりが「公開にした」になりかねない。
+ *
+ * 本文が空なら `null` を返す。PUT は置き換えなので、空で送れば消える。
+ * 解決数の公開カウンタは作らない（SPEC の但し書き）。
+ */
+function normalizeHurdle(value) {
+  const text = cleanText(value?.text, STORY_LIMITS.hurdleMax)
+  if (!text) return null
+  return { text, status: value?.status === 'resolved' ? 'resolved' : 'open' }
 }
 
 /**
@@ -233,6 +250,7 @@ export class StoryStore {
       toolTags: normalizeTags(input.toolTags, 'ツールタグ'),
       topicTags: normalizeTags(input.topicTags, 'つまずき・トピックタグ'),
       gameUrl: normalizeGameUrl(input.gameUrl),
+      hurdle: normalizeHurdle(input.hurdle),
     }
   }
 
