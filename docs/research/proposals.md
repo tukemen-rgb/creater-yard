@@ -14,6 +14,72 @@
 
 ---
 
+## 2026-08-10 12:13 JST **PR #4 に、もう一つの Creator Story MVP が丸ごと存在した**（gdp の統合依頼・受領）
+
+- 状態: **未設計**（gdp からの実装依頼。優先度「高」。②が統合方針を設計する）
+- 根拠: 推測なし。**すべて `git` で数えた実測**（下の表）
+
+### 何が起きていたか
+
+gdp が 18 枠ぶりに発言し（Issue #1 12:02 JST）、**PR #4 を唯一の統合窓口として
+単一の本番候補にまとめよ**と依頼してきた。確かめたところ、この枝
+（`claude/autonomous-loop-setup-ndalj0`）とは**別に、Creator Story の MVP が
+まるごともう 1 つ実装されていた**。
+
+| 枝 | PR | 共通祖先からの独自コミット |
+| --- | --- | --- |
+| `claude/autonomous-loop-setup-ndalj0`（この枝） | なし | **190** |
+| `claude/creatoryard-handover-setup-4jufhg` | **#4**（draft・08-08 起票） | **36** |
+| `agent/partner-inquiry-spec` | #3（draft） | 3（Creator Partner の仕様のみ・コード無し） |
+
+共通祖先は `89b8c98`（引き継ぎ一式）。**両方ともそこから独立に MVP を作った。**
+
+### 実測した重なり（`docs/` と `.github/` を除いたファイル）
+
+| 区分 | 件数 | 中身 |
+| --- | --- | --- |
+| **両方にある** | **17** | うち実コードは **7**: `server/api.mjs`・`server/lib/auth.mjs`・`server/lib/stories.mjs`・`app/layout.tsx`・`app/page.tsx`・`app/login/page.tsx`・`app/write/page.tsx` |
+| **PR #4 だけ** | 48 | 画像添付（`server/lib/image.mjs`・`images.mjs`）／パスワード再設定（`mailer.mjs`）／通報窓口（`reports.mjs`・`/report`・`/admin/reports`）／ブラウザ内の保存（`lib/saved-stories.ts`・`/saved`）／**配備一式**（systemd 4 ユニット・`nginx.conf.example`・`backup.sh`・`healthcheck.sh`・`GO-LIVE.md`）／SSR（`page.server.tsx` 群）／`scripts/verify.mjs`・`demo-seed.mjs` |
+| **この枝だけ** | 25 | 静的書き出し（`lib/stories-static.ts`）／OGP・正規 URL（`lib/og.ts`）／`app/sitemap.ts`・`app/robots.ts`／RSS（`server/lib/feed.mjs`）／**client-IP の穴の修正**（`server/lib/client-ip.mjs`）／**試験 6 本** |
+
+### いちばん大きい食い違い — **正規 URL が 2 系統ある**
+
+| もの | この枝 | PR #4 |
+| --- | --- | --- |
+| Story | `/s/<id>/` | `/story/<id>/` |
+| 書き手 | `/w/<handle>/` | `/creators/<handle>/` |
+
+`app/layout.tsx`・`server/api.mjs`・`server/lib/auth.mjs`・`server/lib/stories.mjs` は
+**両方が独立に書いている**ので、素朴に merge すれば確実に衝突する。
+gdp の完了条件「未整理の重複 route・認証・データ形式が 0 件」は、ここを指している。
+
+### 提案する統合方針（②への申し送り。**まだ実装しない**）
+
+1. **どちらかを丸ごと採るのではなく、層で分けて採る。**
+   - **保存形式・認証・API（`server/`）は、先に「片方を土台に決める」**。
+     混ぜると Story の保存形式が二重定義になり、あとから直せない
+   - **画面（`app/`）は route を 1 系統に決めてから**寄せる
+2. **試験の数で土台を選ぶのではなく、`server/lib/stories.mjs` の保存形式を
+   実際に読み比べてから決める**（この枝は試験 6 本・PR #4 は `server/test.mjs` 1 本
+   ＋`verify.mjs`。数は判断材料の 1 つにすぎない）
+3. **この枝にしかない安全上の修正（`client-ip.mjs`）は、どちらを土台にしても
+   必ず入れる。**入れ忘れると、前段プロキシの裏でログイン待機が全員に効く穴が戻る
+4. **PR #4 にしかない配備一式は捨てない。**この枝には `docs/nginx.example.conf` しかなく、
+   systemd・バックアップ・死活監視は無い
+
+### 要判断（社長へ・新規 1 件）
+
+- **正規 URL をどちらにするか**（`/s/`・`/w/` か、`/story/`・`/creators/` か）。
+  まだ公開していないので**いま決めれば損は無い**が、公開後は動かせない。
+  Claude の推奨は **`/story/` と `/creators/`**（意味が読めば分かる・
+  GAMEYARD と同じ語感）。ただし**決めるのは社長**
+
+### この提案が変えないこと
+
+gdp が明示した禁止事項（main への merge・本番 deploy・force-push・履歴書き換え・
+新規 PR の作成・外部連絡）は**行わない**。標準制約にも触れない
+（依存を増やさない・決済を持たない・行動計測をしない）。
+
 ## 2026-08-10 10:22 JST 再ビルドは **重ならない仕組み**と**入れ替え方**をセットで決める（段階 B への申し送り）
 
 - 状態: **未設計**（要判断ではない。**実行は段階 B ＝社長の判断**）
