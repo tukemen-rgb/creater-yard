@@ -14,6 +14,79 @@
 
 ---
 
+## 2026-08-10 20:10 JST **RSS の URL が 3 層でずれている**（gdp の条件 3 に直接ぶつかる・実測あり）
+
+- 状態: **未設計**（②が 3b の設計に入れる）
+- 根拠: **推測なし。焼いた HTML・PR #4 の `api.mjs`・両枝の nginx 例を実際に読んだ**
+
+### gdp が 20:00 に置いた条件 3
+
+> **auto-discovery または可視リンクの URL と、実際に 200 を返す URL を一致させる。**
+
+**いまのまま 3b で `og.ts` を繋ぐと、この条件を満たせない。**
+
+### 実測した 3 層
+
+| 層 | 全体 RSS | 作者別 RSS |
+| --- | --- | --- |
+| **① 広告している URL**（この枝が焼く HTML） | `/stories/feed.xml` | **`/w/<handle>/feed.xml`** ← **旧 route** |
+| **② nginx の書き換え**（PR #4 の `deploy/nginx.conf.example`） | **無し** | **無し** |
+| **③ API の実体**（PR #4・③が 18:50 に入れた） | `/api/feeds/stories.xml` | **`/api/feeds/creators/<handle>.xml`** |
+
+焼いた実物（この枝・`CY_SITE_ORIGIN` あり）:
+
+```html
+<link rel="alternate" type="application/rss+xml" href="/stories/feed.xml"/>
+```
+
+**この枝の nginx 例には書き換えがある**（`docs/nginx.example.conf`）:
+
+```nginx
+location = /stories/feed.xml {
+    proxy_pass http://127.0.0.1:3010/api/feeds/stories.xml;
+}
+location ~ ^/w/([a-z0-9][a-z0-9_-]{2,31})/feed\.xml$ { ... }
+```
+
+**しかし PR #4 の nginx 例には無い**（`/api/` と `/sitemap-stories.xml` だけ）。
+**土台は PR #4 なので、このままだと `/stories/feed.xml` は 404 になる。**
+
+さらに `handleFeedPath()` は **`/w/<handle>/feed.xml`** を返す。
+**`/w/` は正規 URL から外れた旧 route**（A-1）。③は API 側を
+`/api/feeds/creators/<handle>.xml` と正しく `/creators/` に合わせたが、
+**広告する側が追いついていない。**
+
+### 提案する直し方（②が 3b の設計で決める。①は決めない）
+
+**選べる形が 2 つある。どちらも条件 3 を満たすが、性質が違う。**
+
+| | 案 X: 広告する URL を API の実体に合わせる | 案 Y: nginx で書き換える |
+| --- | --- | --- |
+| 広告する URL | `/api/feeds/stories.xml`・`/api/feeds/creators/<handle>.xml` | `/stories/feed.xml`・`/creators/<handle>/feed.xml` |
+| nginx の追加設定 | **要らない** | **要る**（PR #4 の例に足す） |
+| 見た目 | 購読者に `/api/` が見える | きれい |
+| **設定を忘れたときの壊れ方** | **壊れない** | **404。しかも購読者の手元に残った URL は直せない** |
+| 配備の手間 | 無し | nginx 設定が本番と例で食い違うと事故 |
+
+**①の見立て**: **案 X を推す。**理由は「壊れ方」の欄。RSS の URL は
+**購読の永続契約**で、あとから直せない（この枝が `CY_SITE_ORIGIN` の既定値を
+外したのと同じ理由）。`/api/` が見えることの醜さより、**設定 1 行の抜けで
+購読が全部死ぬこと**のほうが重い。
+
+**ただし決めるのは②。**案 Y を採るなら、**PR #4 の `deploy/nginx.conf.example` に
+書き換えを足すのも同じ batch に入れること**（例だけ古いまま残さない）。
+
+### 3b で必ず確かめること（gdp の検証指標をなぞる）
+
+- **焼いた HTML の `href` を実際に取り出し、その URL を HTTP で叩いて 200**
+  （目で見て一致、で済ませない。**指標「発見リンクと応答URLの不一致: 0件」**）
+- 作者ページの可視リンクと autodiscovery の**両方**（gdp 条件 1・2）
+- **`/w/` が 1 件も残っていない**こと（A-1・旧 route）
+
+### この提案が触れないもの
+
+個人追跡なし・Cookie なし・外部 Analytics なし（gdp 条件 5）。依存を増やさない。
+
 ## 2026-08-10 18:10 JST **「タグ名の安定した昇順」は素直に書くと安定しない**（③への申し送り・実測あり）
 
 - 状態: **未設計**（②が I-1' に足すか、③が実装時に直接使う）
