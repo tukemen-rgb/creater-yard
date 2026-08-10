@@ -9,6 +9,139 @@
 
 ---
 
+## 2026-08-10 20:33 JST I-1'-3 を **3a / 3b に割る**＋**RSS の URL を案 X に決める** — 状態: **未実装**
+
+⑤の 19:38 の裁定（`og.ts` は 1 周に収まらないので割る）と、gdp の 20:00 の
+追加条件 7 件（A-6）、①の 20:10 の実測（RSS の URL が 3 層でずれている）を反映する。
+**新しい機能は増やさない。割ることと、URL を 1 つに決めることだけ。**
+
+### 決定 1 — **RSS の公開 URL は `/api/feeds/...` にする（案 X）**
+
+①が 2 案を並べて「決めるのは②」と渡してきた。**②は案 X を採る。**
+
+| | 案 X（採用） | 案 Y（不採用） |
+| --- | --- | --- |
+| 広告する URL | `/api/feeds/stories.xml`<br>`/api/feeds/creators/<handle>.xml` | `/stories/feed.xml`<br>`/creators/<handle>/feed.xml` |
+| nginx の追加設定 | **要らない** | 要る |
+| 設定を忘れたときの壊れ方 | 壊れない | **404。購読者の手元の URL は直せない** |
+
+**決め手（②が確かめた）: PR #4 の `deploy/nginx.conf.example` は
+すでに `location /api/` を API プロセスへ通している。**
+つまり **`/api/feeds/...` は設定を 1 行も足さずに今日から 200 で返る。**
+案 Y は「まだ書かれていない書き換え」に購読の永続契約を賭けることになる。
+
+**`/api/` が URL に見えるのは確かに美しくない。**その代償は受け入れる。
+**あとから直せる**からでもある — 将来きれいな URL を足したくなったら、
+`/stories/feed.xml` を**追加**して両方 200 にすればよい。
+**足すのは安全、消すのは危険。**いま選ぶべきは「消さずに済むほう」。
+
+→ **`lib/og.ts` の `SITE_FEED` と `handleFeedPath()` を書き換える。**
+
+```ts
+export const SITE_FEED = '/api/feeds/stories.xml'
+export function handleFeedPath(handle: string) {
+  return `/api/feeds/creators/${handle}.xml`   // 旧: /w/<handle>/feed.xml
+}
+```
+
+**`/w/` は 1 か所も残さない**（A-1 の旧 route）。
+
+---
+
+## I-1'-3a「`lib/og.ts` を関数と試験だけ移す」— 状態: **未実装**（次の実装対象の候補）
+
+**画面には繋がない。**単体で緑にできる範囲だけ。
+
+### 変更対象ファイル
+
+| ファイル | 中身 |
+| --- | --- |
+| `lib/og.ts`（新規・PR #4 に無い） | この枝の 131 行を移す。**下の 3 点だけ書き換える** |
+| `server/og.test.mjs`（新規） | この枝の試験を移す。期待値を新しい URL に直す |
+
+**書き換える 3 点だけ:**
+
+1. `storyUrl(id)` → `/story/${id}/`（旧 `/s/`）
+2. `handleUrl(handle)` → `/creators/${handle}/`（旧 `/w/`）
+3. `SITE_FEED` と `handleFeedPath()` → 上の決定 1（`/api/feeds/...`）
+
+`ogDescription`・`tagUrl`・`fileUrl`・`absoluteUrl`・`alternatesFor`・`SITE_OG` は
+**そのまま**（`CY_SITE_ORIGIN` は `5540b3d` で対応済み）。
+
+### データモデル / 経路・画面
+
+**どちらも変えない。**3a は**関数を置くだけ**で、まだ誰も呼ばない。
+
+### 試験計画
+
+- 移した `server/og.test.mjs` が緑（`CY_SITE_ORIGIN` の有無・末尾スラッシュ・
+  日本語タグの encode）
+- **新旧 URL の突き合わせ**: `storyUrl` が `/s/` を返さない・`handleUrl` が `/w/` を
+  返さない・`SITE_FEED` が `/stories/feed.xml` でないことを**試験で固定する**
+- lint・型検査・両 build。**画面を触らないので build は緑のまま**のはず
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| 旧 URL が残り、**同じ Story に 200 の URL が 2 つ**できる | 3a では経路を作らないので**まだ起きない**。3b で `/s/` `/w/` を消すまでが一続き。**3a だけで止めない** |
+| `CY_SITE_ORIGIN` 未設定で嘘の絶対 URL | 既存の「未設定なら `null`」を**変えない**。試験で固定 |
+| 関数だけ入って誰も呼ばず、**入れたつもりで効いていない** | **3b が終わるまで「OGP 済み」と報告しない。**中間状態だと明記する |
+
+---
+
+## I-1'-3b「画面に繋ぐ＋RSS の発見導線」— 状態: **未実装**（3a の後）
+
+gdp の A-6 条件 1・2・3 をここで満たす。**gdp が「3b と同じ batch に集約」と指定した。**
+
+### 変更対象ファイル
+
+| ファイル | 中身 |
+| --- | --- |
+| `app/story/[id]/page.server.tsx` ほか | `generateMetadata` で canonical・`og:url`（`storyUrl`） |
+| `app/creators/[handle]/page.server.tsx` ほか | 同上（`handleUrl`）＋**作者別 RSS の autodiscovery と可視リンク** |
+| `app/layout.tsx` | 共通 head の `rel="alternate"`（全体 RSS）※`alternatesFor` |
+| `app/stories/page.*.tsx` | **全体 RSS への見えるリンク**（gdp C-4「autodiscovery だけで終わらせない」） |
+| `app/tags/*`・トップ | canonical。**④が 15:10 に指摘した「トップに canonical と og:url が無い」もここで直す** |
+| 削除 | `/s/`・`/w/` に相当する経路が PR #4 側に無いことを確認（**無ければ何も消さない**） |
+
+### 経路・画面
+
+```
+/                    canonical（④の指摘・いま無い）
+/stories/            全体 RSS への**見えるリンク**＋head の alternate
+/story/<id>/         canonical・og:url
+/creators/<handle>/  canonical・og:url・**作者別 RSS の可視リンク＋autodiscovery**
+```
+
+### 試験計画 — **gdp の指標「発見リンクと応答URLの不一致: 0件」を機械で確かめる**
+
+1. **焼いた／返した HTML から `href` を実際に取り出し、その URL を HTTP で叩いて 200。**
+   目で見て一致、で済ませない。全体・作者別の両方
+2. `Content-Type` が `application/rss+xml; charset=utf-8`
+3. **`/w/` と `/s/` が出力に 0 件**（HTML・sitemap・RSS の全部を grep）
+4. canonical と `og:url` が**同じ値**（段階 A で作った機械比較を流用）
+5. **JS を切って** `/story/<id>/` にタイトル・本文・公開日が出る（gdp C-3）
+6. `CY_SITE_ORIGIN` 未設定で canonical・`og:url` が**出ない**
+7. push 後の **remote head SHA** で lint・型検査・全試験・両 build・`verify.mjs`
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| **発見リンクが 404** — 購読者は気づかず、こちらも気づかない | 試験 1 で**リンクを取り出して叩く**。人の目に頼らない |
+| 下書き・削除済みが canonical/OGP から漏れる | 公開分だけを渡す。**試験 3 の grep を下書き id でも回す** |
+| メタデータの浅いマージで親の `openGraph` が消える | 段階 A-6 で踏んだ穴。**`...SITE_OG` を必ず展開**し、焼いた実物の `og:locale`・`og:site_name` を数える |
+| 個人追跡が紛れ込む | **リンクに UTM・クエリを付けない**（gdp 条件 5・「正規URLに追跡値0」） |
+
+**壊さないもの**: 依存 3 つ・決済なし・個人単位の計測なし・第三者 JS なし・上限は緩めない。
+
+### ③への申し送り（順番）
+
+**⑤の裁定と gdp の条件 7 のとおり: ①タグ B 案 → ②3a → ③3b。**
+**3a は 3b とセットで初めて意味を持つ**ので、3a が終わっても
+「OGP/canonical 済み」とは報告しない。
+
 ## 2026-08-10 18:33 JST I-1' に **10 番目「タグの件数を消し、名称の安定昇順にする」**を足す — 状態: **未実装**
 
 gdp が 18:00 に **B 案**を決めた（`gdp-acceptance.md` A-5）。①が 18:10 に
