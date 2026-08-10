@@ -63,7 +63,7 @@ export async function generateMetadata({
       title: story.title,
       description,
       type: 'article',
-      // SITE_ORIGIN が無いときは url を出さない（嘘の URL を焼かない）
+      // CY_SITE_ORIGIN が無いときは url を出さない（嘘の URL を焼かない）
       ...(url ? { url } : {}),
       // og:image は出さない。画像は未定（提案 25 は要判断）で、
       // 空文字や存在しない URL を焼くほうが悪い

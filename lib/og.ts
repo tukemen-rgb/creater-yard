@@ -56,7 +56,7 @@ export const SITE_FEED = '/stories/feed.xml'
  * **RSS の自動発見（`types`）を必ず含める**のが要点。ここを通さずに
  * `{ canonical }` だけ書くと、layout の `types` が消える。
  *
- * `canonical` は `SITE_ORIGIN` が無ければ渡さない（鍵ごと出さない）。
+ * `canonical` は `CY_SITE_ORIGIN` が無ければ渡さない（鍵ごと出さない）。
  * `feed` は個人ページだけ本人のものを指す。
  */
 export function alternatesFor(canonical: string | null, feed: string = SITE_FEED) {
@@ -116,11 +116,11 @@ export function fileUrl(path: string): string | null {
  * **一つの形に統一する**。このサイトは `trailingSlash: true` なので
  * 実体が `/s/<id>/` にあり、**末尾スラッシュ有り**に寄せる。
  *
- * `SITE_ORIGIN` が未設定なら null。**それらしい嘘の URL を焼くより、
+ * `CY_SITE_ORIGIN` が未設定なら null。**それらしい嘘の URL を焼くより、
  * 出ないほうが直しやすい**（既定値を置かないのは designs 22:33 の決め）。
  */
 function siteOrigin(): string {
-  return (process.env.SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
+  return (process.env.CY_SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
 }
 
 export function absoluteUrl(path: string): string | null {

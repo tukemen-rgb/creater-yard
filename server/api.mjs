@@ -214,7 +214,7 @@ export function createApiServer({
         })
         res.end(xml)
       }
-      // SITE_ORIGIN が無ければフィードを配らない。RSS の URL は購読の
+      // CY_SITE_ORIGIN が無ければフィードを配らない。RSS の URL は購読の
       // 永続契約なので、それらしい嘘の URL を配るほうが害が大きい
       // （designs 2026-08-10 02:33）。設定漏れだと分かる文言で断る
       if (route.startsWith('GET /api/feeds/') && !siteOrigin()) {

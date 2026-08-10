@@ -49,31 +49,31 @@ test('ちょうど 200 文字（句点なし）は切らない', () => {
 })
 
 // og:url は「恒久的な ID」なので 1 つの形に統一する（事例 36）。
-// SITE_ORIGIN の末尾スラッシュの有無で 2 通りにならないこと。
+// CY_SITE_ORIGIN の末尾スラッシュの有無で 2 通りにならないこと。
 test('og:url は末尾スラッシュ有りに揃う', () => {
-  const before = process.env.SITE_ORIGIN
+  const before = process.env.CY_SITE_ORIGIN
   try {
     for (const origin of ['https://creatoryard.io', 'https://creatoryard.io/']) {
-      process.env.SITE_ORIGIN = origin
+      process.env.CY_SITE_ORIGIN = origin
       assert.equal(absoluteUrl('/s/abc/'), 'https://creatoryard.io/s/abc/')
       assert.equal(absoluteUrl('/s/abc'), 'https://creatoryard.io/s/abc/')
     }
   } finally {
-    if (before === undefined) delete process.env.SITE_ORIGIN
-    else process.env.SITE_ORIGIN = before
+    if (before === undefined) delete process.env.CY_SITE_ORIGIN
+    else process.env.CY_SITE_ORIGIN = before
   }
 })
 
-test('SITE_ORIGIN が無ければ null（それらしい嘘の URL を作らない）', () => {
-  const before = process.env.SITE_ORIGIN
+test('CY_SITE_ORIGIN が無ければ null（それらしい嘘の URL を作らない）', () => {
+  const before = process.env.CY_SITE_ORIGIN
   try {
-    delete process.env.SITE_ORIGIN
+    delete process.env.CY_SITE_ORIGIN
     assert.equal(absoluteUrl('/s/abc/'), null)
-    process.env.SITE_ORIGIN = '   '
+    process.env.CY_SITE_ORIGIN = '   '
     assert.equal(absoluteUrl('/s/abc/'), null)
   } finally {
-    if (before === undefined) delete process.env.SITE_ORIGIN
-    else process.env.SITE_ORIGIN = before
+    if (before === undefined) delete process.env.CY_SITE_ORIGIN
+    else process.env.CY_SITE_ORIGIN = before
   }
 })
 
@@ -81,14 +81,14 @@ test('SITE_ORIGIN が無ければ null（それらしい嘘の URL を作らな�
 // タグには日本語が入る。encode を 1 か所に閉じたことの確認。
 
 function withOrigin(origin, fn) {
-  const before = process.env.SITE_ORIGIN
+  const before = process.env.CY_SITE_ORIGIN
   try {
-    if (origin === null) delete process.env.SITE_ORIGIN
-    else process.env.SITE_ORIGIN = origin
+    if (origin === null) delete process.env.CY_SITE_ORIGIN
+    else process.env.CY_SITE_ORIGIN = origin
     fn()
   } finally {
-    if (before === undefined) delete process.env.SITE_ORIGIN
-    else process.env.SITE_ORIGIN = before
+    if (before === undefined) delete process.env.CY_SITE_ORIGIN
+    else process.env.CY_SITE_ORIGIN = before
   }
 }
 
@@ -117,7 +117,7 @@ test('tagUrl: / を含むタグは経路を割らない', () => {
   })
 })
 
-test('tagUrl: SITE_ORIGIN が無ければ null', () => {
+test('tagUrl: CY_SITE_ORIGIN が無ければ null', () => {
   withOrigin(null, () => assert.equal(tagUrl('godot'), null))
 })
 
@@ -138,7 +138,7 @@ test('fileUrl は末尾スラッシュを付けない', () => {
   })
 })
 
-test('handleUrl / storyUrl / fileUrl も SITE_ORIGIN が無ければ null', () => {
+test('handleUrl / storyUrl / fileUrl も CY_SITE_ORIGIN が無ければ null', () => {
   withOrigin(null, () => {
     assert.equal(handleUrl('hana'), null)
     assert.equal(storyUrl('0123456789abcdef'), null)

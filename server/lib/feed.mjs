@@ -6,7 +6,7 @@
  *   - channel は title / link / description の 3 つ必須
  *   - item は title＋link＋pubDate（RFC 822 系。Date#toUTCString で足りる）
  *
- * サイトのオリジンは SITE_ORIGIN 環境変数で受ける。**既定値は置かない。**
+ * サイトのオリジンは CY_SITE_ORIGIN 環境変数で受ける。**既定値は置かない。**
  *
  * 以前は未設定のとき `http://localhost:3000` にしていたが、外した
  * （designs 2026-08-10 02:33）。**RSS の URL は購読の永続契約**
@@ -21,7 +21,7 @@
  * lib/og.ts の siteOrigin と同じ形にそろえてある。
  */
 export function siteOrigin() {
-  return (process.env.SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
+  return (process.env.CY_SITE_ORIGIN ?? '').trim().replace(/\/+$/, '')
 }
 
 function escapeXml(value) {

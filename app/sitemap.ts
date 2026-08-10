@@ -13,7 +13,7 @@
  *        `0.8` のような数字には根拠が無い
  *   5. 固定ページに `lastModified` を持たせない（09:20・10:20 補記）
  *
- * `SITE_ORIGIN` が無ければ**空を返す**。Google は
+ * `CY_SITE_ORIGIN` が無ければ**空を返す**。Google は
  * 「fully-qualified, absolute URLs」を求め「exactly as listed」
  * （書いたとおりに辿る）と書いているので、相対 URL で埋めると
  * **辿れない URL の一覧を配る**ことになる。空のほうが正直で害が無い。
@@ -38,7 +38,7 @@ function latestUpdate(stories: { updatedAt: string }[]): string | undefined {
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  // SITE_ORIGIN が無ければ空。辿れない URL の一覧を配らない
+  // CY_SITE_ORIGIN が無ければ空。辿れない URL の一覧を配らない
   if (!absoluteUrl('/')) return []
   const all = readPublicStories()
 
