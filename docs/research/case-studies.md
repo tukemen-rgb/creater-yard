@@ -12,6 +12,52 @@
 
 ---
 
+## 43. 再ビルドの回し方 — **cron は重なりを防がない。systemd timer は防ぐ**
+
+⑤ 07:37 の指示 2（段階 B の下ごしらえ）。
+
+- 出典: https://man7.org/linux/man-pages/man5/systemd.timer.5.html
+  （2026-08-10 確認）
+- 出典: `flock(1)` の挙動は**この機械で実際に動かして確かめた**
+  （下記。読んだだけではない）
+- 事実（systemd timer の公式 man）:
+  - **重なり**: 「**in case the unit to activate is already active at the
+    time the timer elapses it is not restarted, but simply left
+    running.**」＝ **前のビルドが走っていれば、次は起動しない**
+  - `Persistent=`: 「the time when the service unit was last triggered is
+    stored on disk. When the timer is activated, the service unit is
+    triggered immediately **if it would have been triggered at least once
+    during the time when the timer was inactive**.」
+    ＝ **止まっていた間の取りこぼしを 1 回だけ埋める**
+  - `RandomizedDelaySec=`: 「Delay the timer by a **randomly selected**,
+    evenly distributed amount of time between 0 and the specified
+    time value.」＝ 同時発火を散らす
+  - `OnUnitInactiveSec=`: 「Defines a timer relative to **when the unit
+    the timer unit is activating was last deactivated**」
+    ＝ **前回のビルドが終わってから** N 秒。`OnCalendar=`（実時刻）と
+    違い、**ビルドにかかる時間を織り込める**
+- 事実（`flock` を実際に動かした結果）:
+
+  ```
+  1 本目: 取れた
+  2 本目: 弾かれた（重なりを防いだ）
+  ```
+
+  `flock -n`（`--nonblock` = fail rather than wait）で 2 本目が弾かれる。
+  **cron 自体には重なりを防ぐ仕組みが無いので、これを噛ませる必要がある**
+- 事実（この機械）: `flock` と `systemctl` は在る。**`crontab` は無い**
+  （確認済み。VPS に何が在るかは別の話）
+- 学び:
+  - **ビルドが 10 分かかるのに 5 分ごとに回すと、cron なら重なる。**
+    重なると `out/` を 2 つの過程が同時に書く
+  - **`OnUnitInactiveSec=` は「窓の長さ」を素直に表せる。**
+    提案 28 で「再ビルドの間隔は soft 404 の窓で決める」と決めたが、
+    `OnCalendar=` だとビルドが長引いたとき窓が読めなくなる
+  - `Persistent=` は**サーバーを止めていた間の取りこぼしを埋める**。
+    無人運用では効く
+  - **ただし systemd が使えるかは VPS 次第。**使えないなら
+    **cron ＋ `flock -n` が最低条件**
+
 ## 42. 証明書の取り方は 3 通りある — **Origin CA は「オレンジ雲を外せなくなる」**
 
 ⑤ 07:37 の指示 1（段階 B の最初の関門）。
