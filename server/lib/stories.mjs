@@ -372,6 +372,27 @@ export class StoryStore {
    * sitemap 用の最小索引。公開分の ID・書き手・日付だけを返す。
    * 本文まで持ち出すと、sitemap を引くたびに全文をメモリへ載せることになる。
    */
+  /**
+   * フィード用。公開分を**初回公開日時の新しい順**で最大 limit 件返す。
+   *
+   * `listPublic` を使わないのは、あちらが作者輪番＋ページ送りだから。
+   * フィードは「新着を知る」ためのもので、輪番もページも要らない。
+   * 順位づけ・件数・閲覧数は使わない（新しい順だけ）。
+   */
+  latestPublic({ limit = 30, handle = '' } = {}) {
+    const byHandle = String(handle ?? '').trim()
+    return this.#readAll()
+      .filter((r) => r.status === 'public' && r.publishedAt)
+      .filter((r) => !byHandle || r.authorHandle === byHandle)
+      .sort(
+        (a, b) =>
+          String(b.publishedAt).localeCompare(String(a.publishedAt)) ||
+          String(a.id).localeCompare(String(b.id)),
+      )
+      .slice(0, limit)
+      .map((r) => publicStory(r))
+  }
+
   publicIndex() {
     return this.#readAll()
       .filter((r) => r.status === 'public')

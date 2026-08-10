@@ -15,6 +15,7 @@ import { Gate, RateLimitError } from './lib/gate.mjs'
 import { ImageError, inspectImage } from './lib/image.mjs'
 import { ImageStore } from './lib/images.mjs'
 import { StoryStore, StoryError } from './lib/stories.mjs'
+import { buildStoriesFeed, siteOrigin } from './lib/feed.mjs'
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'cy-test-'))
 after(() => fs.rmSync(TMP, { recursive: true, force: true }))
@@ -339,6 +340,58 @@ test('つまずき欄: 本文と未解決/解決を持て、本人以外は触�
     hurdle: { text: 'あ'.repeat(500) },
   })
   assert.equal(long.hurdle.text.length, 200)
+})
+
+test('RSS: 公開分だけ・publishedAt を使う・正規 URL は /story/<id>/', () => {
+  const before = process.env.CY_SITE_ORIGIN
+  process.env.CY_SITE_ORIGIN = 'https://creatoryard.io'
+  try {
+    let clock = Date.parse('2026-08-01T00:00:00.000Z')
+    const stories = freshStories('story-feed', { now: () => clock })
+
+    const open1 = stories.create(AUTHOR, { title: '公開1', body: 'x'.repeat(20) })
+    clock += 60_000
+    stories.create(AUTHOR, { title: '下書き', body: '', status: 'draft' })
+    clock += 60_000
+    const open2 = stories.create(OTHER, { title: '公開2', body: 'y'.repeat(20) })
+
+    const latest = stories.latestPublic({ limit: 30 })
+    assert.equal(latest.length, 2, '下書きは入らない')
+    assert.equal(latest[0].id, open2.id, '新しい順')
+
+    const xml = buildStoriesFeed({
+      title: 't', link: 'https://creatoryard.io/stories/', description: 'd', stories: latest,
+    })
+    assert.ok(xml.includes(`https://creatoryard.io/story/${open1.id}/`), '正規 URL は /story/')
+    assert.ok(!xml.includes('/s/'), '旧 URL /s/ を配らない')
+    assert.equal((xml.match(/<item>/g) ?? []).length, 2)
+    assert.ok(!xml.includes('下書き'), '下書きの題が漏れない')
+    // pubDate は publishedAt。createdAt ではない
+    assert.ok(xml.includes(new Date(open2.publishedAt).toUTCString()))
+
+    // 作者で絞れる
+    assert.equal(stories.latestPublic({ handle: 'author2' }).length, 1)
+
+    // publishedAt が無いものは buildStoriesFeed 側でも落とす（二重の歯止め）
+    const forced = buildStoriesFeed({
+      title: 't', link: 'l', description: 'd',
+      stories: [{ id: 'x', title: 'ないはず', body: 'b', publishedAt: null }],
+    })
+    assert.ok(!forced.includes('ないはず'))
+  } finally {
+    if (before === undefined) delete process.env.CY_SITE_ORIGIN
+    else process.env.CY_SITE_ORIGIN = before
+  }
+})
+
+test('RSS: CY_SITE_ORIGIN が無ければ配らない（嘘の URL を購読者に残さない）', () => {
+  const before = process.env.CY_SITE_ORIGIN
+  try {
+    delete process.env.CY_SITE_ORIGIN
+    assert.equal(siteOrigin(), '')
+  } finally {
+    if (before !== undefined) process.env.CY_SITE_ORIGIN = before
+  }
 })
 
 // ---- 通報 ----

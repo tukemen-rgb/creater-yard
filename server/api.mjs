@@ -42,6 +42,7 @@ import { fileURLToPath } from 'node:url'
 
 import { Accounts, AuthError } from './lib/auth.mjs'
 import { Gate, RateLimitError, clientKey } from './lib/gate.mjs'
+import { buildStoriesFeed, siteOrigin } from './lib/feed.mjs'
 import { IMAGE_LIMITS } from './lib/image.mjs'
 import { ImageStore, ImageError } from './lib/images.mjs'
 import { Mailer } from './lib/mailer.mjs'
@@ -102,6 +103,16 @@ function send(res, status, body, extraHeaders = {}) {
     ...extraHeaders,
   })
   res.end(payload)
+}
+
+/** JSON 以外（RSS など）をそのまま返す。send() は必ず JSON 化するので使えない。 */
+function sendRaw(res, status, body, contentType) {
+  res.writeHead(status, {
+    'content-type': contentType,
+    'x-content-type-options': 'nosniff',
+    'cache-control': 'no-store',
+  })
+  res.end(body)
 }
 
 function sendError(res, err) {
@@ -447,6 +458,41 @@ async function handle(req, res) {
     // 「まだ何も書いていない人」として同じ見た目になる）。
     send(res, 200, { handle, ...listing })
     return
+  }
+
+  // ---- RSS ----
+  // CY_SITE_ORIGIN が無ければ配らない。嘘の絶対 URL を購読者の手元に残さない。
+  if (req.method === 'GET' && p.startsWith('/api/feeds/')) {
+    if (!siteOrigin()) {
+      send(res, 503, { error: 'フィードは準備中です。' })
+      return
+    }
+    const sendFeed = (xml) => sendRaw(res, 200, xml, 'application/rss+xml; charset=utf-8')
+
+    if (p === '/api/feeds/stories.xml') {
+      sendFeed(
+        buildStoriesFeed({
+          title: 'CreatorYard — 新着の制作記録',
+          link: `${siteOrigin()}/stories/`,
+          description: 'ゲームを作る人の制作記録（Creator Story）の新着。',
+          stories: stories.latestPublic({ limit: 30 }),
+        }),
+      )
+      return
+    }
+    const byAuthor = /^\/api\/feeds\/creators\/([a-z0-9][a-z0-9_-]{2,31})\.xml$/.exec(p)
+    if (byAuthor) {
+      const handle = byAuthor[1]
+      sendFeed(
+        buildStoriesFeed({
+          title: `${handle} の制作記録 — CreatorYard`,
+          link: `${siteOrigin()}/creators/${handle}/`,
+          description: `${handle} の Creator Story の新着。`,
+          stories: stories.latestPublic({ limit: 30, handle }),
+        }),
+      )
+      return
+    }
   }
 
   if (req.method === 'GET' && p === '/api/tags.json') {
