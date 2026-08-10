@@ -9,6 +9,127 @@
 
 ---
 
+## 2026-08-10 12:33 JST 統合 段階 I-1「**土台を PR #4 の `server/` に寄せる**」— 状態: **未実装**
+
+提案 32（12:13）を設計に落とす。gdp の依頼（Issue #1 12:02）に対する最初の一手。
+**この設計は route の統一を含まない**（正規 URL は社長の要判断・提案 32 参照）。
+route に触れずに済む範囲だけを I-1 として切り出した。
+
+### 先に確かめた事実（推測ではなく両方のコードを読んだ結果）
+
+`server/lib/stories.mjs` を両枝で読み比べた。**同じ機能の別実装ではなく、片方が
+もう片方を含んでいた。**
+
+| 項目 | この枝（190 コミット側） | PR #4（36 コミット側） |
+| --- | --- | --- |
+| 公開状態の**フィールド名** | **`visibility`** | **`status`** |
+| id の作り方 | `randomBytes(8).toString('hex')` → **16 文字** | `randomBytes(6).toString('base64url')` → **8 文字** |
+| 公開日時 | **持たない**（`createdAt` で並べる） | **`publishedAt`**（下書きは `null`）で並べる |
+| 削除 | **意図して持たない**（退会と一緒に、と註釈） | **ある**（`remove` / `removeByAuthor`） |
+| 画像 | **意図して持たない**（検査体制が先、と註釈） | **ある**（検査は `images.mjs` が済ませてから渡す） |
+| 本文の下限 | 無し | **公開時のみ `bodyMinPublic`** |
+| 行数 | stories 291 / auth 272 / api 275 | stories 407 / auth 559 / api 588 |
+
+**判断: PR #4 の保存形式はこの枝の上位互換。** この枝が持たない
+`publishedAt`・削除・画像・公開時の本文下限を持ち、この枝が持つものは
+名前が違うだけで全部ある（`visibility` ↔ `status`）。
+**逆向き（PR #4 をこの枝に寄せる）は、削除・画像・`publishedAt` を捨てることになる。**
+
+よって **`server/` は PR #4 を土台**とし、この枝の独自資産をその上に載せる。
+「試験がこの枝に 6 本ある」ことは土台選びの理由にしない（試験は移植できるが、
+捨てた機能は戻らない）。
+
+### 変更対象ファイル
+
+**PR #4 から取り込む（この枝を上書き）:**
+
+| ファイル | 理由 |
+| --- | --- |
+| `server/lib/stories.mjs` | 上位互換。**この枝の版は捨てる** |
+| `server/lib/auth.mjs` | パスワード再設定の経路を含む（この枝には無い） |
+| `server/api.mjs` | 上の 2 つに追従。**ただし下の「必ず載せ直すもの」を適用してから** |
+| `server/lib/image.mjs` / `images.mjs` / `mailer.mjs` / `reports.mjs` / `gate.mjs` | この枝に対応物が無い |
+| `server/test.mjs`・`scripts/verify.mjs`・`scripts/demo-seed.mjs` | 同上 |
+| `deploy/` 一式（systemd 4・nginx・backup・healthcheck・GO-LIVE） | この枝には nginx の例しか無い |
+
+**この枝から必ず載せ直すもの（落とすと退行する）:**
+
+| ファイル | 落とすと何が起きるか |
+| --- | --- |
+| **`server/lib/client-ip.mjs`** | **前段プロキシの裏でログイン待機が全利用者に効く穴が戻る**（実際に 429/429 で再現済み）。`api.mjs` の `clientKey(req, trustedIpHeader)` ごと移す |
+| `server/lib/feed.mjs` | RSS が消える。`siteOrigin()` が空なら 503 を返す挙動も一緒に移す |
+| `server/*.test.mjs` 6 本 | 試験が `server/test.mjs` 1 本に戻る |
+
+**この段階では触らない:** `app/` 配下すべて、`lib/og.ts`、`lib/stories-static.ts`、
+`app/sitemap.ts`、`app/robots.ts`。**route が決まっていないため。**
+
+### データモデル
+
+土台は PR #4 のレコード。**この枝の `visibility` は使わず `status` に統一する。**
+
+```
+data/stories/<id>.json
+  id           string  base64url 8 文字（PR #4 の作り方）
+  authorId     string
+  authorHandle string
+  status       'public' | 'draft'      ← この枝の visibility を廃止
+  title, body, tools, tags{tool[],topic[]}, gameyardUrl
+  images       [...]                    ← この枝には無かった
+  createdAt, updatedAt                  ISO
+  publishedAt  ISO | null               ← この枝には無かった
+```
+
+**移行データは無い。**両枝とも `data/` は git 管理外で、本番はまだ立っていない。
+よって変換スクリプトは書かない（書けば「動かしたことのない移行」を抱えるだけ）。
+
+**この枝の静的書き出しに効く副作用（I-2 で直す。今回は直さない）:**
+`lib/stories-static.ts` は `story.visibility === 'public'` で絞り、
+`app/s/[id]/page.tsx` の空プレースホルダは **`'0'.repeat(16)`**（hex 16 文字前提）。
+id が base64url 8 文字になるので**どちらも合わなくなる**。I-1 では `app/` を
+触らないので、**I-1 の時点でこの枝の静的書き出しは壊れた状態になる**。
+これは隠さず I-1 の完了条件に「壊れている箇所の一覧を PR #4 に書く」として含める。
+
+### 経路・画面
+
+**I-1 では変えない。** route の統一（`/s/` `/w/` ↔ `/story/` `/creators/`）は
+社長の決定待ちで、決まるまで手を付けない。API の経路は PR #4 の `api.mjs` に従う。
+
+### 試験計画
+
+I-1 の完了は**試験で判定する**。順に:
+
+1. **PR #4 の既存試験がそのまま緑**（`server/test.mjs` ＋ `scripts/verify.mjs`）
+2. **この枝の 6 本のうち、`app/` に依存しない 3 本を PR #4 の形式へ移植して緑**
+   - `server/client-ip.test.mjs` — **そのまま通ること。通らなければ移植失敗**
+   - `server/auth.test.mjs` — `status`/`visibility` の名前差だけを直す
+   - `server/stories.test.mjs` — 同上。**`visibility` を期待している箇所が
+     赤くなるのが正しい**。赤いまま放置せず `status` に直す（規則 15）
+3. **`og.test.mjs`・`stories-static.test.mjs`・`api.test.mjs` は I-1 では動かさない**
+   （`app/` と route に依存する。**「動かしていない」と PR #4 に明記する**）
+4. `npm run lint`（ESLint＋tsc）と、**素の `npm run build`**（規則 13。`CY_DATA_DIR`
+   を渡さない）。**build は上の副作用で赤くなる見込み**。赤ければ赤いと書く
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| **土台の入れ替えで `client-ip` の修正が消え、ログイン待機が全利用者に効く** | 移植後に `client-ip.test.mjs` を**必ず走らせる**。緑でなければ I-1 を未完了とする。これが I-1 で最も落としやすい一点 |
+| 画像の受け口が検査より先に入る | `image.mjs`/`images.mjs` は**セットで**取り込む。API 層が検査と所有者確認を済ませてから `stories.mjs` に渡す PR #4 の順序を崩さない |
+| パスワード再設定の `mailer.mjs` が SMTP 未設定で例外を投げ、経路ごと落ちる | SMTP は**社長の未決事項**。未設定時に**その経路だけが 503 を返す**ことを確認する（`feed.mjs` の `siteOrigin()` 空 → 503 と同じ扱い） |
+| 上限の取り違え | 両枝の `LIMITS` / `STORY_LIMITS` を**数値で突き合わせる**。**小さいほうを採る**（緩めない） |
+| 下書きが公開側に漏れる | `status === 'public'` の絞り込みを、一覧・RSS・静的書き出しの**全経路で**確認。この枝で `visibility` を見ている箇所の**消し残しが漏れの原因になる** |
+
+**壊さないもの:** 依存パッケージは増やさない（PR #4 の `server/` も
+`package.json` の実行時依存は 3 つのまま。取り込み時に `package.json` の差分を
+必ず目視する）。決済なし・行動計測なし・ランキングなし・第三者 JS なし。
+
+### ③への申し送り
+
+- **20 分に収まらない。** I-1 は「`server/` の入れ替え＋試験 3 本の移植」だけで
+  区切り、`app/` には一切触らない
+- **PR #4 へ merge も push もしない。**この枝で作業し、差分表を PR #4 に**書く**だけ
+- **route が決まるまで I-2（画面の統一）に進まない**
+
 ## 2026-08-10 06:33 JST A-6（焼いたページから消えた metadata を戻す）— 状態: **実装済み 4350590**（lint・build 緑・試験 83 件緑・検査 6 点すべて合格）
 
 **実装の結果（焼いた実物）:**
