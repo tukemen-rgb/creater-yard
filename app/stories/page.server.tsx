@@ -47,9 +47,6 @@ export default async function StoriesPage({ searchParams }: Props) {
         つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。{' '}
         <Link prefetch={false} href="/tags/">タグから探す</Link>
       </p>
-      <p className="notice">
-        新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
-      </p>
       {filterLabel && (
         <p className="notice">
           「{filterLabel}」で絞り込み中 — <Link prefetch={false} href="/stories/">解除する</Link>
@@ -64,6 +61,14 @@ export default async function StoriesPage({ searchParams }: Props) {
       {listing.stories.map((story) => (
         <StoryCard key={story.id} story={story} />
       ))}
+      {/* 並びの説明は最初の Story カードより後ろに置く（経営判断 2026-08-10 22:00）。
+          説明は消さない — 「閲覧数ランキングではありません」は文化の説明として要る。
+          Story が 0 件のときは説明する対象が無いので出さない。 */}
+      {listing.stories.length > 0 && (
+        <p className="notice">
+          新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
+        </p>
+      )}
       <Pager
         page={listing.page}
         totalPages={listing.totalPages}

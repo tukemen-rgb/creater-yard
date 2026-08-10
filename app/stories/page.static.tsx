@@ -40,9 +40,6 @@ function StoriesInner() {
         {' '}
         <Link prefetch={false} href="/tags/">タグから探す</Link>
       </p>
-      <p className="notice">
-        新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
-      </p>
       {filterLabel && (
         <p className="notice">
           「{filterLabel}」で絞り込み中 — <Link prefetch={false} href="/stories/">解除する</Link>
@@ -57,6 +54,12 @@ function StoriesInner() {
         </p>
       )}
       {listing?.stories.map((story) => <StoryCard key={story.id} story={story} />)}
+      {/* server 版と同じ位置・同じ文言にそろえる（表示順の差異を作らない）。 */}
+      {listing && listing.stories.length > 0 && (
+        <p className="notice">
+          新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
+        </p>
+      )}
       {listing && listing.totalPages > 1 && (
         <nav className="pager" aria-label="ページ送り">
           {listing.page > 1 && (
