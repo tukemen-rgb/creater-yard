@@ -33,9 +33,9 @@ export default function TagsPage() {
             <h2>ツール</h2>
             {index.tools.length === 0 && <p className="notice">まだタグがありません。</p>}
             <p className="story-card__tags">
-              {index.tools.map(({ tag, count }) => (
+              {index.tools.map((tag) => (
                 <Link prefetch={false} key={tag} className="tag" href={`/stories/?tool=${encodeURIComponent(tag)}`}>
-                  {tag}（{count}）
+                  {tag}
                 </Link>
               ))}
             </p>
@@ -44,9 +44,9 @@ export default function TagsPage() {
             <h2>つまずき・トピック</h2>
             {index.topics.length === 0 && <p className="notice">まだタグがありません。</p>}
             <p className="story-card__tags">
-              {index.topics.map(({ tag, count }) => (
+              {index.topics.map((tag) => (
                 <Link prefetch={false} key={tag} className="tag tag--topic" href={`/stories/?topic=${encodeURIComponent(tag)}`}>
-                  {tag}（{count}）
+                  {tag}
                 </Link>
               ))}
             </p>

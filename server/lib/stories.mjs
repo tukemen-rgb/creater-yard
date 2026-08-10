@@ -65,6 +65,25 @@ function cleanText(value, max) {
 }
 
 /**
+ * タグの並び。**件数は使わない**（公開カウンタも人気順も作らない — CLAUDE.md）。
+ *
+ * `Intl.Collator('ja')` だけでは足りない。**ひらがなとカタカナを同値（0）と
+ * 判定する**ため、同値のときの順序が入力順に依存する。入力順は「どの Story が
+ * あるか」で変わるので、**Story が 1 本増えただけで並びが入れ替わりうる。**
+ *
+ *   new Intl.Collator('ja').compare('あ', 'ア')  // → 0
+ *   ['あ','ア'].sort(c.compare)  // → あ,ア
+ *   ['ア','あ'].sort(c.compare)  // → ア,あ   ← 変わってしまう
+ *
+ * 右側のコードポイント比較が同値を決定的に解く。これで件数が変わっても
+ * 並びは動かない。`Intl` は Node 標準なので依存は増えない。
+ */
+const tagCollator = new Intl.Collator('ja')
+function byTagName(a, b) {
+  return tagCollator.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0)
+}
+
+/**
  * つまずき欄（SPEC.md §1）。任意の短文＋未解決/解決の状態を持てる。
  *
  * レコード直下の `status`（公開状態）と名前がぶつかるので、**入れ子のまま**扱う。
@@ -411,18 +430,14 @@ export class StoryStore {
    * （個人単位の計測はしない — 文化 §5）。
    */
   tagIndex() {
-    const tools = new Map()
-    const topics = new Map()
+    const tools = new Set()
+    const topics = new Set()
     for (const record of this.#readAll()) {
       if (record.status !== 'public') continue
-      for (const tag of record.toolTags ?? []) tools.set(tag, (tools.get(tag) ?? 0) + 1)
-      for (const tag of record.topicTags ?? []) topics.set(tag, (topics.get(tag) ?? 0) + 1)
+      for (const tag of record.toolTags ?? []) tools.add(tag)
+      for (const tag of record.topicTags ?? []) topics.add(tag)
     }
-    const toSorted = (map) =>
-      [...map.entries()]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([tag, count]) => ({ tag, count }))
-    return { tools: toSorted(tools), topics: toSorted(topics) }
+    return { tools: [...tools].sort(byTagName), topics: [...topics].sort(byTagName) }
   }
 }
 

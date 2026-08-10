@@ -148,16 +148,22 @@ export function creatorStories(handle: string, page = 1): StoryListing {
 }
 
 /** タグ索引。サイト全体の合計値だけを数える（個人単位の計測はしない）。 */
+/**
+ * タグの並び。server/lib/stories.mjs の byTagName と**同じ規則**にそろえる。
+ * 片方だけ直すと SSR と静的書き出しで並びが食い違う。
+ * 同値解決の理由は stories.mjs 側の註釈を見ること。
+ */
+const tagCollator = new Intl.Collator('ja')
+function byTagName(a: string, b: string): number {
+  return tagCollator.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0)
+}
+
 export function tagIndex(): TagIndex {
-  const tools = new Map<string, number>()
-  const topics = new Map<string, number>()
+  const tools = new Set<string>()
+  const topics = new Set<string>()
   for (const record of publishedRecords()) {
-    for (const tag of record.toolTags) tools.set(tag, (tools.get(tag) ?? 0) + 1)
-    for (const tag of record.topicTags) topics.set(tag, (topics.get(tag) ?? 0) + 1)
+    for (const tag of record.toolTags) tools.add(tag)
+    for (const tag of record.topicTags) topics.add(tag)
   }
-  const toSorted = (map: Map<string, number>) =>
-    [...map.entries()]
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([tag, count]) => ({ tag, count }))
-  return { tools: toSorted(tools), topics: toSorted(topics) }
+  return { tools: [...tools].sort(byTagName), topics: [...topics].sort(byTagName) }
 }

@@ -211,13 +211,37 @@ test('作品リンクは GAMEYARD だけ受ける', () => {
   }
 })
 
-test('タグ索引はサイト全体の合計を返す', () => {
+test('タグ索引は件数を持たず、名前の安定した昇順で返す', () => {
   const stories = freshStories('story-tags')
   stories.create(AUTHOR, { title: 'a', body: 'x'.repeat(20), toolTags: ['Unity'], topicTags: ['音'] })
   stories.create(OTHER, { title: 'b', body: 'y'.repeat(20), toolTags: ['ｕｎｉｔｙ'], topicTags: ['光'] })
   const index = stories.tagIndex()
-  assert.deepEqual(index.tools, [{ tag: 'unity', count: 2 }])
+  // NFKC + 小文字化で 1 つに畳まれる。**件数は持たない**（公開カウンタを作らない）
+  assert.deepEqual(index.tools, ['unity'])
   assert.equal(index.topics.length, 2)
+  assert.ok(
+    index.tools.every((t) => typeof t === 'string'),
+    '{tag, count} ではなく文字列の配列',
+  )
+})
+
+test('タグの並びは Story が増減しても変わらない（ひらがな/カタカナの同値対策）', () => {
+  // Intl.Collator('ja') は 'あ' と 'ア' を同値(0)と判定する。同値だと
+  // Array.sort は入力順を保つので、素直に書くと Story の有無で並びが変わる。
+  const a = freshStories('tags-stable-a')
+  a.create(AUTHOR, { title: '1', body: 'x'.repeat(20), topicTags: ['あ'] })
+  a.create(AUTHOR, { title: '2', body: 'x'.repeat(20), topicTags: ['ア'] })
+  const first = a.tagIndex().topics
+
+  // 同じ 2 つを**逆の順で**入れた別のストア
+  const b = freshStories('tags-stable-b')
+  b.create(AUTHOR, { title: '1', body: 'x'.repeat(20), topicTags: ['ア'] })
+  b.create(AUTHOR, { title: '2', body: 'x'.repeat(20), topicTags: ['あ'] })
+  assert.deepEqual(b.tagIndex().topics, first, '入力順が違っても同じ並び')
+
+  // Story を 1 本足しても、既にあるタグの並びは動かない
+  a.create(OTHER, { title: '3', body: 'x'.repeat(20), topicTags: ['ん'] })
+  assert.deepEqual(a.tagIndex().topics.slice(0, first.length), first, 'Story が増えても並びは同じ')
 })
 
 test('退会でその人の Story が全部消える', () => {
@@ -497,7 +521,9 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   const creator = await call('GET', '/api/creators/httpwriter.json')
   assert.equal(creator.data.total, 1)
   const tags = await call('GET', '/api/tags.json')
-  assert.deepEqual(tags.data.tools, [{ tag: 'unity', count: 1 }])
+  assert.deepEqual(tags.data.tools, ['unity'])
+  // 公開 API にも件数を出さない（gdp 20:00 の条件 4）。本文を文字列として検査する
+  assert.ok(!JSON.stringify(tags.data).includes('count'), '/api/tags.json に count を出さない')
 
   // 認証なしの書き込みは 401
   const noAuth = await call('POST', '/api/stories', { body: { title: 'x', body: 'y'.repeat(20) } })

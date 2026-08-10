@@ -49,9 +49,14 @@ export type StoryListing = {
   totalPages: number
 }
 
+/**
+ * タグ索引。**件数は持たない。**公開カウンタと件数順は組み合わさると
+ * 実質的な人気ランキングになる（経営判断 2026-08-10 20:00）。
+ * 数えた値をそもそも外へ出さないため、型からも落としてある。
+ */
 export type TagIndex = {
-  tools: { tag: string; count: number }[]
-  topics: { tag: string; count: number }[]
+  tools: string[]
+  topics: string[]
 }
 
 export class ApiError extends Error {
