@@ -118,7 +118,7 @@ id は **base64url 8 文字**。
 | # | 運ぶもの | PR #4 に合わせて変わる点（1 行） |
 | --- | --- | --- |
 | 1 | ✅ **`hurdle`** — **実装済み PR #4 `d00193e`** | PR #4 の `#validate` に `hurdle: {text ≤200, status:'open'\|'resolved'}` を足す。**レコードの `status`（公開状態）と名前が衝突するので、つまずき側は `hurdle.status` のまま入れ子に留める** |
-| 2 | **RSS `server/lib/feed.mjs`** | `visibility==='public'` → `status==='public'`／`pubDate` を `createdAt` → **`publishedAt`**／item の URL を `/s/<id>/` → **`/story/<id>/`**／作者別は `listPublic({handle})` を使う |
+| 2 | ✅ **RSS `feed.mjs`** — **実装済み PR #4 `2b2cf1f`** | `visibility==='public'` → `status==='public'`／`pubDate` を `createdAt` → **`publishedAt`**／item の URL を `/s/<id>/` → **`/story/<id>/`**／作者別は `listPublic({handle})` を使う |
 | 3 | **`lib/og.ts`** | `storyUrl` → `/story/<id>/`、`handleUrl` → `/creators/<handle>/`。`CY_SITE_ORIGIN` は済（`5540b3d`） |
 | 4 | **`app/sitemap.ts`** | 載せる URL を `/story/`・`/creators/` に。固定ページの一覧を PR #4 の経路に合わせる。**タグの絞り込みクエリは載せない**（gdp C-3） |
 | 5 | **`app/robots.ts`** | PR #4 は `public/robots.txt`（静的ファイル）を持つ。**二重になる**ので、どちらか一方に寄せる（`app/robots.ts` を採り、`public/robots.txt` を消す） |
