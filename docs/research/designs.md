@@ -49,7 +49,7 @@ PR #4 には `hurdle` が 1 か所も無い（④が全ファイルで確認）�
 - `status` の切替は**本人のみ**。公開カウンタは作らない（SPEC の但し書き）
 - PUT は置き換え。つまずきが空なら `hurdle` を消す（この枝の事例 29 の挙動を踏襲）
 
-### 追補 2. `SITE_ORIGIN` → **`CY_SITE_ORIGIN`** に統一（gdp 08-08 15:02）
+### 追補 2. `CY_SITE_ORIGIN` に統一（gdp 08-08 15:02）— **実装済み `5540b3d`**
 
 この枝に `SITE_ORIGIN` が **34 か所**、PR #4 に `CY_SITE_ORIGIN` が 5 か所。
 **書き換える側はこの枝。** 対象は `server/lib/feed.mjs`・`lib/og.ts`・
