@@ -23,6 +23,7 @@ export default function AccountPage() {
   const router = useRouter()
   const [account, setAccount] = useState<Account | null>(null)
   const [mine, setMine] = useState<Story[] | null>(null)
+  const [mineError, setMineError] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
@@ -41,7 +42,10 @@ export default function AccountPage() {
       .catch(() => router.replace('/login/'))
     api<{ stories: Story[] }>('/api/mine', { auth: true })
       .then((data) => setMine(data.stories))
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
+      .catch((err: unknown) => {
+        const detail = err instanceof ApiError ? err.message : '読み込めませんでした。'
+        setMineError(`Story の読み込みに失敗しました。${detail}`)
+      })
   }, [router])
 
   const changePassword = async (e: React.FormEvent) => {
@@ -116,8 +120,8 @@ export default function AccountPage() {
           ログアウト
         </button>
       </p>
-      {message && <p className="notice">{message}</p>}
-      {error && <p className="notice notice--error">{error}</p>}
+      {message && <p className="notice" role="status">{message}</p>}
+      {error && <p className="notice notice--error" role="alert">{error}</p>}
 
       {drafts.length > 0 && (
         <section>
@@ -128,7 +132,15 @@ export default function AccountPage() {
 
       <section>
         <h2>公開した Story</h2>
-        {mine === null && <p className="notice">読み込み中…</p>}
+        {mine === null && !mineError && <p className="notice">読み込み中…</p>}
+        {mineError && (
+          <p className="notice notice--error" role="alert">
+            {mineError}{' '}
+            <button type="button" className="linklike" onClick={() => window.location.reload()}>
+              再読み込み
+            </button>
+          </p>
+        )}
         {mine !== null && published.length === 0 && (
           <p className="notice">
             まだありません。<Link prefetch={false} href="/write/">最初の 1 本を書く</Link>
