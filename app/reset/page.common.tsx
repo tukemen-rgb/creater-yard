@@ -59,62 +59,62 @@ function ResetInner() {
 
   if (token) {
     return (
-      <div className="page page--narrow">
+      <div className="page page--narrow auth-page">
         <h1>新しいパスワードを設定</h1>
-        <form className="form" onSubmit={confirm}>
-          <label className="form__field">
-            新しいパスワード（10 文字以上）
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={10}
-              autoComplete="new-password"
-              required
-            />
-          </label>
-          {error && <p className="notice notice--error">{error}</p>}
-          <div className="form__actions">
-            <button type="submit" className="button" disabled={busy}>
-              パスワードを設定する
+        <div className="auth-panel">
+          <form className="form" onSubmit={confirm}>
+            <label className="form__field">
+              新しいパスワード（10 文字以上）
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={10}
+                autoComplete="new-password"
+                required
+              />
+            </label>
+            {error && <p className="notice notice--error" role="alert">{error}</p>}
+            <button type="submit" className="button auth-panel__submit" disabled={busy}>
+              {busy ? '設定中…' : 'パスワードを設定する'}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="page page--narrow">
+    <div className="page page--narrow auth-page">
       <h1>パスワード再設定</h1>
       <p className="page__lede">
         登録時にメールアドレスを設定している場合、再設定用のリンクを送ります。
       </p>
-      {message ? (
-        <p className="notice">{message}</p>
-      ) : (
-        <form className="form" onSubmit={request}>
-          <label className="form__field">
-            ハンドル
-            <input
-              type="text"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
-          {error && <p className="notice notice--error">{error}</p>}
-          <div className="form__actions">
-            <button type="submit" className="button" disabled={busy}>
-              再設定リンクを要求する
+      <div className="auth-panel">
+        {message ? (
+          <p className="notice" role="status">{message}</p>
+        ) : (
+          <form className="form" onSubmit={request}>
+            <label className="form__field">
+              ハンドル
+              <input
+                type="text"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </label>
+            {error && <p className="notice notice--error" role="alert">{error}</p>}
+            <button type="submit" className="button auth-panel__submit" disabled={busy}>
+              {busy ? '送信中…' : '再設定リンクを要求する'}
             </button>
-          </div>
-        </form>
-      )}
-      <p className="notice">
-        <Link prefetch={false} href="/login/">← ログインへ戻る</Link>
-      </p>
+          </form>
+        )}
+        <nav className="auth-panel__links" aria-label="パスワード再設定の補助メニュー">
+          <Link prefetch={false} href="/login/">ログインへ戻る</Link>
+        </nav>
+      </div>
     </div>
   )
 }
