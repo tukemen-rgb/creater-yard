@@ -621,3 +621,44 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   assert.ok(!afterDeleteXml.includes('/creators/httpwriter/'))
   delete process.env.CY_SITE_ORIGIN
 })
+
+test('HTTP: メールが有効でも公開 origin が無ければ再設定を受け付けない', async () => {
+  const before = {
+    data: process.env.CY_DATA_DIR,
+    transport: process.env.MAIL_TRANSPORT,
+    from: process.env.MAIL_FROM,
+    origin: process.env.CY_SITE_ORIGIN,
+  }
+  process.env.CY_DATA_DIR = path.join(TMP, 'api-reset-origin', 'store')
+  process.env.MAIL_TRANSPORT = 'sendmail'
+  process.env.MAIL_FROM = 'noreply@example.com'
+  delete process.env.CY_SITE_ORIGIN
+
+  let resetServer
+  try {
+    ;({ server: resetServer } = await import(`./api.mjs?reset-origin=${Date.now()}`))
+    await new Promise((resolve) => resetServer.listen(0, resolve))
+    const base = `http://localhost:${resetServer.address().port}`
+
+    const health = await fetch(`${base}/api/health`).then((res) => res.json())
+    assert.equal(health.mail, false, 'UI に再設定可能と誤表示しない')
+
+    const response = await fetch(`${base}/api/auth/reset`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ handle: '存在しても存在しなくても読まない' }),
+    })
+    assert.equal(response.status, 503)
+  } finally {
+    if (resetServer?.listening) await new Promise((resolve) => resetServer.close(resolve))
+    for (const [key, value] of [
+      ['CY_DATA_DIR', before.data],
+      ['MAIL_TRANSPORT', before.transport],
+      ['MAIL_FROM', before.from],
+      ['CY_SITE_ORIGIN', before.origin],
+    ]) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
+})

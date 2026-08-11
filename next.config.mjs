@@ -28,8 +28,8 @@ const nextConfig = {
    * static モードでは存在しない扱いになる。
    */
   pageExtensions: serverMode
-    ? ['server.tsx', 'tsx', 'ts']
-    : ['static.tsx', 'tsx', 'ts'],
+    ? ['server.tsx', 'common.tsx']
+    : ['static.tsx', 'common.tsx'],
   trailingSlash: true,
   reactStrictMode: true,
   images: { unoptimized: true },

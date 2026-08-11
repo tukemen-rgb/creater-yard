@@ -92,6 +92,26 @@ if (mailer.problems.length) {
   for (const problem of mailer.problems) console.error(`mailer: ${problem}`)
 }
 
+/**
+ * 再設定リンクに使える公開 origin。localhost やパス付き URL をメールへ
+ * 混ぜないため、HTTPS の origin そのものだけを受け付ける。
+ */
+function passwordResetOrigin() {
+  const configured = siteOrigin()
+  try {
+    const url = new URL(configured)
+    if (url.protocol !== 'https:' || url.username || url.password) return ''
+    if ((url.pathname && url.pathname !== '/') || url.search || url.hash) return ''
+    return url.origin
+  } catch {
+    return ''
+  }
+}
+
+function passwordResetAvailable() {
+  return mailer.enabled && Boolean(passwordResetOrigin())
+}
+
 const HANDLE_RE = /^[a-z0-9][a-z0-9_-]{2,31}$/
 
 function send(res, status, body, extraHeaders = {}) {
@@ -250,7 +270,7 @@ async function handle(req, res) {
   // ---- 死活 ----
   if (req.method === 'GET' && p === '/api/health') {
     // mail は再設定機能が使えるかどうか。UI がこれを見て案内を変えられる
-    send(res, 200, { ok: true, service: 'creatoryard-api', mail: mailer.enabled })
+    send(res, 200, { ok: true, service: 'creatoryard-api', mail: passwordResetAvailable() })
     return
   }
 
@@ -285,19 +305,19 @@ async function handle(req, res) {
   }
 
   if (req.method === 'POST' && p === '/api/auth/reset') {
-    if (!mailer.enabled) {
+    const origin = passwordResetOrigin()
+    if (!mailer.enabled || !origin) {
       // 送れないのに受け付けたふりはしない。ここは存在を漏らさない
       // （ハンドルを見る前に返している）
       send(res, 503, {
         error:
-          'このサイトではメール送信が設定されていないため、パスワード再設定を受け付けられません。運営（Issue か X の @sidra_studio）までご連絡ください。',
+          'このサイトではパスワード再設定の準備が完了していないため、受け付けられません。運営（Issue か X の @sidra_studio）までご連絡ください。',
       })
       return
     }
     const body = await readJson(req)
     const request = accounts.requestReset({ handle: body.handle })
     if (request) {
-      const origin = (process.env.CY_SITE_ORIGIN ?? '').replace(/\/+$/, '') || 'http://localhost:3000'
       const link = `${origin}/reset/?t=${encodeURIComponent(request.token)}`
       mailer.sendInBackground({
         to: request.contact,
