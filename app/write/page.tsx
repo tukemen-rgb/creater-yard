@@ -39,6 +39,7 @@ function WriteInner() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [loaded, setLoaded] = useState(!editId)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   useEffect(() => {
     if (!getHandle()) {
@@ -65,6 +66,36 @@ function WriteInner() {
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
   }, [editId, router])
 
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+
+    const message = '保存していない内容があります。このページを離れますか？'
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    const confirmLinkNavigation = (event: MouseEvent) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const link = target.closest<HTMLAnchorElement>('a[href]')
+      if (!link || link.target === '_blank' || link.hasAttribute('download')) return
+      if (window.confirm(message)) {
+        setHasUnsavedChanges(false)
+        return
+      }
+      event.preventDefault()
+      event.stopPropagation()
+    }
+
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    document.addEventListener('click', confirmLinkNavigation, true)
+    return () => {
+      window.removeEventListener('beforeunload', warnBeforeUnload)
+      document.removeEventListener('click', confirmLinkNavigation, true)
+    }
+  }, [hasUnsavedChanges])
+
   const splitList = (value: string) =>
     value.split(/[,、，]/).map((item) => item.trim()).filter(Boolean)
 
@@ -85,6 +116,7 @@ function WriteInner() {
       const data = editId
         ? await api<{ story: Story }>(`/api/stories/${editId}`, { method: 'PUT', body: payload, auth: true })
         : await api<{ story: Story }>('/api/stories', { method: 'POST', body: payload, auth: true })
+      setHasUnsavedChanges(false)
       router.push(saveStatus === 'public' ? `/story/${data.story.id}/` : '/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '保存できませんでした。')
@@ -99,6 +131,7 @@ function WriteInner() {
     setBusy(true)
     try {
       await api<{ ok: boolean }>(`/api/stories/${editId}`, { method: 'DELETE', auth: true })
+      setHasUnsavedChanges(false)
       router.push('/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '削除できませんでした。')
@@ -129,7 +162,10 @@ function WriteInner() {
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             maxLength={80}
             required
           />
@@ -138,7 +174,10 @@ function WriteInner() {
           本文
           <textarea
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => {
+              setBody(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             rows={14}
             maxLength={8000}
             placeholder={
@@ -153,7 +192,10 @@ function WriteInner() {
           <input
             type="text"
             value={tools}
-            onChange={(e) => setTools(e.target.value)}
+            onChange={(e) => {
+              setTools(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             placeholder="Unity, Aseprite, Claude"
           />
         </label>
@@ -162,7 +204,10 @@ function WriteInner() {
           <input
             type="text"
             value={toolTags}
-            onChange={(e) => setToolTags(e.target.value)}
+            onChange={(e) => {
+              setToolTags(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             placeholder="unity, aseprite"
           />
         </label>
@@ -171,7 +216,10 @@ function WriteInner() {
           <input
             type="text"
             value={topicTags}
-            onChange={(e) => setTopicTags(e.target.value)}
+            onChange={(e) => {
+              setTopicTags(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             placeholder="当たり判定, ビルドエラー"
           />
         </label>
@@ -191,6 +239,7 @@ function WriteInner() {
                 const result = await uploadImage(file)
                 setImage(result.image)
                 setImageWarnings(result.warnings)
+                setHasUnsavedChanges(true)
               } catch (err) {
                 e.target.value = ''
                 setError(err instanceof ApiError ? err.message : '画像を保存できませんでした。')
@@ -206,6 +255,7 @@ function WriteInner() {
                 onClick={() => {
                   setImage(null)
                   setImageWarnings([])
+                  setHasUnsavedChanges(true)
                 }}
               >
                 画像を外す
@@ -221,7 +271,10 @@ function WriteInner() {
           <input
             type="url"
             value={gameUrl}
-            onChange={(e) => setGameUrl(e.target.value)}
+            onChange={(e) => {
+              setGameUrl(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             placeholder="https://play-game-yard.com/games/…"
           />
         </label>
