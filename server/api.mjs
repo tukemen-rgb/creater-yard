@@ -626,8 +626,8 @@ const server = http.createServer((req, res) => {
 
 // テストから import したときは起動しない（ポートを奪い合わない）
 if (process.env.CY_API_AUTOSTART !== '0') {
-  server.listen(PORT, () => {
-    console.log(`creatoryard-api: http://localhost:${PORT} (data: ${DATA})`)
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log(`creatoryard-api: http://127.0.0.1:${PORT} (data: ${DATA})`)
   })
 }
 

@@ -12,7 +12,7 @@ Type=simple
 User=creatoryard
 Group=creatoryard
 WorkingDirectory=/opt/creatoryard
-ExecStart=/usr/bin/npx next start -p 3000
+ExecStart=/usr/bin/npx next start -H 127.0.0.1 -p 3000
 EnvironmentFile=/etc/creatoryard/creatoryard.env
 Environment=SITE_MODE=server
 Environment=NODE_ENV=production
