@@ -49,7 +49,7 @@ export default function SignupPage() {
             type="text"
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
-            pattern="[a-z0-9][a-z0-9_-]{2,31}"
+            pattern="[a-z0-9][a-z0-9_\-]{2,31}"
             autoComplete="username"
             required
           />
