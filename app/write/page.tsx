@@ -42,6 +42,7 @@ function WriteInner() {
   const [busy, setBusy] = useState(false)
   const [loaded, setLoaded] = useState(!editId)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [optionalFieldsOpen, setOptionalFieldsOpen] = useState(false)
 
   useEffect(() => {
     if (!getHandle()) {
@@ -65,6 +66,13 @@ function WriteInner() {
         setGameUrl(story.gameUrl)
         setStatus(story.status)
         setImage(story.image)
+        setOptionalFieldsOpen(Boolean(
+          story.tools.length
+          || story.toolTags.length
+          || story.topicTags.length
+          || story.image
+          || story.gameUrl,
+        ))
         setLoaded(true)
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
@@ -192,42 +200,6 @@ function WriteInner() {
             }
           />
         </label>
-        <label className="form__field">
-          使ったツール（カンマ区切り。AI も普通に書いてください）
-          <input
-            type="text"
-            value={tools}
-            onChange={(e) => {
-              setTools(e.target.value)
-              setHasUnsavedChanges(true)
-            }}
-            placeholder="Unity, Aseprite, Claude"
-          />
-        </label>
-        <label className="form__field">
-          ツールタグ（カンマ区切り・5 つまで。検索の入口になります）
-          <input
-            type="text"
-            value={toolTags}
-            onChange={(e) => {
-              setToolTags(e.target.value)
-              setHasUnsavedChanges(true)
-            }}
-            placeholder="unity, aseprite"
-          />
-        </label>
-        <label className="form__field">
-          つまずき・トピックタグ（カンマ区切り・5 つまで）
-          <input
-            type="text"
-            value={topicTags}
-            onChange={(e) => {
-              setTopicTags(e.target.value)
-              setHasUnsavedChanges(true)
-            }}
-            placeholder="当たり判定, ビルドエラー"
-          />
-        </label>
         <fieldset className="form__field hurdle-editor">
           <legend>いま悩んでいること・乗り越えたこと（任意）</legend>
           <p className="form__hint">
@@ -270,61 +242,106 @@ function WriteInner() {
             </div>
           )}
         </fieldset>
-        <div className="form__field">
-          画像（任意。PNG / JPEG / WebP、3MB まで）
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={async (e) => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              setError('')
-              setImageWarnings([])
-              try {
-                // 選んだ時点で検査に通す。保存の段で初めて断られると、
-                // 書き上げた本文を前に画像だけ差し替える羽目になる
-                const result = await uploadImage(file)
-                setImage(result.image)
-                setImageWarnings(result.warnings)
-                setHasUnsavedChanges(true)
-              } catch (err) {
-                e.target.value = ''
-                setError(err instanceof ApiError ? err.message : '画像を保存できませんでした。')
-              }
-            }}
-          />
-          {image && (
-            <span className="form__image-preview">
-              <img src={imageUrl(image)} alt="" width={image.width} height={image.height} />
-              <button
-                type="button"
-                className="linklike"
-                onClick={() => {
-                  setImage(null)
-                  setImageWarnings([])
+        <details
+          className="optional-fields"
+          open={optionalFieldsOpen}
+          onToggle={(event) => setOptionalFieldsOpen(event.currentTarget.open)}
+        >
+          <summary>画像・ツール・タグ・作品リンクを追加（任意）</summary>
+          <div className="optional-fields__body">
+            <label className="form__field">
+              使ったツール（カンマ区切り。AI も普通に書いてください）
+              <input
+                type="text"
+                value={tools}
+                onChange={(e) => {
+                  setTools(e.target.value)
                   setHasUnsavedChanges(true)
                 }}
-              >
-                画像を外す
-              </button>
-            </span>
-          )}
-          {imageWarnings.map((warning) => (
-            <span key={warning} className="notice">{warning}</span>
-          ))}
-        </div>
-        <label className="form__field">
-          GAMEYARD の作品リンク（任意）
-          <input
-            type="url"
-            value={gameUrl}
-            onChange={(e) => {
-              setGameUrl(e.target.value)
-              setHasUnsavedChanges(true)
-            }}
-            placeholder="https://play-game-yard.com/games/…"
-          />
-        </label>
+                placeholder="Unity, Aseprite, Claude"
+              />
+            </label>
+            <label className="form__field">
+              ツールタグ（カンマ区切り・5 つまで。検索の入口になります）
+              <input
+                type="text"
+                value={toolTags}
+                onChange={(e) => {
+                  setToolTags(e.target.value)
+                  setHasUnsavedChanges(true)
+                }}
+                placeholder="unity, aseprite"
+              />
+            </label>
+            <label className="form__field">
+              つまずき・トピックタグ（カンマ区切り・5 つまで）
+              <input
+                type="text"
+                value={topicTags}
+                onChange={(e) => {
+                  setTopicTags(e.target.value)
+                  setHasUnsavedChanges(true)
+                }}
+                placeholder="当たり判定, ビルドエラー"
+              />
+            </label>
+            <div className="form__field">
+              画像（任意。PNG / JPEG / WebP、3MB まで）
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  setError('')
+                  setImageWarnings([])
+                  try {
+                    // 選んだ時点で検査に通す。保存の段で初めて断られると、
+                    // 書き上げた本文を前に画像だけ差し替える羽目になる
+                    const result = await uploadImage(file)
+                    setImage(result.image)
+                    setImageWarnings(result.warnings)
+                    setHasUnsavedChanges(true)
+                  } catch (err) {
+                    e.target.value = ''
+                    setError(err instanceof ApiError ? err.message : '画像を保存できませんでした。')
+                  }
+                }}
+              />
+              {image && (
+                <span className="form__image-preview">
+                  <img src={imageUrl(image)} alt="" width={image.width} height={image.height} />
+                  <button
+                    type="button"
+                    className="linklike"
+                    onClick={() => {
+                      setImage(null)
+                      setImageWarnings([])
+                      setHasUnsavedChanges(true)
+                    }}
+                  >
+                    画像を外す
+                  </button>
+                </span>
+              )}
+              {imageWarnings.map((warning) => (
+                <span key={warning} className="notice">{warning}</span>
+              ))}
+            </div>
+            <label className="form__field">
+              GAMEYARD の作品リンク（任意）
+              <input
+                type="url"
+                value={gameUrl}
+                onChange={(e) => {
+                  setGameUrl(e.target.value)
+                  setHasUnsavedChanges(true)
+                }}
+                placeholder="https://play-game-yard.com/games/…"
+              />
+            </label>
+          </div>
+        </details>
         <div className="form__actions">
           <button type="button" className="button" disabled={busy} onClick={() => save('public')}>
             公開する
