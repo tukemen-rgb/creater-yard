@@ -36,54 +36,65 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="page page--narrow">
+    <div className="page page--narrow auth-page">
       <h1>新規登録</h1>
       <p className="page__lede">
         必要なのはハンドルとパスワードだけ。あなたの記録はあなたのもので、
         いつでも全部消せます。
       </p>
-      <form className="form" onSubmit={submit}>
-        <label className="form__field">
-          ハンドル（英小文字・数字・ハイフン・アンダースコアの 3〜32 文字）
-          <input
-            type="text"
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            pattern="[a-z0-9][a-z0-9_\-]{2,31}"
-            autoComplete="username"
-            required
-          />
-        </label>
-        <label className="form__field">
-          パスワード（10 文字以上）
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={10}
-            autoComplete="new-password"
-            required
-          />
-        </label>
-        <label className="form__field">
-          メールアドレス（任意。いまはパスワードを忘れたときの連絡先の控えにしか使いません）
-          <input
-            type="email"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
-            autoComplete="email"
-          />
-        </label>
-        {error && <p className="notice notice--error">{error}</p>}
-        <div className="form__actions">
-          <button type="submit" className="button" disabled={busy}>
-            登録して書き始める
+      <div className="auth-panel">
+        <form className="form" onSubmit={submit}>
+          <label className="form__field">
+            ハンドル（英小文字・数字・ハイフン・アンダースコアの 3〜32 文字）
+            <input
+              type="text"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              pattern="[a-z0-9][a-z0-9_\-]{2,31}"
+              autoComplete="username"
+              required
+            />
+          </label>
+          <label className="form__field">
+            パスワード（10 文字以上）
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={10}
+              autoComplete="new-password"
+              required
+            />
+          </label>
+
+          <details className="optional-fields">
+            <summary>メールアドレスを登録する（任意）</summary>
+            <div className="optional-fields__body">
+              <label className="form__field">
+                メールアドレス
+                <input
+                  type="email"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  autoComplete="email"
+                />
+              </label>
+              <p className="form__hint">
+                パスワードを忘れたときの再設定にだけ使います。
+              </p>
+            </div>
+          </details>
+
+          {error && <p className="notice notice--error" role="alert">{error}</p>}
+          <button type="submit" className="button auth-panel__submit" disabled={busy}>
+            {busy ? '登録中…' : '登録して書き始める'}
           </button>
-        </div>
-      </form>
-      <p className="notice">
-        すでにアカウントがある人は <Link prefetch={false} href="/login/">ログイン</Link> へ。
-      </p>
+        </form>
+
+        <nav className="auth-panel__links" aria-label="新規登録の補助メニュー">
+          <Link prefetch={false} href="/login/">すでにアカウントがある人はログイン</Link>
+        </nav>
+      </div>
     </div>
   )
 }
