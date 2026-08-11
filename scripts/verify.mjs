@@ -40,6 +40,10 @@ run('lint', 'npm run lint')
 run('サーバー試験', 'npm run test:server')
 
 // ---- 静的ビルド ----
+// 前回の verify や手動 build:server の成果物が残っていると、server 専用の
+// 動的ルートが静的 export に混ざる。どの順番で実行しても同じ結果になるよう、
+// 静的ビルドの前にも .next を空にする。
+fs.rmSync(path.join(ROOT, '.next'), { recursive: true, force: true })
 run('静的ビルド', 'npm run build')
 check('静的出力', () => {
   const out = path.join(ROOT, 'out')
