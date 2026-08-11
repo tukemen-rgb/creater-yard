@@ -45,7 +45,6 @@ export default function AdminReportsPage() {
     }
     load()
     // load は安定（外側の状態に依存しない）なので依存に入れない
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
   const setStatus = async (report: Report, status: string) => {
