@@ -321,6 +321,40 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.auth-page {
+  margin-inline: auto;
+}
+.auth-page h1 {
+  margin-block-end: 18px;
+}
+.auth-panel {
+  padding: 24px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.auth-panel .form__field input {
+  min-height: 46px;
+  background: var(--bg);
+}
+.auth-panel__submit {
+  min-height: 46px;
+  width: 100%;
+}
+.auth-panel__links {
+  display: grid;
+  gap: 4px;
+  margin-block-start: 20px;
+  padding-block-start: 16px;
+  border-top: 1px solid var(--border);
+}
+.auth-panel__links a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 4px;
+}
+
 .optional-fields {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -550,4 +584,13 @@ a:hover {
 .story-card__hurdle strong {
   font-size: 0.95rem;
   line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .auth-page {
+    padding-block-start: 24px;
+  }
+  .auth-panel {
+    padding: 20px;
+  }
 }

@@ -31,40 +31,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="page page--narrow">
+    <div className="page page--narrow auth-page">
       <h1>ログイン</h1>
-      <form className="form" onSubmit={submit}>
-        <label className="form__field">
-          ハンドル
-          <input
-            type="text"
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            autoComplete="username"
-            required
-          />
-        </label>
-        <label className="form__field">
-          パスワード
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </label>
-        {error && <p className="notice notice--error">{error}</p>}
-        <div className="form__actions">
-          <button type="submit" className="button" disabled={busy}>
-            ログイン
+      <div className="auth-panel">
+        <form className="form" onSubmit={submit}>
+          <label className="form__field">
+            ハンドル
+            <input
+              type="text"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              autoComplete="username"
+              required
+            />
+          </label>
+          <label className="form__field">
+            パスワード
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </label>
+          {error && <p className="notice notice--error" role="alert">{error}</p>}
+          <button type="submit" className="button auth-panel__submit" disabled={busy}>
+            {busy ? 'ログイン中…' : 'ログイン'}
           </button>
-        </div>
-      </form>
-      <p className="notice">
-        アカウントがまだの人は <Link prefetch={false} href="/signup/">新規登録</Link> へ。
-        パスワードを忘れた人は <Link prefetch={false} href="/reset/">再設定</Link> へ。
-      </p>
+        </form>
+
+        <nav className="auth-panel__links" aria-label="ログインの補助メニュー">
+          <Link prefetch={false} href="/signup/">アカウントを新しく作る</Link>
+          <Link prefetch={false} href="/reset/">パスワードを再設定する</Link>
+        </nav>
+      </div>
     </div>
   )
 }
