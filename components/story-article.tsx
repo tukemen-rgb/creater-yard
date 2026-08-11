@@ -39,6 +39,22 @@ export function StoryArticle({ story, nextStory }: { story: Story; nextStory?: S
           alt=""
         />
       )}
+      {story.hurdle && (
+        <section
+          className={`hurdle-card hurdle-card--${story.hurdle.status}`}
+          aria-labelledby="hurdle-heading"
+        >
+          <p className="hurdle-card__eyebrow">
+            {story.hurdle.status === 'resolved' ? '乗り越えた悩み' : 'いま向き合っている悩み'}
+          </p>
+          <h2 id="hurdle-heading" className="hurdle-card__text">{story.hurdle.text}</h2>
+          <p className="hurdle-card__note">
+            {story.hurdle.status === 'resolved'
+              ? '本文で、作者がどう考えて解決したかを読めます。'
+              : '同じことで悩んだ経験がある人は、作者の制作過程を見守れます。'}
+          </p>
+        </section>
+      )}
       <div className="story__body">{story.body}</div>
       {story.status === 'public' && (
         <CopyOwnStoryLink id={story.id} authorHandle={story.authorHandle} />

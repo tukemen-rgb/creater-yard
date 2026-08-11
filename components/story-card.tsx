@@ -30,6 +30,12 @@ export function StoryCard({ story, showAuthor = true }: { story: Story; showAuth
         )}
         {formatDate(story.publishedAt ?? story.updatedAt)}
       </p>
+      {story.hurdle && (
+        <div className={`story-card__hurdle story-card__hurdle--${story.hurdle.status}`}>
+          <span>{story.hurdle.status === 'resolved' ? '乗り越えた' : '悩み中'}</span>
+          <strong>{story.hurdle.text}</strong>
+        </div>
+      )}
       {excerpt && <p className="story-card__excerpt">{excerpt}</p>}
       {(story.toolTags.length > 0 || story.topicTags.length > 0) && (
         <p className="story-card__tags">

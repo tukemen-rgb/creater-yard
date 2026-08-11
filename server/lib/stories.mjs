@@ -451,6 +451,7 @@ export function publicStory(record) {
     tools: record.tools ?? [],
     toolTags: record.toolTags ?? [],
     topicTags: record.topicTags ?? [],
+    hurdle: record.hurdle ?? null,
     gameUrl: record.gameUrl ?? '',
     image: record.image ?? null,
     status: record.status,

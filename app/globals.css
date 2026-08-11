@@ -427,3 +427,105 @@ a:hover {
 .site-footer__links {
   font-size: 0.85rem;
 }
+.hurdle-editor {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--line, #d8d4ca);
+  border-radius: 1rem;
+  background: #fffaf0;
+}
+
+.form__hint {
+  margin: 0 0 0.75rem;
+  color: var(--muted, #625f58);
+  font-size: 0.9rem;
+}
+
+.hurdle-editor__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.choice-chip {
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #c9c3b7;
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+}
+
+.choice-chip--active {
+  border-color: #d06c3c;
+  background: #fff0e7;
+  color: #853817;
+}
+
+.choice-chip--resolved {
+  border-color: #27866b;
+  background: #e8f7f1;
+  color: #155c49;
+}
+
+.hurdle-card {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid #e5b79e;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #fff7ee 0%, #fff 72%);
+}
+
+.hurdle-card--resolved {
+  border-color: #9bcdbd;
+  background: linear-gradient(135deg, #ebf9f4 0%, #fff 72%);
+}
+
+.hurdle-card__eyebrow {
+  margin: 0 0 0.4rem;
+  color: #a14b25;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hurdle-card--resolved .hurdle-card__eyebrow { color: #197057; }
+
+.hurdle-card__text {
+  margin: 0;
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
+  line-height: 1.55;
+}
+
+.hurdle-card__note {
+  margin: 0.65rem 0 0;
+  color: var(--muted, #625f58);
+  font-size: 0.9rem;
+}
+
+.story-card__hurdle {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.9rem 0;
+  padding: 0.8rem 0.9rem;
+  border-left: 3px solid #d06c3c;
+  border-radius: 0 0.7rem 0.7rem 0;
+  background: #fff7ee;
+}
+
+.story-card__hurdle--resolved {
+  border-left-color: #27866b;
+  background: #ebf9f4;
+}
+
+.story-card__hurdle span {
+  color: var(--muted, #625f58);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.story-card__hurdle strong {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}

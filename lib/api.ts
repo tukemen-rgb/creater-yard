@@ -34,6 +34,10 @@ export type Story = {
   tools: string[]
   toolTags: string[]
   topicTags: string[]
+  hurdle: {
+    text: string
+    status: 'open' | 'resolved'
+  } | null
   gameUrl: string
   image: StoryImage | null
   status: 'public' | 'draft'

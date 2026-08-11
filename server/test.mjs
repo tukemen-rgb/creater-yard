@@ -14,7 +14,7 @@ import { Accounts, AuthError } from './lib/auth.mjs'
 import { Gate, RateLimitError } from './lib/gate.mjs'
 import { ImageError, inspectImage } from './lib/image.mjs'
 import { ImageStore } from './lib/images.mjs'
-import { StoryStore, StoryError } from './lib/stories.mjs'
+import { StoryStore, StoryError, publicStory } from './lib/stories.mjs'
 import { buildStoriesFeed, siteOrigin } from './lib/feed.mjs'
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'cy-test-'))
@@ -333,6 +333,10 @@ test('つまずき欄: 本文と未解決/解決を持て、本人以外は触�
   })
   assert.equal(made.hurdle.text, 'リアルタイム影が出ない')
   assert.equal(made.hurdle.status, 'open')
+  assert.deepEqual(publicStory(made).hurdle, {
+    text: 'リアルタイム影が出ない',
+    status: 'open',
+  })
 
   // 保存したものが読み出せる（書いたつもりで消えていない）
   assert.equal(stories.get(made.id).hurdle.status, 'open')

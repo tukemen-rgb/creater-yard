@@ -32,6 +32,8 @@ function WriteInner() {
   const [tools, setTools] = useState('')
   const [toolTags, setToolTags] = useState('')
   const [topicTags, setTopicTags] = useState('')
+  const [hurdleText, setHurdleText] = useState('')
+  const [hurdleStatus, setHurdleStatus] = useState<'open' | 'resolved'>('open')
   const [gameUrl, setGameUrl] = useState('')
   const [status, setStatus] = useState<'public' | 'draft'>('public')
   const [image, setImage] = useState<StoryImage | null>(null)
@@ -58,6 +60,8 @@ function WriteInner() {
         setTools(story.tools.join(', '))
         setToolTags(story.toolTags.join(', '))
         setTopicTags(story.topicTags.join(', '))
+        setHurdleText(story.hurdle?.text ?? '')
+        setHurdleStatus(story.hurdle?.status ?? 'open')
         setGameUrl(story.gameUrl)
         setStatus(story.status)
         setImage(story.image)
@@ -108,6 +112,7 @@ function WriteInner() {
       tools: splitList(tools),
       toolTags: splitList(toolTags),
       topicTags: splitList(topicTags),
+      hurdle: hurdleText.trim() ? { text: hurdleText, status: hurdleStatus } : null,
       gameUrl,
       status: saveStatus,
       imageId: image?.id ?? null,
@@ -223,6 +228,48 @@ function WriteInner() {
             placeholder="当たり判定, ビルドエラー"
           />
         </label>
+        <fieldset className="form__field hurdle-editor">
+          <legend>いま悩んでいること・乗り越えたこと（任意）</legend>
+          <p className="form__hint">
+            具体的に書くと、同じ悩みを持つ人や解決経験のある人が見つけやすくなります。
+          </p>
+          <textarea
+            value={hurdleText}
+            onChange={(e) => {
+              setHurdleText(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
+            rows={3}
+            maxLength={200}
+            placeholder="例: スマホで操作すると当たり判定がずれる原因が分からない"
+          />
+          {hurdleText.trim() && (
+            <div className="hurdle-editor__status" role="group" aria-label="つまずきの状態">
+              <button
+                type="button"
+                className={hurdleStatus === 'open' ? 'choice-chip choice-chip--active' : 'choice-chip'}
+                aria-pressed={hurdleStatus === 'open'}
+                onClick={() => {
+                  setHurdleStatus('open')
+                  setHasUnsavedChanges(true)
+                }}
+              >
+                まだ悩んでいる
+              </button>
+              <button
+                type="button"
+                className={hurdleStatus === 'resolved' ? 'choice-chip choice-chip--resolved' : 'choice-chip'}
+                aria-pressed={hurdleStatus === 'resolved'}
+                onClick={() => {
+                  setHurdleStatus('resolved')
+                  setHasUnsavedChanges(true)
+                }}
+              >
+                乗り越えた
+              </button>
+            </div>
+          )}
+        </fieldset>
         <div className="form__field">
           画像（任意。PNG / JPEG / WebP、3MB まで）
           <input
