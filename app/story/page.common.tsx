@@ -20,29 +20,47 @@ function StoryInner() {
 
   const [story, setStory] = useState<Story | null>(null)
   const [error, setError] = useState('')
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
+    setStory(null)
+    setError('')
     if (!id) {
       setError('Story が指定されていません。')
       return
     }
+    let active = true
     api<{ story: Story }>(`/api/stories/${id}.json`, { auth: Boolean(getHandle()) })
       .then((data) => {
+        if (!active) return
         if (data.story.status === 'public') {
           router.replace(`/story/${data.story.id}/`)
           return
         }
         setStory(data.story)
       })
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
-  }, [id, router])
+      .catch((err: unknown) => {
+        if (!active) return
+        setError(err instanceof ApiError ? err.message : '読み込めませんでした。')
+      })
+    return () => {
+      active = false
+    }
+  }, [id, retryKey, router])
 
   if (error) {
     return (
       <div className="page">
-        <p className="notice notice--error">{error}</p>
+        <p className="notice notice--error" role="alert">
+          {error}{' '}
+          {id && (
+            <button type="button" className="linklike" onClick={() => setRetryKey((key) => key + 1)}>
+              再読み込み
+            </button>
+          )}
+        </p>
         <p>
-          <Link prefetch={false} href="/stories/">← Story 一覧へ</Link>
+          <Link prefetch={false} href="/account/">← 自分の Story 一覧へ</Link>
         </p>
       </div>
     )
