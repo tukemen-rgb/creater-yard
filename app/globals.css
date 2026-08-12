@@ -228,6 +228,7 @@ a:hover {
   margin-block: 0;
   color: var(--text-muted);
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }
 .story-card__tags {
   display: flex;
@@ -276,6 +277,7 @@ a:hover {
 }
 .story__title {
   margin-block: 4px 4px;
+  overflow-wrap: anywhere;
 }
 .story__meta {
   color: var(--text-muted);
@@ -292,6 +294,7 @@ a:hover {
 .story__game {
   color: var(--text-muted);
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }
 
 .pager {
@@ -589,6 +592,7 @@ a:hover {
   margin: 0;
   font-size: clamp(1.1rem, 3vw, 1.4rem);
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .hurdle-card__note {
@@ -622,6 +626,7 @@ a:hover {
 .story-card__hurdle strong {
   font-size: 0.95rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 560px) {
