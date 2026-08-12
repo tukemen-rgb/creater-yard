@@ -39,21 +39,33 @@ function WriteInner() {
   const [image, setImage] = useState<StoryImage | null>(null)
   const [imageWarnings, setImageWarnings] = useState<string[]>([])
   const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState<{ id: string; message: string } | null>(null)
+  const [loadedEditId, setLoadedEditId] = useState('')
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [busy, setBusy] = useState(false)
-  const [loaded, setLoaded] = useState(!editId)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [optionalFieldsOpen, setOptionalFieldsOpen] = useState(false)
 
   useEffect(() => {
+    let active = true
     if (!getHandle()) {
       router.replace('/login/')
-      return
+      return () => {
+        active = false
+      }
     }
-    if (!editId) return
+    if (!editId) {
+      return () => {
+        active = false
+      }
+    }
+    setLoadedEditId('')
+    setLoadError(null)
     api<{ story: Story }>(`/api/stories/${editId}.json`, { auth: true })
       .then(({ story }) => {
+        if (!active) return
         if (story.authorHandle !== getHandle()) {
-          setError('この Story を編集できるのは本人だけです。')
+          setLoadError({ id: editId, message: 'この Story を編集できるのは本人だけです。' })
           return
         }
         setTitle(story.title)
@@ -73,10 +85,20 @@ function WriteInner() {
           || story.image
           || story.gameUrl,
         ))
-        setLoaded(true)
+        setLoadedEditId(editId)
       })
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
-  }, [editId, router])
+      .catch((err: unknown) => {
+        if (active) {
+          setLoadError({
+            id: editId,
+            message: err instanceof ApiError ? err.message : '読み込めませんでした。',
+          })
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [editId, router, loadAttempt])
 
   useEffect(() => {
     if (!hasUnsavedChanges) return
@@ -152,7 +174,23 @@ function WriteInner() {
     }
   }
 
-  if (!loaded && !error) return <p className="notice">読み込み中…</p>
+  if (editId && loadedEditId !== editId) {
+    const currentLoadError = loadError?.id === editId ? loadError.message : ''
+    if (!currentLoadError) return <p className="notice">読み込み中…</p>
+    return (
+      <div className="page page--narrow">
+        <div className="notice notice--error" role="alert">
+          {currentLoadError}{' '}
+          <button type="button" className="button button--ghost" onClick={() => setLoadAttempt((count) => count + 1)}>
+            もう一度読み込む
+          </button>
+        </div>
+        <p>
+          <Link prefetch={false} href="/account/">← 自分のStory一覧へ</Link>
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="page page--narrow">
