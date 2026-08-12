@@ -12,12 +12,23 @@ import { api, ApiError, type TagIndex } from '../../lib/api'
 export default function TagsPage() {
   const [index, setIndex] = useState<TagIndex | null>(null)
   const [error, setError] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
+    let active = true
+    setIndex(null)
+    setError('')
     api<TagIndex>('/api/tags.json')
-      .then(setIndex)
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
-  }, [])
+      .then((data) => {
+        if (active) setIndex(data)
+      })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof ApiError ? err.message : '読み込めませんでした。')
+      })
+    return () => {
+      active = false
+    }
+  }, [retryCount])
 
   return (
     <div className="page">
@@ -25,7 +36,14 @@ export default function TagsPage() {
       <p className="page__lede">
         あなたの遠回りが、誰かの近道になる。ツール名と「どこでつまずいたか」で記録を引けます。
       </p>
-      {error && <p className="notice notice--error">{error}</p>}
+      {error && (
+        <div className="notice notice--error" role="alert">
+          {error}{' '}
+          <button type="button" className="button button--ghost" onClick={() => setRetryCount((count) => count + 1)}>
+            もう一度読み込む
+          </button>
+        </div>
+      )}
       {!error && !index && <p className="notice">読み込み中…</p>}
       {index && (
         <>
