@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "SITE_MODE=server next dev",
-    "build": "next build",
-    "build:server": "SITE_MODE=server next build",
+    "build": "node scripts/build.mjs static",
+    "build:server": "node scripts/build.mjs server",
     "start:server": "SITE_MODE=server next start",
     "lint": "eslint . && npm run typecheck && echo 'lint OK（ESLint + 型検査）'",
     "typecheck": "tsc --noEmit",
