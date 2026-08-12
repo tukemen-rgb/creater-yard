@@ -163,6 +163,10 @@ a:hover {
   margin-block-start: 0;
 }
 
+.creator-page__title {
+  overflow-wrap: anywhere;
+}
+
 .hero__actions {
   display: flex;
   gap: 12px;
