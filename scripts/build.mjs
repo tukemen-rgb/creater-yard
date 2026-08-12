@@ -2,9 +2,9 @@
 /**
  * static/server の Next.js build を必ずクリーンな成果物から始める。
  *
- * 両モードは pageExtensions を切り替える一方、Next.js の内部成果物 `.next`
- * を共有する。直前の別モードが残ると server 専用の動的ルートが static export
- * に混ざるため、npm script の入口で削除し、外部の SITE_MODE も上書きする。
+ * 両モードは pageExtensions と distDir を切り替える。各モードの
+ * 成果物を物理的に分け、server 専用の動的ルートが static export に
+ * 混ざる余地をなくす。外部の SITE_MODE も要求した値へ上書きする。
  */
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
@@ -19,7 +19,8 @@ if (mode !== 'static' && mode !== 'server') {
   process.exit(2)
 }
 
-fs.rmSync(path.join(ROOT, '.next'), { recursive: true, force: true })
+const distDir = mode === 'server' ? '.next-server' : '.next'
+fs.rmSync(path.join(ROOT, distDir), { recursive: true, force: true })
 if (mode === 'static') {
   fs.rmSync(path.join(ROOT, 'out'), { recursive: true, force: true })
 }

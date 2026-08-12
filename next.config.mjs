@@ -16,6 +16,11 @@ const serverMode = process.env.SITE_MODE === 'server'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: serverMode ? undefined : 'export',
+  // 2モードでNext.jsの中間成果物を共有しない。ルート表の再利用で
+  // server専用ページがstatic exportへ混ざる余地をなくす。
+  // output: 'export' は静的出力先とdistDirを同じ設定で扱うため、
+  // staticは標準の.next、serverだけを別ディレクトリへ分離する。
+  distDir: serverMode ? '.next-server' : '.next',
   /**
    * モードごとにルート設定を差し替えるための仕組み（GAMEYARD と同じ）。
    *

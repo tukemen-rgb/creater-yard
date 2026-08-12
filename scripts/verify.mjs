@@ -40,8 +40,8 @@ run('lint', 'npm run lint')
 run('サーバー試験', 'npm run test:server')
 
 // ---- 静的ビルド ----
-// npm run build 自体が前モードの成果物を消すため、手動実行でも verify でも
-// 同じ条件になる。
+// npm run build 自体がstatic専用の成果物を消すため、手動実行でも
+// verifyでも同じ条件になる。server成果物は別ディレクトリに保つ。
 run('静的ビルド', 'npm run build')
 check('静的出力', () => {
   const out = path.join(ROOT, 'out')
@@ -55,6 +55,12 @@ check('静的出力', () => {
       return 'out/story/ に動的ルートの出力が混ざっています'
     }
   }
+  const manifest = path.join(ROOT, '.next', 'server', 'app-paths-manifest.json')
+  if (!fs.existsSync(manifest)) return '.next の静的ルート表がありません'
+  const routes = Object.keys(JSON.parse(fs.readFileSync(manifest, 'utf8')))
+  for (const route of ['/story/[id]/page', '/creators/[handle]/page']) {
+    if (routes.includes(route)) return `static 成果物に server 専用ルート ${route} が混ざっています`
+  }
   return null
 })
 
@@ -62,7 +68,7 @@ check('静的出力', () => {
 // npm run build:server 側でも静的成果物との混入を防ぐ。
 run('server ビルド', 'npm run build:server')
 check('server 出力', () => {
-  const manifest = path.join(ROOT, '.next', 'server', 'app-paths-manifest.json')
+  const manifest = path.join(ROOT, '.next-server', 'server', 'app-paths-manifest.json')
   if (!fs.existsSync(manifest)) return 'app-paths-manifest.json がありません'
   const routes = Object.keys(JSON.parse(fs.readFileSync(manifest, 'utf8')))
   for (const route of ['/story/[id]/page', '/creators/[handle]/page', '/stories/page', '/tags/page']) {
@@ -70,7 +76,7 @@ check('server 出力', () => {
   }
   // /stories が static 版（クライアント fetch）で入っていないか。
   // server 版にはローディング表示が無いことを目印にする
-  const storiesJs = fs.readFileSync(path.join(ROOT, '.next', 'server', 'app', 'stories', 'page.js'), 'utf8')
+  const storiesJs = fs.readFileSync(path.join(ROOT, '.next-server', 'server', 'app', 'stories', 'page.js'), 'utf8')
   if (storiesJs.includes('読み込み中')) {
     return '/stories が static 版のまま server ビルドに入っています（.next の混入）'
   }
@@ -78,4 +84,4 @@ check('server 出力', () => {
 })
 
 console.log(`\n[verify] すべて緑（${results.length} 段階）: ${results.join(' → ')}`)
-console.log('[verify] .next は server モードの成果物になっています（そのまま start:server できる）')
+console.log('[verify] .next-server は server モードの成果物になっています（そのまま start:server できる）')

@@ -23,6 +23,8 @@ const config = [
   {
     ignores: [
       '.next/**',
+      '.next-static/**',
+      '.next-server/**',
       'out/**',
       'release/**',
       'node_modules/**',
