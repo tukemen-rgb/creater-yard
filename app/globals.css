@@ -489,6 +489,7 @@ a:hover {
   border: 1px solid var(--line, #d8d4ca);
   border-radius: 1rem;
   background: #fffaf0;
+  color: #3f2a20;
 }
 
 .form__hint {
@@ -531,6 +532,7 @@ a:hover {
   border: 1px solid #e5b79e;
   border-radius: 1.25rem;
   background: linear-gradient(135deg, #fff7ee 0%, #fff 72%);
+  color: #3f2a20;
 }
 
 .hurdle-card--resolved {
@@ -568,6 +570,7 @@ a:hover {
   border-left: 3px solid #d06c3c;
   border-radius: 0 0.7rem 0.7rem 0;
   background: #fff7ee;
+  color: #3f2a20;
 }
 
 .story-card__hurdle--resolved {
