@@ -280,8 +280,15 @@ a:hover {
 .pager {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
   margin-block: 24px;
+}
+.pager a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 4px;
 }
 .pager__state {
   color: var(--text-muted);
