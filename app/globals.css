@@ -204,7 +204,12 @@ a:hover {
   font-size: 1.15rem;
 }
 .story-card__title a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  max-width: 100%;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 .story-card__meta {
   margin-block: 4px 8px;
