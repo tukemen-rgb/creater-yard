@@ -224,13 +224,17 @@ a:hover {
 }
 
 .tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  max-width: 100%;
   padding: 3px 10px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
   background: var(--bg-elevated);
   color: var(--accent);
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 .tag:hover {
   text-decoration: none;
