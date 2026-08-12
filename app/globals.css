@@ -77,10 +77,14 @@ a:hover {
 .site-nav {
   margin-inline-start: auto;
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 .site-nav a {
-  padding: 7px 11px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 11px;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   color: var(--text-muted);
@@ -594,6 +598,21 @@ a:hover {
 }
 
 @media (max-width: 560px) {
+  .site-header__inner {
+    gap: 8px;
+  }
+  .brand__tag {
+    display: none;
+  }
+  .site-nav {
+    width: 100%;
+    margin-inline-start: 0;
+    justify-content: flex-start;
+  }
+  .site-nav a {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
   .auth-page {
     padding-block-start: 24px;
   }
