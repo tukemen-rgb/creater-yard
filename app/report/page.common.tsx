@@ -73,6 +73,7 @@ function ReportInner() {
             type="text"
             value={target}
             onChange={(e) => setTarget(e.target.value)}
+            maxLength={100}
             required
           />
         </label>
@@ -90,6 +91,8 @@ function ReportInner() {
             value={detail}
             onChange={(e) => setDetail(e.target.value)}
             rows={8}
+            minLength={10}
+            maxLength={4000}
             required
           />
         </label>
@@ -99,12 +102,13 @@ function ReportInner() {
             type="text"
             value={contact}
             onChange={(e) => setContact(e.target.value)}
+            maxLength={200}
           />
         </label>
-        {error && <p className="notice notice--error">{error}</p>}
+        {error && <p className="notice notice--error" role="alert">{error}</p>}
         <div className="form__actions">
           <button type="submit" className="button" disabled={busy}>
-            通報する
+            {busy ? '送信中…' : '通報する'}
           </button>
         </div>
       </form>
