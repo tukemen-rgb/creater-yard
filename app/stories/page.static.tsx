@@ -19,15 +19,26 @@ function StoriesInner() {
 
   const [listing, setListing] = useState<StoryListing | null>(null)
   const [error, setError] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
+    let active = true
+    setListing(null)
+    setError('')
     const query = new URLSearchParams({ page })
     if (tool) query.set('tool', tool)
     if (topic) query.set('topic', topic)
     api<StoryListing>(`/api/stories.json?${query}`)
-      .then(setListing)
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
-  }, [tool, topic, page])
+      .then((data) => {
+        if (active) setListing(data)
+      })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof ApiError ? err.message : '読み込めませんでした。')
+      })
+    return () => {
+      active = false
+    }
+  }, [tool, topic, page, retryCount])
 
   const filterLabel = tool || topic
   const filterQuery = tool ? `tool=${encodeURIComponent(tool)}` : topic ? `topic=${encodeURIComponent(topic)}` : ''
@@ -45,7 +56,14 @@ function StoriesInner() {
           「{filterLabel}」で絞り込み中 — <Link prefetch={false} href="/stories/">解除する</Link>
         </p>
       )}
-      {error && <p className="notice notice--error">{error}</p>}
+      {error && (
+        <div className="notice notice--error" role="alert">
+          {error}{' '}
+          <button type="button" className="button button--ghost" onClick={() => setRetryCount((count) => count + 1)}>
+            もう一度読み込む
+          </button>
+        </div>
+      )}
       {!error && !listing && <p className="notice">読み込み中…</p>}
       {listing && listing.stories.length === 0 && (
         <p className="notice">
