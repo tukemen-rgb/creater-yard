@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, formatDate, getHandle } from '../../../lib/api'
@@ -31,12 +31,20 @@ export default function AdminReportsPage() {
   const router = useRouter()
   const [listing, setListing] = useState<Listing | null>(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState('')
 
-  const load = () =>
-    api<Listing>('/api/reports', { auth: true })
-      .then(setListing)
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : '読み込めませんでした。'))
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      setListing(await api<Listing>('/api/reports', { auth: true }))
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : '読み込めませんでした。')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!getHandle()) {
@@ -44,11 +52,11 @@ export default function AdminReportsPage() {
       return
     }
     load()
-    // load は安定（外側の状態に依存しない）なので依存に入れない
-  }, [router])
+  }, [load, router])
 
   const setStatus = async (report: Report, status: string) => {
     setBusyId(report.id)
+    setError('')
     try {
       await api(`/api/reports/${report.id}`, { method: 'POST', body: { status }, auth: true })
       await load()
@@ -58,12 +66,30 @@ export default function AdminReportsPage() {
     setBusyId('')
   }
 
-  if (error) return <p className="notice notice--error">{error}</p>
-  if (!listing) return <p className="notice">読み込み中…</p>
+  if (!listing && loading) return <p className="notice">読み込み中…</p>
+  if (!listing) {
+    return (
+      <div className="page">
+        <p className="notice notice--error" role="alert">{error}</p>
+        <button type="button" className="button button--ghost" onClick={load}>
+          再読み込み
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="page">
       <h1>通報の一覧</h1>
+      {error && (
+        <div className="notice notice--error" role="alert">
+          <p>{error}</p>
+          <button type="button" className="button button--ghost" onClick={load}>
+            再読み込み
+          </button>
+        </div>
+      )}
+      {loading && <p className="notice" role="status">読み込み中…</p>}
       {listing.reports.length === 0 && <p className="notice">通報はありません。</p>}
       {listing.reports.map((report) => (
         <article key={report.id} className="story-card">
@@ -86,7 +112,7 @@ export default function AdminReportsPage() {
                 key={value}
                 type="button"
                 className={value === report.status ? 'button' : 'button button--ghost'}
-                disabled={busyId === report.id || value === report.status}
+                disabled={Boolean(busyId) || loading || value === report.status}
                 onClick={() => setStatus(report, value)}
               >
                 {label}
