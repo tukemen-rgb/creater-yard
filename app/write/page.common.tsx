@@ -44,6 +44,7 @@ function WriteInner() {
   const [status, setStatus] = useState<'public' | 'draft'>('public')
   const [image, setImage] = useState<StoryImage | null>(null)
   const [imageWarnings, setImageWarnings] = useState<string[]>([])
+  const [imageUploading, setImageUploading] = useState(false)
   const [error, setError] = useState('')
   const [loadError, setLoadError] = useState<{ id: string; message: string } | null>(null)
   const [loadedEditId, setLoadedEditId] = useState('')
@@ -140,6 +141,10 @@ function WriteInner() {
     value.split(/[,、，]/).map((item) => item.trim()).filter(Boolean)
 
   const save = async (saveStatus: 'public' | 'draft') => {
+    if (imageUploading) {
+      setError('画像の確認が終わるまでお待ちください。')
+      return
+    }
     setBusy(true)
     setError('')
     const payload = {
@@ -350,9 +355,11 @@ function WriteInner() {
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
+                disabled={busy || imageUploading}
                 onChange={async (e) => {
                   const file = e.target.files?.[0]
                   if (!file) return
+                  setImageUploading(true)
                   setError('')
                   setImageWarnings([])
                   try {
@@ -365,9 +372,16 @@ function WriteInner() {
                   } catch (err) {
                     e.target.value = ''
                     setError(err instanceof ApiError ? err.message : '画像を保存できませんでした。')
+                  } finally {
+                    setImageUploading(false)
                   }
                 }}
               />
+              {imageUploading && (
+                <span className="form__hint" role="status">
+                  画像を確認中です。完了するまで公開・下書き保存はできません。
+                </span>
+              )}
               {image && (
                 <span className="form__image-preview">
                   <img src={imageUrl(image)} alt="" width={image.width} height={image.height} />
@@ -403,14 +417,14 @@ function WriteInner() {
           </div>
         </details>
         <div className="form__actions">
-          <button type="button" className="button" disabled={busy} onClick={() => save('public')}>
+          <button type="button" className="button" disabled={busy || imageUploading} onClick={() => save('public')}>
             公開する
           </button>
-          <button type="button" className="button button--ghost" disabled={busy} onClick={() => save('draft')}>
+          <button type="button" className="button button--ghost" disabled={busy || imageUploading} onClick={() => save('draft')}>
             下書き保存
           </button>
           {editId && (
-            <button type="button" className="button button--danger" disabled={busy} onClick={remove}>
+            <button type="button" className="button button--danger" disabled={busy || imageUploading} onClick={remove}>
               削除する
             </button>
           )}
