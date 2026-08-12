@@ -216,6 +216,14 @@ a:hover {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+.story-card__meta a,
+.story__meta a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
 .story-card__excerpt {
   margin-block: 0;
   color: var(--text-muted);
