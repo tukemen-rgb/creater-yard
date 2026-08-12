@@ -14,6 +14,12 @@ import {
   type StoryImage,
 } from '../../lib/api'
 import { VoiceInput } from '../../components/voice-input'
+import { StoryInterview } from '../../components/story-interview'
+import {
+  saveInterviewDraft,
+  takeInterviewDraft,
+  type InterviewDraft,
+} from '../../lib/story-interview'
 
 function appendTranscript(current: string, transcript: string, maxLength: number, separator: string) {
   const before = current.trimEnd()
@@ -32,6 +38,8 @@ function WriteInner() {
   const params = useSearchParams()
   const editId = params.get('id') ?? ''
   const followsFirstStory = !editId && params.get('from') === 'first-story'
+  const startsWithInterview = !editId && params.get('mode') === 'interview'
+  const restoresInterview = !editId && params.get('restore') === 'interview'
 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -52,10 +60,11 @@ function WriteInner() {
   const [busy, setBusy] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [optionalFieldsOpen, setOptionalFieldsOpen] = useState(false)
+  const [interviewActive, setInterviewActive] = useState(startsWithInterview)
 
   useEffect(() => {
     let active = true
-    if (!getHandle()) {
+    if (!getHandle() && !startsWithInterview) {
       router.replace('/login/')
       return () => {
         active = false
@@ -105,7 +114,17 @@ function WriteInner() {
     return () => {
       active = false
     }
-  }, [editId, router, loadAttempt])
+  }, [editId, router, loadAttempt, startsWithInterview])
+
+  useEffect(() => {
+    if (!restoresInterview || !getHandle()) return
+    const draft = takeInterviewDraft()
+    if (!draft) return
+    setTitle(draft.title)
+    setBody(draft.body)
+    setHurdleText(draft.hurdleText)
+    setHasUnsavedChanges(true)
+  }, [restoresInterview])
 
   useEffect(() => {
     if (!hasUnsavedChanges) return
@@ -185,6 +204,19 @@ function WriteInner() {
     }
   }
 
+  const finishInterview = async (draft: InterviewDraft) => {
+    if (!getHandle()) {
+      saveInterviewDraft(draft)
+      router.push('/signup/')
+      return
+    }
+    setTitle(draft.title)
+    setBody(draft.body)
+    setHurdleText(draft.hurdleText)
+    setHasUnsavedChanges(true)
+    setInterviewActive(false)
+  }
+
   if (editId && loadedEditId !== editId) {
     const currentLoadError = loadError?.id === editId ? loadError.message : ''
     if (!currentLoadError) return <p className="notice">読み込み中…</p>
@@ -199,6 +231,14 @@ function WriteInner() {
         <p>
           <Link prefetch={false} href="/account/">← 自分のStory一覧へ</Link>
         </p>
+      </div>
+    )
+  }
+
+  if (interviewActive) {
+    return (
+      <div className="page page--narrow">
+        <StoryInterview onComplete={finishInterview} />
       </div>
     )
   }

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
+import { INTERVIEW_DRAFT_KEY } from '../../lib/story-interview'
 
 /**
  * 新規登録。ハンドル＋パスワードだけ。メールは任意（SPEC §1）。
@@ -28,7 +29,8 @@ export default function SignupPage() {
         body: { handle, password, contact },
       })
       saveSession(data.token, data.account)
-      router.push('/write/')
+      const hasInterviewDraft = Boolean(window.localStorage.getItem(INTERVIEW_DRAFT_KEY))
+      router.push(hasInterviewDraft ? '/write/?restore=interview' : '/write/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '登録できませんでした。')
       setBusy(false)

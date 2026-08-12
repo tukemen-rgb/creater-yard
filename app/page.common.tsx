@@ -21,7 +21,7 @@ export default function Home() {
         <Link prefetch={false} href="/stories/" className="button">
           Story を読む
         </Link>
-        <Link prefetch={false} href="/signup/" className="button button--ghost">
+        <Link prefetch={false} href="/write/?mode=interview" className="button button--ghost">
           書き始める
         </Link>
       </p>

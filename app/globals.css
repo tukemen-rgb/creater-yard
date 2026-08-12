@@ -470,6 +470,48 @@ a:hover {
   font-size: 0.85rem;
 }
 
+.interview__eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.interview__progress {
+  margin-block: 20px 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.interview__card {
+  padding: 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+}
+.interview__card h2 {
+  margin-block: 0 8px;
+  font-size: 1.25rem;
+}
+.interview__card textarea {
+  min-height: 132px;
+  background: var(--bg);
+}
+.interview__voice-note {
+  margin-block: 6px 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+.interview__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.interview__actions .button {
+  min-height: 44px;
+}
+
 .account-box {
   margin-block: 32px;
   padding: 20px 24px;
@@ -664,5 +706,11 @@ a:hover {
   }
   .auth-panel {
     padding: 20px;
+  }
+  .interview__card {
+    padding: 16px;
+  }
+  .interview__actions .button {
+    width: 100%;
   }
 }
