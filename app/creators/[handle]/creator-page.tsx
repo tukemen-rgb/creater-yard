@@ -38,7 +38,7 @@ export default async function CreatorPage({ params, searchParams }: Props) {
 
   return (
     <div className="page">
-      <h1>{handle} の記録</h1>
+      <h1 className="creator-page__title">{handle} の記録</h1>
       {listing.stories.map((story) => (
         <StoryCard key={story.id} story={story} showAuthor={false} />
       ))}
