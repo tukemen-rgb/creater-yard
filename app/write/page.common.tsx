@@ -13,6 +13,12 @@ import {
   type Story,
   type StoryImage,
 } from '../../lib/api'
+import { VoiceInput } from '../../components/voice-input'
+
+function appendTranscript(current: string, transcript: string, maxLength: number, separator: string) {
+  const before = current.trimEnd()
+  return `${before}${before ? separator : ''}${transcript}`.slice(0, maxLength)
+}
 
 /**
  * Story を書く・直す。?id= があれば編集。
@@ -237,6 +243,14 @@ function WriteInner() {
                 : '何を作ろうとして、どこでつまずいて、どう抜けたか（抜けられていなくても）。'
             }
           />
+          <VoiceInput
+            label="本文を音声で入力"
+            disabled={busy}
+            onTranscript={(transcript) => {
+              setBody((current) => appendTranscript(current, transcript, 8000, '\n'))
+              setHasUnsavedChanges(true)
+            }}
+          />
         </label>
         <fieldset className="form__field hurdle-editor">
           <legend>いま悩んでいること・乗り越えたこと（任意）</legend>
@@ -252,6 +266,14 @@ function WriteInner() {
             rows={3}
             maxLength={200}
             placeholder="例: スマホで操作すると当たり判定がずれる原因が分からない"
+          />
+          <VoiceInput
+            label="悩みを音声で入力"
+            disabled={busy}
+            onTranscript={(transcript) => {
+              setHurdleText((current) => appendTranscript(current, transcript, 200, ' '))
+              setHasUnsavedChanges(true)
+            }}
           />
           {hurdleText.trim() && (
             <div className="hurdle-editor__status" role="group" aria-label="つまずきの状態">

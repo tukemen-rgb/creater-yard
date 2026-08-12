@@ -456,6 +456,20 @@ a:hover {
   text-decoration: underline;
 }
 
+.voice-input {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.voice-input__button {
+  min-height: 44px;
+}
+.voice-input__status {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 .account-box {
   margin-block: 32px;
   padding: 20px 24px;
