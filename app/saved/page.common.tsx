@@ -44,15 +44,18 @@ export default function SavedStoriesPage() {
         この端末のブラウザに保存したStoryです。保存情報はCreatorYardへ送信しません。
       </p>
       {!ready && <p className="notice">読み込み中…</p>}
-      {ready && stories.length === 0 && (
+      {ready && !failed && stories.length === 0 && (
         <p className="notice">
           保存したStoryはありません。<Link prefetch={false} href="/stories/">Storyを読む</Link>
         </p>
       )}
       {failed && (
-        <p className="notice notice--error">
-          一部のStoryを読み込めませんでした。保存は消さずに残しています。
-        </p>
+        <div className="notice notice--error" role="alert">
+          一部のStoryを読み込めませんでした。保存は消さずに残しています。{' '}
+          <button type="button" className="button button--ghost" onClick={() => window.location.reload()}>
+            もう一度読み込む
+          </button>
+        </div>
       )}
       {stories.map((story) => <StoryCard key={story.id} story={story} />)}
     </div>
