@@ -38,6 +38,14 @@ export type Story = {
     text: string
     status: 'open' | 'resolved'
   } | null
+  /**
+   * 根拠リンク。活動（commit / PR / Issue / review）から起こした Story が、
+   * どの活動を元にしたかを示す。手で書いた Story では null。
+   * **並び順の材料には使わない**（件数を競争にしない）。
+   */
+  sources:
+    | { kind: 'commit' | 'pr' | 'issue' | 'review' | 'manual'; url: string; label: string; at?: string }[]
+    | null
   gameUrl: string
   image: StoryImage | null
   status: 'public' | 'draft'

@@ -103,6 +103,21 @@ export function StoryArticle({ story, nextStory }: { story: Story; nextStory?: S
           <p className="story-card__meta">書いた人: {nextStory.authorHandle}</p>
         </section>
       )}
+      {story.sources && story.sources.length > 0 && (
+        <section className="account-box" aria-labelledby="sources-heading">
+          <h2 id="sources-heading">この記録のもとになった活動</h2>
+          <ul className="story__sources">
+            {story.sources.map((s) => (
+              <li key={s.url}>
+                {/* 外部サイトへ評価と参照元を渡さない。追跡クエリも付けない */}
+                <a href={s.url} rel="nofollow noopener" target="_blank">
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <p className="story__report">
         <Link prefetch={false} href={`/report/?story=${story.id}`}>
           この Story の問題を通報する

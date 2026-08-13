@@ -39,6 +39,10 @@ export const STORY_LIMITS = {
   gameUrlMax: 300,
   /** つまずき欄の本文。SPEC §1 の「短文」。緩めるのは人の判断（CLAUDE.md）。 */
   hurdleMax: 200,
+  /** 根拠リンク（sources）。件数・URL 長・表示名の上限。緩めるのは人の判断。 */
+  sources: 20,
+  sourceUrlMax: 300,
+  sourceLabelMax: 80,
   /** 1 人あたりの保持件数。書き潰しでディスクを埋められないための上限。 */
   maxPerAuthor: 500,
   perPage: 20,
@@ -174,6 +178,52 @@ function normalizeTools(list) {
  * GAMEYARD だけに絞る。外部決済リンク等を持つ話（D-CY4）は Story 本文
  * ではなくプロフィール側の設計になってから考える。
  */
+/** `sources` の種類。知らない値は 'manual' に倒す（拒否せず、嘘もつかない）。 */
+const SOURCE_KINDS = new Set(['commit', 'pr', 'issue', 'review', 'manual'])
+
+/**
+ * 根拠リンク（経営判断 2026-08-11「根拠リンク付きで下書き生成」の受け皿）。
+ *
+ * **`https:` 以外は受けない。** `javascript:` や `data:` を保存すると、
+ * その Story を開いた人の画面でそれが動く。入口で止める。
+ *
+ * 空配列は undefined に畳む（PUT は置き換え。hurdle と同じ扱い）。
+ * 並び順の材料にはしない — 件数の多い Story を上に出すと、
+ * 「根拠が多いほうが上」という順位づけになる（CLAUDE.md「数字を競争にしない」）。
+ */
+function normalizeSources(value) {
+  if (value == null) return undefined
+  if (!Array.isArray(value)) throw new StoryError('根拠リンクの形式が不正です。')
+  if (value.length > STORY_LIMITS.sources) {
+    throw new StoryError(`根拠リンクは${STORY_LIMITS.sources}件までにしてください。`)
+  }
+  const out = []
+  for (const item of value) {
+    const raw = String(item?.url ?? '').trim()
+    if (!raw) continue
+    if (raw.length > STORY_LIMITS.sourceUrlMax) {
+      throw new StoryError(`根拠リンクの URL は${STORY_LIMITS.sourceUrlMax}文字以内にしてください。`)
+    }
+    let url
+    try {
+      url = new URL(raw)
+    } catch {
+      throw new StoryError('根拠リンクが URL として読めません。')
+    }
+    if (url.protocol !== 'https:') {
+      throw new StoryError('根拠リンクに使えるのは https:// で始まる URL だけです。')
+    }
+    const at = String(item?.at ?? '').trim()
+    out.push({
+      kind: SOURCE_KINDS.has(item?.kind) ? item.kind : 'manual',
+      url: url.toString(),
+      label: cleanText(item?.label, STORY_LIMITS.sourceLabelMax) || url.hostname,
+      ...(at && !Number.isNaN(Date.parse(at)) ? { at: new Date(at).toISOString() } : {}),
+    })
+  }
+  return out.length ? out : undefined
+}
+
 function normalizeGameUrl(value) {
   const raw = String(value ?? '').trim()
   if (!raw) return ''
@@ -270,6 +320,7 @@ export class StoryStore {
       topicTags: normalizeTags(input.topicTags, 'つまずき・トピックタグ'),
       gameUrl: normalizeGameUrl(input.gameUrl),
       hurdle: normalizeHurdle(input.hurdle),
+      sources: normalizeSources(input.sources),
     }
   }
 
@@ -452,6 +503,7 @@ export function publicStory(record) {
     toolTags: record.toolTags ?? [],
     topicTags: record.topicTags ?? [],
     hurdle: record.hurdle ?? null,
+    sources: record.sources ?? null,
     gameUrl: record.gameUrl ?? '',
     image: record.image ?? null,
     status: record.status,

@@ -322,6 +322,51 @@ test('画像ストア: 本人だけが添付でき、孤児は時間で消える
   assert.notEqual(store.meta(saved.id), null)
 })
 
+test('根拠リンク: https だけを受け、上限を守り、空で消える', () => {
+  const stories = freshStories('story-sources')
+  const made = stories.create(AUTHOR, {
+    title: '活動から起こした記録',
+    body: 'x'.repeat(30),
+    sources: [
+      { kind: 'commit', url: 'https://github.com/o/r/commit/abc', label: 'レイヤー設定を直した', at: '2026-08-13T01:00:00.000Z' },
+      { kind: 'なにこれ', url: 'https://github.com/o/r/pull/1' },
+      { kind: 'issue', url: '   ' },
+    ],
+  })
+  assert.equal(made.sources.length, 2, '空の URL は落ちる')
+  assert.equal(made.sources[0].kind, 'commit')
+  assert.equal(made.sources[1].kind, 'manual', '知らない kind は manual へ倒す')
+  assert.equal(made.sources[1].label, 'github.com', 'label 未指定なら hostname')
+
+  // https 以外は入口で止める（開いた人の画面で動くため）
+  for (const bad of ['javascript:alert(1)', 'data:text/html,<script>a</script>', 'http://github.com/x']) {
+    assert.throws(
+      () => stories.create(AUTHOR, { title: 't', body: 'y'.repeat(30), sources: [{ url: bad }] }),
+      StoryError,
+      bad,
+    )
+  }
+
+  // 件数の上限
+  assert.throws(
+    () =>
+      stories.create(AUTHOR, {
+        title: 't',
+        body: 'y'.repeat(30),
+        sources: Array.from({ length: 21 }, (_, i) => ({ url: `https://github.com/o/r/commit/${i}` })),
+      }),
+    StoryError,
+  )
+
+  // 空で送れば消える（PUT は置き換え）
+  const cleared = stories.update(made.id, AUTHOR, { title: made.title, body: made.body })
+  assert.equal(cleared.sources, undefined)
+
+  // 手で書いた Story には付かない（「根拠が無い」と見せない）
+  const byHand = stories.create(AUTHOR, { title: '手書き', body: 'z'.repeat(30) })
+  assert.equal(byHand.sources, undefined)
+})
+
 test('つまずき欄: 本文と未解決/解決を持て、本人以外は触れない（SPEC §1）', () => {
   const stories = freshStories('story-hurdle')
 
