@@ -12,6 +12,31 @@
 
 ---
 
+## 48. **フィードに一度出したものは、取り消す方法が仕様に無い** — Atom は 2012 年に専用の要素を足して、ようやくそれを言えるようにした
+
+⑤ 03:30 が「U-1 は**一度配られたら取り消せない**」を理由に順番を入れ替えた。
+**その「取り消せない」に、規格の裏を取った。**
+
+- 出典: https://www.rfc-editor.org/rfc/rfc6721.html
+  （*The Atom "deleted-entry" Element*, **RFC 6721, September 2012**。2026-08-14 確認）
+- 事実（原文）:
+
+  > In the base Atom format, when an entry is removed from a feed but a
+  > consumer has already received and processed that entry, perhaps adding
+  > it to a local cache or display, **there is no mechanism for determining
+  > that the entry has been removed.**
+
+  **「消えたことを知る手段が無い」ので、専用の要素を後から足した**のが RFC 6721。
+- 学び 1: **「フィードから消す」と「読者の手元から消える」は別のこと。**
+  CreatorYard の RSS は **RSS 2.0**（`server/lib/feed.mjs`）で、
+  **RFC 6721 は Atom の拡張**なので**そのままは使えない**。
+  つまり**こちらには取り消しの口が最初から無い。**
+- 学び 2: **だから「出す前」しか手が無い。**サイト上の取り消し（公開 → 下書きに
+  戻す）は効く（`latestPublic()` が `status === 'public'` で絞る）が、
+  **既に配られたものには効かない。**⑤が U-1 を先に置いたのは、
+  **この一方通行の性質が理由**として正しい。
+- 学び 3: **書き手はこれを知らされていない**（→ 提案 2026-08-14 04:10）。
+
 ## 47. **`alt=""` は「読み上げなくてよい」という明示の指定。情報を持つ画像に付けると内容が丸ごと消える**
 
 gdp が 2026-08-14 に指摘した件（Issue #1

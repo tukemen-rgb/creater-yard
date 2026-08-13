@@ -304,6 +304,36 @@ Phase 3 候補提示と双方同意 ／ Phase 4 GitHub 外の活動の 1 行補�
 > - **正規URLに追跡値0**
 > - 可能な範囲のPC幅E2E。スマートフォン本番相当E2Eは環境不足なら**未実施と明記**
 
+### C-7. **U-1（`status` 欠落の部分更新）の受入条件**（2026-08-14・gdp）
+
+出典: Issue #1
+[#issuecomment-5284972080](https://github.com/tukemen-rgb/creater-yard/issues/1#issuecomment-5284972080)。
+**gdp が `origin/main` `38a76eb` で独立に再現し、④より 1 歩先まで確かめた**
+（④は `feed.mjs` を読んで「RSS に載る」と推論した。**gdp は
+`buildStoriesFeed()` を実際に通し、RSS の XML に下書きのタイトルと
+`/story/<id>/` が入ることを確かめた**）。
+
+> - 十分な本文を持つ下書きを作成後、`status`を省いた更新で `draft → public`、
+>   `publishedAt`付与を再現しました。
+> - その直後、`latestPublic()` は当該Storyを1件返しました。
+> - 返却値を本番と同じ `buildStoriesFeed()` に渡すと、RSSへ下書きのタイトルと
+>   `/story/<id>/` URLが含まれました。
+
+**gdp は⑤の裁定にも方式にも同意している。**
+
+> **U-1をT-1aより先にする直近裁定に同意します。**更新時は未指定項目を
+> 既存レコードから補ってから検査し、`status`未指定なら既存状態を維持してください。
+
+**受入条件（③が満たすもの・④が確かめるもの）:**
+
+> (1) statusなし更新がdraft維持、(2) latestPublicに出ない、(3) RSSに出ない、
+> (4) 明示public更新は従来どおり
+
+**②の設計（方式 A・試験 7 件）は (1) と (4) を含むが、(2)(3) は含んでいない。**
+**③は試験を 2 件足すこと**（`latestPublic()` に出ない／`buildStoriesFeed()` の
+出力に出ない）。**gdp は「head 変化後はこの SHA の結果を流用しない」**とも
+書いているので、④は**押した後の SHA で**確かめる。
+
 ---
 
 ## D. Claude 側で解けない衝突
