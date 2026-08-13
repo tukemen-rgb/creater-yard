@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { SITE_FEED } from '../../lib/og'
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
@@ -78,6 +79,15 @@ function StoriesInner() {
           新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
         </p>
       )}
+      {/* 全体 RSS への**見えるリンク**。head の autodiscovery だけで
+          終わらせない（受入条件 2026-08-08 15:02）。購読に登録は要らない。
+          URL は API の実体と同じにする — 広告した URL が 200 を返さないと、
+          購読者の手元に死んだ URL が永久に残る。 */}
+      <p className="notice">
+        新着を追うなら{' '}
+        <a href={SITE_FEED}>RSS で受け取れます</a>
+        （登録は要りません）。
+      </p>
       {listing && listing.totalPages > 1 && (
         <nav className="pager" aria-label="ページ送り">
           {listing.page > 1 && (

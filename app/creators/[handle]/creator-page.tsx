@@ -54,6 +54,12 @@ export default async function CreatorPage({ params, searchParams }: Props) {
       {listing.stories.map((story) => (
         <StoryCard key={story.id} story={story} showAuthor={false} />
       ))}
+      {/* この作者の RSS への**見えるリンク**。全体 RSS ではない。 */}
+      <p className="notice">
+        {handle} の新着を追うなら{' '}
+        <a href={handleFeedPath(handle)}>RSS で受け取れます</a>
+        （登録は要りません）。
+      </p>
       <Pager
         page={listing.page}
         totalPages={listing.totalPages}
