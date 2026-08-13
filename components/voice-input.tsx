@@ -48,10 +48,12 @@ function errorMessage(error: string) {
 export function VoiceInput({
   label,
   disabled = false,
+  onListeningChange,
   onTranscript,
 }: {
   label: string
   disabled?: boolean
+  onListeningChange?: (listening: boolean) => void
   onTranscript: (text: string) => void
 }) {
   const recognitionRef = useRef<Recognition | null>(null)
@@ -93,10 +95,14 @@ export function VoiceInput({
         setMessage('音声を入力しました。')
       }
     }
-    recognition.onerror = (event) => setMessage(errorMessage(event.error))
+    recognition.onerror = (event) => {
+      setMessage(errorMessage(event.error))
+      onListeningChange?.(false)
+    }
     recognition.onend = () => {
       recognitionRef.current = null
       setListening(false)
+      onListeningChange?.(false)
     }
 
     recognitionRef.current = recognition
@@ -104,9 +110,11 @@ export function VoiceInput({
     try {
       recognition.start()
       setListening(true)
+      onListeningChange?.(true)
     } catch {
       recognitionRef.current = null
       setListening(false)
+      onListeningChange?.(false)
       setMessage('音声入力を開始できませんでした。もう一度お試しください。')
     }
   }

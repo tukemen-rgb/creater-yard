@@ -24,6 +24,7 @@ export function StoryInterview({
   const [error, setError] = useState('')
   const [progressReady, setProgressReady] = useState(false)
   const [restored, setRestored] = useState(false)
+  const [voiceListening, setVoiceListening] = useState(false)
   const question = INTERVIEW_QUESTIONS[step]
   const answer = answers[step]
 
@@ -98,7 +99,7 @@ export function StoryInterview({
           {restored ? '保存した続きから再開しました。' : '回答は質問ごとに、この端末へ自動保存されます。'}
         </p>
         {restored && (
-          <button type="button" className="linklike" onClick={restart}>
+          <button type="button" className="linklike" disabled={voiceListening} onClick={restart}>
             最初からやり直す
           </button>
         )}
@@ -110,6 +111,7 @@ export function StoryInterview({
           回答
           <textarea
             autoFocus
+            disabled={voiceListening || busy}
             value={answer}
             rows={6}
             maxLength={1200}
@@ -120,20 +122,25 @@ export function StoryInterview({
         <VoiceInput
           label={`${question.label}への回答を音声で入力`}
           disabled={busy}
+          onListeningChange={setVoiceListening}
           onTranscript={(transcript) => {
             const combinedAnswer = appendInterviewTranscript(answer, transcript)
             updateAnswer(combinedAnswer)
             void advance(combinedAnswer)
           }}
         />
-        <p className="interview__voice-note">音声は聞き取り後、自動で次の質問へ進みます。</p>
+        <p className="interview__voice-note" role={voiceListening ? 'status' : undefined}>
+          {voiceListening
+            ? '聞き取り中です。完了すると自動で次の質問へ進みます。'
+            : '音声は聞き取り後、自動で次の質問へ進みます。'}
+        </p>
         {error && <p className="notice notice--error" role="alert">{error}</p>}
         <div className="interview__actions">
           {step > 0 && (
             <button
               type="button"
               className="button button--ghost"
-              disabled={busy}
+              disabled={busy || voiceListening}
               onClick={() => {
                 setError('')
                 setStep((current) => current - 1)
@@ -142,7 +149,12 @@ export function StoryInterview({
               前の質問
             </button>
           )}
-          <button type="button" className="button" disabled={busy} onClick={() => void advance()}>
+          <button
+            type="button"
+            className="button"
+            disabled={busy || voiceListening}
+            onClick={() => void advance()}
+          >
             {busy
               ? '下書きを準備中…'
               : step === INTERVIEW_QUESTIONS.length - 1
