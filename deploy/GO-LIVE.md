@@ -82,6 +82,26 @@ certbot certonly --nginx -d creatoryard.example
 nginx -t && systemctl reload nginx
 ```
 
+**Cloudflare の IP 範囲を取り直す**（`set_real_ip_from` の行）。
+入れっぱなしにしない —— Cloudflare は範囲を足すことがある。
+足された範囲が抜けていると、**その範囲を通った訪問者だけ IP を取り戻せず、
+まとめて 1 枠**になる（流量制限とログインのバックオフが効かない）。
+
+```sh
+curl -s https://www.cloudflare.com/ips-v4
+# 出た範囲を deploy/nginx.conf.example の set_real_ip_from と突き合わせ、
+# 増えていたら足す。ファイル上部の「取得日」も更新する
+```
+
+**取り戻せているかの確認**（訪問者の IP になっているか）:
+
+```sh
+# 公開後、別回線のスマホなどから 1 回アクセスしてから
+tail -n 5 /var/log/nginx/access.log
+# 先頭の IP が Cloudflare の範囲（104.16.x など）のままなら、
+# 取り戻せていない。set_real_ip_from を確認する
+```
+
 ## 5. 公開後の確認（上から順に）
 
 - [ ] `https://<ドメイン>/` … トップが出る（静的）
