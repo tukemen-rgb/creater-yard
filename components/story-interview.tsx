@@ -49,6 +49,15 @@ export function StoryInterview({
     setAnswers((current) => current.map((item, index) => (index === step ? value.slice(0, 1200) : item)))
   }
 
+  const restart = () => {
+    if (!window.confirm('保存した回答を消して、最初から始めますか？')) return
+    clearInterviewProgress()
+    setAnswers(INTERVIEW_QUESTIONS.map(() => ''))
+    setStep(0)
+    setRestored(false)
+    setError('')
+  }
+
   const advance = async (spokenAnswer?: string) => {
     const finalAnswers = answers.map((item, index) => (
       index === step ? (spokenAnswer ?? item).trim() : item.trim()
@@ -83,9 +92,16 @@ export function StoryInterview({
       <p className="interview__progress" aria-live="polite">
         質問 {step + 1} / {INTERVIEW_QUESTIONS.length}
       </p>
-      <p className="interview__saved" role="status">
-        {restored ? '保存した続きから再開しました。' : '回答は質問ごとに、この端末へ自動保存されます。'}
-      </p>
+      <div className="interview__saved">
+        <p role="status">
+          {restored ? '保存した続きから再開しました。' : '回答は質問ごとに、この端末へ自動保存されます。'}
+        </p>
+        {restored && (
+          <button type="button" className="linklike" onClick={restart}>
+            最初からやり直す
+          </button>
+        )}
+      </div>
       <div className="interview__card">
         <h2>{question.label}</h2>
         <p className="form__hint">{question.hint}</p>

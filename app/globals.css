@@ -483,9 +483,16 @@ a:hover {
   font-size: 0.9rem;
 }
 .interview__saved {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 8px;
   margin-block: 2px 8px;
   color: var(--text-muted);
   font-size: 0.82rem;
+}
+.interview__saved p {
+  margin: 0;
 }
 .interview__card {
   padding: 20px;
