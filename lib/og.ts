@@ -43,12 +43,12 @@ export function tagUrl(tag: string): string | null {
 /**
  * タグで絞った Story 一覧の正規 URL。
  *
- * `/stories/?tool=A&page=2` と `/stories/?page=2&tool=A` は**別 URL で同じ中身**
- * になるので、**1 本に正規化して canonical に出す**。`page` は落として
- * 1 ページ目へ寄せる（ページ送りは同じ一覧の続きで、別の内容ではない）。
+ * クエリの順序やタグの表記揺れだけが違う URL は**同じ中身**になるので、
+ * **1 本に正規化して canonical に出す**。一方、ページ送りは各ページの
+ * Story が異なるため、2 ページ目以降は `page` を残す。
  *
- * `tool` と `topic` が両方来たら **`tool` を優先**する。両方を canonical に
- * 入れると、また 2 本になるため。
+ * `tool` と `topic` は一覧側で AND 絞り込みされるため、両方あれば両方を
+ * canonical に残す。順序は常に tool → topic → page とする。
  *
  * **タグ長の上限（`STORY_LIMITS.tagMax` = 24）を超える値には canonical を
  * 出さない。**保存できないタグなので結果は必ず 0 件で、長い文字列を
@@ -58,14 +58,22 @@ export function tagUrl(tag: string): string | null {
  */
 const CANONICAL_TAG_MAX = 24
 
-export function storiesFilterUrl(tool?: string, topic?: string): string | null {
+export function storiesFilterUrl(tool?: string, topic?: string, page?: string): string | null {
   const origin = siteOrigin()
   if (!origin) return null
-  const axis = tool?.trim() ? 'tool' : topic?.trim() ? 'topic' : ''
-  const value = (axis === 'tool' ? tool : axis === 'topic' ? topic : '')?.trim() ?? ''
-  if (!axis) return `${origin}/stories/`
-  if (value.length > CANONICAL_TAG_MAX) return null
-  return `${origin}/stories/?${axis}=${encodeURIComponent(value)}`
+  // 一覧の照合規則（NFKC・小文字・前後空白除去）と同じ形にする。
+  const toolTag = String(tool ?? '').normalize('NFKC').toLowerCase().trim()
+  const topicTag = String(topic ?? '').normalize('NFKC').toLowerCase().trim()
+  if (toolTag.length > CANONICAL_TAG_MAX || topicTag.length > CANONICAL_TAG_MAX) return null
+
+  const params = new URLSearchParams()
+  if (toolTag) params.set('tool', toolTag)
+  if (topicTag) params.set('topic', topicTag)
+  const pageNumber = Math.floor(Number(page))
+  if (Number.isFinite(pageNumber) && pageNumber > 1) params.set('page', String(pageNumber))
+
+  const query = params.toString()
+  return `${origin}/stories/${query ? `?${query}` : ''}`
 }
 
 /** 作者ページの正規 URL。 */
