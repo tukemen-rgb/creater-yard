@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, formatDate, getHandle } from '../../../lib/api'
@@ -33,6 +33,7 @@ export default function AdminReportsPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState('')
+  const statusUpdateLockRef = useRef(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -55,6 +56,8 @@ export default function AdminReportsPage() {
   }, [load, router])
 
   const setStatus = async (report: Report, status: string) => {
+    if (statusUpdateLockRef.current) return
+    statusUpdateLockRef.current = true
     setBusyId(report.id)
     setError('')
     try {
@@ -62,8 +65,10 @@ export default function AdminReportsPage() {
       await load()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '更新できませんでした。')
+    } finally {
+      statusUpdateLockRef.current = false
+      setBusyId('')
     }
-    setBusyId('')
   }
 
   if (!listing && loading) return <p className="notice">読み込み中…</p>
