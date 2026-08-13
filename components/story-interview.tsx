@@ -95,10 +95,10 @@ export function StoryInterview({
 
   return (
     <section className="interview" aria-labelledby="interview-title">
-      <p className="interview__eyebrow">AIヒアリング</p>
+      <p className="interview__eyebrow">Storyヒアリング</p>
       <h1 id="interview-title">話すだけで、Storyの下書きに。</h1>
       <p className="page__lede">
-        4つの質問に答えると、投稿フォームへ自動で整理します。API接続前も基本質問で利用できます。
+        4つの質問に答えると、端末内で投稿フォームへ自動で整理します。音声入力にも対応し、回答はAIへ送信しません。
       </p>
       <p className="interview__progress" aria-live="polite">
         質問 {step + 1} / {INTERVIEW_QUESTIONS.length}

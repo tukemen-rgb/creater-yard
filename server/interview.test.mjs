@@ -40,3 +40,10 @@ test('同じ質問の進行処理を重複実行しない', () => {
   assert.match(source, /if \(advanceLockRef\.current\) return\s+advanceLockRef\.current = true/)
   assert.match(source, /advanceLockRef\.current = false\s+}, \[step\]\)/)
 })
+
+test('固定質問のヒアリングをAI処理と誤表示しない', () => {
+  const source = readFileSync(new URL('../components/story-interview.tsx', import.meta.url), 'utf8')
+  assert.match(source, />Storyヒアリング</)
+  assert.match(source, /回答はAIへ送信しません/)
+  assert.doesNotMatch(source, />AIヒアリング</)
+})
