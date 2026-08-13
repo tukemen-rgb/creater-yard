@@ -19,13 +19,13 @@ export const dynamic = 'force-dynamic'
 type Props = { searchParams: Promise<{ tool?: string; topic?: string; page?: string }> }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const { tool, topic } = await searchParams
+  const { tool, topic, page } = await searchParams
   const filter = tool || topic
   const title = filter ? `「${filter}」の Story` : 'Creator Story'
   const description = filter
     ? `「${filter}」に関する制作記録（Creator Story）の一覧。`
     : 'つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。'
-  const canonical = storiesFilterUrl(tool, topic)
+  const canonical = storiesFilterUrl(tool, topic, page)
   return {
     title,
     description,
