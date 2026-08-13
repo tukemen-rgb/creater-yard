@@ -99,7 +99,7 @@ export function StoryInterview({
           {restored ? '保存した続きから再開しました。' : '回答は質問ごとに、この端末へ自動保存されます。'}
         </p>
         {restored && (
-          <button type="button" className="linklike" disabled={voiceListening} onClick={restart}>
+          <button type="button" className="linklike" disabled={busy || voiceListening} onClick={restart}>
             最初からやり直す
           </button>
         )}

@@ -25,3 +25,11 @@ test('聞き取り中は質問移動と回答変更を止める', () => {
   assert.match(source, /disabled=\{voiceListening \|\| busy\}/)
   assert.match(source, /disabled=\{busy \|\| voiceListening\}/)
 })
+
+test('下書き準備中は復元回答のリセットを止める', () => {
+  const source = readFileSync(new URL('../components/story-interview.tsx', import.meta.url), 'utf8')
+  assert.match(
+    source,
+    /className="linklike" disabled=\{busy \|\| voiceListening\} onClick=\{restart\}/,
+  )
+})
