@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
@@ -18,9 +18,12 @@ export default function SignupPage() {
   const [contact, setContact] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const submitLockRef = useRef(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitLockRef.current) return
+    submitLockRef.current = true
     setBusy(true)
     setError('')
     try {
@@ -32,6 +35,7 @@ export default function SignupPage() {
       router.push(hasInterviewDraft() ? '/write/?restore=interview' : '/write/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '登録できませんでした。')
+      submitLockRef.current = false
       setBusy(false)
     }
   }

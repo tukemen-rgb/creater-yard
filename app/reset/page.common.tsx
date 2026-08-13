@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Suspense, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
@@ -22,9 +22,12 @@ function ResetInner() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const submitLockRef = useRef(false)
 
   const request = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitLockRef.current) return
+    submitLockRef.current = true
     setBusy(true)
     setError('')
     try {
@@ -35,12 +38,15 @@ function ResetInner() {
       setMessage(data.message)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '受け付けられませんでした。')
+      submitLockRef.current = false
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   const confirm = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitLockRef.current) return
+    submitLockRef.current = true
     setBusy(true)
     setError('')
     try {
@@ -53,6 +59,7 @@ function ResetInner() {
       router.push('/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '再設定できませんでした。')
+      submitLockRef.current = false
       setBusy(false)
     }
   }
