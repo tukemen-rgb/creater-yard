@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   appendInterviewTranscript,
@@ -25,6 +25,7 @@ export function StoryInterview({
   const [progressReady, setProgressReady] = useState(false)
   const [restored, setRestored] = useState(false)
   const [voiceListening, setVoiceListening] = useState(false)
+  const advanceLockRef = useRef(false)
   const question = INTERVIEW_QUESTIONS[step]
   const answer = answers[step]
 
@@ -47,6 +48,10 @@ export function StoryInterview({
     }
   }, [answers, progressReady, step])
 
+  useEffect(() => {
+    advanceLockRef.current = false
+  }, [step])
+
   const updateAnswer = (value: string) => {
     setAnswers((current) => current.map((item, index) => (index === step ? value.slice(0, 1200) : item)))
   }
@@ -61,11 +66,14 @@ export function StoryInterview({
   }
 
   const advance = async (spokenAnswer?: string) => {
+    if (advanceLockRef.current) return
+    advanceLockRef.current = true
     const finalAnswers = answers.map((item, index) => (
       index === step ? (spokenAnswer ?? item).trim() : item.trim()
     ))
     if (!finalAnswers[step]) {
       setError('回答を入力してください。')
+      advanceLockRef.current = false
       return
     }
     setAnswers(finalAnswers)
@@ -81,6 +89,7 @@ export function StoryInterview({
     } catch {
       setError('回答を引き継げませんでした。この画面のまま、もう一度お試しください。')
       setBusy(false)
+      advanceLockRef.current = false
     }
   }
 

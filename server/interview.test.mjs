@@ -33,3 +33,10 @@ test('下書き準備中は復元回答のリセットを止める', () => {
     /className="linklike" disabled=\{busy \|\| voiceListening\} onClick=\{restart\}/,
   )
 })
+
+test('同じ質問の進行処理を重複実行しない', () => {
+  const source = readFileSync(new URL('../components/story-interview.tsx', import.meta.url), 'utf8')
+  assert.match(source, /const advanceLockRef = useRef\(false\)/)
+  assert.match(source, /if \(advanceLockRef\.current\) return\s+advanceLockRef\.current = true/)
+  assert.match(source, /advanceLockRef\.current = false\s+}, \[step\]\)/)
+})
