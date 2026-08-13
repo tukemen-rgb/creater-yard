@@ -9,6 +9,140 @@
 
 ---
 
+## 2026-08-14 00:30 JST **T-1「タグの URL は路かクエリか」— 結論: 路を増やさない。クエリのまま** — 状態: **設計済み（③への実装は 1 件だけ・小さい）**
+
+⑤ 00:30 の指示。①の 00:10 の提案（保存で消える件）ではなく**こちらを取る**
+（規則: mediation の指示が優先）。①の提案は次の②の周へ回す。
+
+**②の結論は「取り下げ」です。**⑤は「移植ではなく URL 設計の話だから②へ」と
+渡したが、**実物を読んだ結果、路を増やす理由が消えました。**
+③に渡すのは**別の小さな 1 件**だけです。
+
+### 何を確かめたか（推測なし・PR #4 head `654dd70` と作業枝を読んだ）
+
+| | 作業ブランチ | **PR #4（正本）** |
+| --- | --- | --- |
+| タグの結果ページ | `app/tags/[tag]/page.tsx`（98 行・**焼く**） | `/stories/?tool=` `/stories/?topic=`（**クエリ**） |
+| 軸の扱い | **軸で分けない**（1 語がツール軸・トピック軸を横断） | **軸で分ける**（`tool` と `topic` は別の結果） |
+| server モードの中身 | — | `page.server.tsx`・`force-dynamic`・**HTML を組み立てて返す**。`generateMetadata` が `「<タグ>」の Story` を出す |
+| static モードの中身 | 焼いた HTML | `page.static.tsx`・`'use client'`・**ブラウザから API を読む**。metadata は無い |
+
+### **決め手は nginx だった**（PR #4 `deploy/nginx.conf.example:81`）
+
+```nginx
+# ---- 動的ページ（Story が増えるたびに変わるパス） ----
+location ~ ^/(story|stories|creators|tags)(/|$) {
+    proxy_pass http://creatoryard_web;
+}
+```
+
+**`/stories/` と `/tags/` は、静的ファイルを一切見ずに Next サーバーへ行きます。**
+`try_files` の対象外なので、**`page.static.tsx` は本番の経路に載りません。**
+`deploy/creatoryard-web.service:17` も `Environment=SITE_MODE=server`。
+
+つまり **`/stories/?tool=Godot` は本番で「JS 無しで読める HTML」を返します。**
+「クエリだと JS 必須」という②の当初の想定は、**この配備では成り立ちません。**
+`page.static.tsx` は `out/` だけを配る構成のための予備であって、
+**いまの公開手順（`deploy/GO-LIVE.md`）はサーバーも動かします。**
+
+### 路を増やさない理由（3 つ）
+
+1. **クエリで用が足りている。**JS 無しで HTML が返り、per-タグの `<title>` も出る
+2. **タグは利用者が作るので数に上限が無い。**焼くと**公開のたびに全タグを焼き直す**
+   ことになる。いまの再ビルドの回し方（case-studies 43）に負荷を足す
+3. **A-1 で決めた正規 URL は `/story/<id>/` と `/creators/<handle>/` の 2 つだけ。**
+   3 つ目の正規 URL を足すのは gdp の同意が要る話で、**得るものに見合わない**
+
+### 路を増やす唯一の本当の利点（隠さず書く）
+
+**焼いた路は「在るタグ」だけの有限集合。クエリは無限に作れます。**
+`?tool=` に何を入れても 200 が返るので、クローラは無限に潜れます。
+**いまは全ページ noindex なので無害**ですが、**公開判断の瞬間に効いてきます。**
+→ 下の T-1b に、路を増やさずに塞ぐ形を書きました。**ただし着手は公開判断の後**
+（⑤が `app/sitemap.ts` を保留にしたのと同じ理由。いま入れても効かない）。
+
+---
+
+## T-1a（③へ・**これだけ実装する**）タグ結果ページに canonical と OGP が無い
+
+### 変更対象ファイル
+
+- `app/stories/page.server.tsx` — `generateMetadata` のみ（**表示は触らない**）
+
+### いまの中身（実物）
+
+```ts
+return {
+  title: filter ? `「${filter}」の Story` : 'Creator Story',
+  description: filter ? `「${filter}」に関する…` : 'つくる過程の記録。…',
+}
+```
+
+**`alternates` が無く、`openGraph` も無い。**結果:
+
+- `?tool=A&page=1` と `?page=1&tool=A` は**別 URL・同じ中身**。正規形が示されていない
+- タグの結果ページを共有すると、**サイト全体の OGP カード**が出る
+  （`app/layout.common.tsx` の `SITE_OG`）。何のタグか分からない
+
+### データモデル
+
+**変更なし。**Story のレコードにも `tagIndex()` にも触らない。
+
+### 経路・画面
+
+**変更なし。**URL も見た目も 1px も変わらない。`<head>` だけが変わる。
+
+### 中身（`lib/og.ts` の既存の関数を使う。**新しい関数を作らない**）
+
+- `alternates: alternatesFor(canonical)` — `canonical` は
+  **`/stories/?tool=<値>` の 1 本に正規化**（`page` は落とす。1 ページ目に寄せる）
+- `openGraph: { ...SITE_OG, title, description, type: 'website', url: canonical }`
+  — **`...SITE_OG` の展開を絶対に忘れない**。忘れると親の `og:site_name` と
+  `og:locale` が**丸ごと消える**（case-studies 41。**この罠は 2 回踏んでいる**）
+- `tool` と `topic` の**両方**が来たときは、`tool` を優先して 1 本に決める
+  （どちらも canonical に入れると、また 2 本になる）
+
+### 試験計画（`server/test.mjs` に足す。**3 件**）
+
+1. `?tool=Godot` の HTML に `rel="canonical"` が **1 本だけ**あり、
+   `?page=2` を付けても**同じ 1 本**を指す
+2. `?tool=Godot` の HTML に `og:site_name=CreatorYard` と `og:locale=ja_JP` が
+   **残っている**（`...SITE_OG` の展開漏れを捕まえる**専用の試験**）
+3. `?tool=A&topic=B` のとき canonical が **1 本**（`tool` 側）
+
+**③へ: `CY_SITE_ORIGIN` が空のときは `alternatesFor(null)` が canonical を
+出さない**（既存の挙動）。試験では origin を入れて回すこと。
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| `?tool=` に `"><script>` 等を入れて `<head>` へ注入 | **Next が metadata を属性値として escape する。**手で文字列を組み立てない（`` `<link href="${x}">` `` のような書き方をしない）。**試験 2 で山括弧入りの値を 1 件通す** |
+| `?tool=` に `javascript:` や別ドメインを入れ、canonical で外部へ飛ばす | `canonical` は **`CY_SITE_ORIGIN` 由来の絶対 URL ＋ 自前の path** で組む。**利用者の値は query 値としてのみ載せ、origin には触らせない** |
+| 長大な `?tool=` で `<head>` を膨らませる | `normalizeTags` の**タグ長上限を canonical にも効かせる**。上限超えは canonical を出さない（無いほうが安全） |
+| 無限のクエリ空間をクロールされる | **今回は扱わない**（noindex 中）。T-1b へ |
+
+**外部通信は 1 本も増えません。**依存も増えません。
+
+---
+
+## T-1b（**公開判断の後・いまは着手しない**）無限のクエリ空間を塞ぐ
+
+`?tool=` は任意の値で 200 を返すので、公開して noindex を外した瞬間に
+**存在しないタグの結果ページが無限にクロールされます**（中身は「0 件」）。
+
+**塞ぎ方（路を増やさずに済む）:** `generateMetadata` で、
+**`publicTags()` に無い値のときだけ `robots: { index: false }` を返す**。
+在るタグは今までどおり。**1 つの条件式で済み、URL も画面も変わりません。**
+
+**いま入れない理由:** 全ページ noindex の間は**動作を確かめようがない**
+（何を入れても noindex になる）。確かめられないものを入れると、
+公開の日に「入っているはずのもの」が効いていない形になります。
+
+**社長の公開判断が出た周に、`app/sitemap.ts`（⑤が保留）と一緒に 1 回で扱う。**
+
+---
+
 ## 2026-08-13 23:40 JST **P-1「GitHub 活動の自動記録」** — C-1/C-2 は **実装済み PR #4 `f2c1b86`**。B と要判断 4 件は人待ち
 
 社長が 08-11 に中核価値を転換した（PR #4 #issuecomment-5247479396）。
