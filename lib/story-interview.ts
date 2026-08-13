@@ -1,9 +1,15 @@
 export const INTERVIEW_DRAFT_KEY = 'creatoryard:story-interview-draft'
+export const INTERVIEW_PROGRESS_KEY = 'creatoryard:story-interview-progress'
 
 export type InterviewDraft = {
   title: string
   body: string
   hurdleText: string
+}
+
+export type InterviewProgress = {
+  answers: string[]
+  step: number
 }
 
 export const INTERVIEW_QUESTIONS = [
@@ -46,6 +52,51 @@ export function buildInterviewDraft(answers: string[]): InterviewDraft {
 
 export function saveInterviewDraft(draft: InterviewDraft) {
   window.localStorage.setItem(INTERVIEW_DRAFT_KEY, JSON.stringify(draft))
+}
+
+export function saveInterviewProgress(progress: InterviewProgress) {
+  try {
+    window.localStorage.setItem(INTERVIEW_PROGRESS_KEY, JSON.stringify({
+      answers: progress.answers.map((answer) => answer.slice(0, 1200)),
+      step: Math.min(Math.max(progress.step, 0), INTERVIEW_QUESTIONS.length - 1),
+    }))
+  } catch {
+    // The interview still works when storage is unavailable; only resume is disabled.
+  }
+}
+
+export function loadInterviewProgress(): InterviewProgress | null {
+  try {
+    const raw = window.localStorage.getItem(INTERVIEW_PROGRESS_KEY)
+    if (!raw) return null
+    const value = JSON.parse(raw) as Partial<InterviewProgress>
+    if (!Array.isArray(value.answers)
+      || value.answers.length !== INTERVIEW_QUESTIONS.length
+      || value.answers.some((answer) => typeof answer !== 'string')
+      || !Number.isInteger(value.step)) {
+      window.localStorage.removeItem(INTERVIEW_PROGRESS_KEY)
+      return null
+    }
+    return {
+      answers: value.answers.map((answer) => answer.slice(0, 1200)),
+      step: Math.min(Math.max(value.step as number, 0), INTERVIEW_QUESTIONS.length - 1),
+    }
+  } catch {
+    try {
+      window.localStorage.removeItem(INTERVIEW_PROGRESS_KEY)
+    } catch {
+      // Storage may be entirely unavailable.
+    }
+    return null
+  }
+}
+
+export function clearInterviewProgress() {
+  try {
+    window.localStorage.removeItem(INTERVIEW_PROGRESS_KEY)
+  } catch {
+    // Nothing else is required when storage is unavailable.
+  }
 }
 
 function readInterviewDraft(removeAfterRead: boolean): InterviewDraft | null {

@@ -478,9 +478,14 @@ a:hover {
   letter-spacing: 0.08em;
 }
 .interview__progress {
-  margin-block: 20px 8px;
+  margin-block: 20px 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+.interview__saved {
+  margin-block: 2px 8px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
 }
 .interview__card {
   padding: 20px;

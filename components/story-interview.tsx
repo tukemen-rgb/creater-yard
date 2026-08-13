@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   buildInterviewDraft,
+  clearInterviewProgress,
   INTERVIEW_QUESTIONS,
+  loadInterviewProgress,
+  saveInterviewProgress,
   type InterviewDraft,
 } from '../lib/story-interview'
 import { VoiceInput } from './voice-input'
@@ -18,8 +21,29 @@ export function StoryInterview({
   const [answers, setAnswers] = useState(() => INTERVIEW_QUESTIONS.map(() => ''))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [progressReady, setProgressReady] = useState(false)
+  const [restored, setRestored] = useState(false)
   const question = INTERVIEW_QUESTIONS[step]
   const answer = answers[step]
+
+  useEffect(() => {
+    const saved = loadInterviewProgress()
+    if (saved) {
+      setAnswers(saved.answers)
+      setStep(saved.step)
+      setRestored(true)
+    }
+    setProgressReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!progressReady) return
+    if (step > 0 || answers.some((savedAnswer) => savedAnswer.trim())) {
+      saveInterviewProgress({ answers, step })
+    } else {
+      clearInterviewProgress()
+    }
+  }, [answers, progressReady, step])
 
   const updateAnswer = (value: string) => {
     setAnswers((current) => current.map((item, index) => (index === step ? value.slice(0, 1200) : item)))
@@ -42,6 +66,7 @@ export function StoryInterview({
     setBusy(true)
     try {
       await onComplete(buildInterviewDraft(finalAnswers))
+      clearInterviewProgress()
     } catch {
       setError('回答を引き継げませんでした。この画面のまま、もう一度お試しください。')
       setBusy(false)
@@ -57,6 +82,9 @@ export function StoryInterview({
       </p>
       <p className="interview__progress" aria-live="polite">
         質問 {step + 1} / {INTERVIEW_QUESTIONS.length}
+      </p>
+      <p className="interview__saved" role="status">
+        {restored ? '保存した続きから再開しました。' : '回答は質問ごとに、この端末へ自動保存されます。'}
       </p>
       <div className="interview__card">
         <h2>{question.label}</h2>
