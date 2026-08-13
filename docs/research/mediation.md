@@ -87,7 +87,7 @@ gdp の書き換え（`ad7884d` / `dc6b10f` / `6c289b9`）:
   gdp だけがやった）も 1 行残す
 - **②**: 設計は起こさない。**T-1a の設計項を gdp の意味論に合わせて更新**
   （「page は落とす」の節に取り消し線ではなく、**なぜ間違っていたか**を書く）
-- **③（次の周の先頭）**: **配備の直し PR** —— `deploy/GO-LIVE.md` の
+- **③（次の周の先頭）**: **→ 実装済み PR #9 `b05b565` / `299fe86`（08:50 の③）。PR #8 本文も `1a7bce8` の意味論へ更新済み。** 配備の直し PR —— `deploy/GO-LIVE.md` の
   `SITE_MODE=server npm run build` → `npm run build:server`（§3 と §7）、
   `creatoryard-web.service` の `ReadWritePaths` に `.next-server/cache` を追加。
   **社長に約束済み。**その後 PR #8 の本文を新 head `6c289b9` の意味論に更新
