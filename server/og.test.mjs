@@ -116,17 +116,25 @@ test('タグで絞った一覧の canonical は 1 本に正規化する', () => 
     assert.equal(storiesFilterUrl('', ''), 'https://creatoryard.io/stories/')
 
     // 軸ごとに 1 本
-    assert.equal(storiesFilterUrl('Godot'), 'https://creatoryard.io/stories/?tool=Godot')
+    assert.equal(storiesFilterUrl('Godot'), 'https://creatoryard.io/stories/?tool=godot')
     assert.equal(storiesFilterUrl('', '影'), 'https://creatoryard.io/stories/?topic=%E5%BD%B1')
 
-    // 両方来たら tool を優先（両方入れるとまた 2 本になる）
-    assert.equal(storiesFilterUrl('Godot', '影'), 'https://creatoryard.io/stories/?tool=Godot')
+    // 両方指定は AND 絞り込みなので両方を残し、順序を固定する
+    assert.equal(
+      storiesFilterUrl('Godot', '影'),
+      'https://creatoryard.io/stories/?tool=godot&topic=%E5%BD%B1',
+    )
 
-    // page は canonical に入れない（?tool=A&page=1 と ?page=1&tool=A を 1 本に寄せる）
-    assert.ok(!storiesFilterUrl('Godot').includes('page='))
+    // 1 ページ目は省略し、内容が異なる 2 ページ目以降は自己 canonical にする
+    assert.equal(storiesFilterUrl('Godot', '', '1'), 'https://creatoryard.io/stories/?tool=godot')
+    assert.equal(
+      storiesFilterUrl('Godot', '', '2'),
+      'https://creatoryard.io/stories/?tool=godot&page=2',
+    )
 
-    // 前後の空白は軸の判定にも値にも持ち込まない
+    // 一覧の照合と同じく NFKC・小文字・前後空白除去で表記揺れを束ねる
     assert.equal(storiesFilterUrl('  '), 'https://creatoryard.io/stories/')
+    assert.equal(storiesFilterUrl(' Ｇｏｄｏｔ '), 'https://creatoryard.io/stories/?tool=godot')
 
     // 保存できない長さのタグには canonical を出さない（<head> を膨らませない）
     assert.equal(storiesFilterUrl('あ'.repeat(25)), null)
