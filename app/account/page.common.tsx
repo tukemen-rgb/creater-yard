@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import {
@@ -31,6 +31,7 @@ export default function AccountPage() {
   const [newPassword, setNewPassword] = useState('')
   const [deletePassword, setDeletePassword] = useState('')
   const [busy, setBusy] = useState(false)
+  const accountActionLockRef = useRef(false)
 
   useEffect(() => {
     if (!getHandle()) {
@@ -50,6 +51,8 @@ export default function AccountPage() {
 
   const changePassword = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (accountActionLockRef.current) return
+    accountActionLockRef.current = true
     setBusy(true)
     setError('')
     setMessage('')
@@ -66,23 +69,29 @@ export default function AccountPage() {
       setNewPassword('')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '変更できませんでした。')
+    } finally {
+      accountActionLockRef.current = false
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   const logout = () => {
+    if (accountActionLockRef.current) return
     clearSession()
     router.push('/stories/')
   }
 
   const deleteAccount = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (accountActionLockRef.current) return
+    accountActionLockRef.current = true
     const count = mine?.length ?? 0
     if (
       !window.confirm(
         `退会すると、あなたの Story ${count} 件もすべて消えます。元に戻せません。よろしいですか？`,
       )
     ) {
+      accountActionLockRef.current = false
       return
     }
     setBusy(true)
@@ -97,6 +106,7 @@ export default function AccountPage() {
       router.push('/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '退会できませんでした。')
+      accountActionLockRef.current = false
       setBusy(false)
     }
   }
@@ -116,7 +126,7 @@ export default function AccountPage() {
           公開ページを見る
         </Link>
         {' ・ '}
-        <button type="button" className="linklike" onClick={logout}>
+        <button type="button" className="linklike" disabled={busy} onClick={logout}>
           ログアウト
         </button>
       </p>

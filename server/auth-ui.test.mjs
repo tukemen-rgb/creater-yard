@@ -21,3 +21,20 @@ for (const [label, path, submitCount] of pages) {
     )
   })
 }
+
+test('アカウント変更・退会・ログアウトを同時実行しない', async () => {
+  const source = await readFile(new URL('../app/account/page.common.tsx', import.meta.url), 'utf8')
+  assert.match(source, /const accountActionLockRef = useRef\(false\)/)
+  assert.equal(source.match(/if \(accountActionLockRef\.current\) return/g)?.length, 3)
+  assert.match(
+    source,
+    /finally \{\s+accountActionLockRef\.current = false\s+setBusy\(false\)/,
+    'パスワード変更完了後は次の操作ができること',
+  )
+  assert.match(
+    source,
+    /if \([\s\S]*?window\.confirm\([\s\S]*?\)\s*\{\s+accountActionLockRef\.current = false\s+return/,
+    '退会確認を取り消したらロックを解除すること',
+  )
+  assert.match(source, /className="linklike" disabled=\{busy\} onClick=\{logout\}/)
+})
