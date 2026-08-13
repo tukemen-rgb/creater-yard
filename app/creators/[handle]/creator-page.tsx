@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SITE_OG, alternatesFor, handleFeedPath, handleUrl } from '../../../lib/og'
 import { notFound } from 'next/navigation'
 
 import { StoryCard } from '../../../components/story-card'
@@ -23,9 +24,20 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { handle } = await params
   if (!HANDLE_RE.test(handle) || creatorStories(handle).total === 0) return {}
+  const canonical = handleUrl(handle)
+  const description = `${handle} の制作記録（Creator Story）。`
   return {
     title: `${handle} の記録`,
-    description: `${handle} の制作記録（Creator Story）。`,
+    description,
+    // 作者ページの alternate は**その作者の RSS**（全体 RSS ではない）
+    alternates: alternatesFor(canonical, handleFeedPath(handle)),
+    openGraph: {
+      ...SITE_OG,
+      title: `${handle} の記録`,
+      description,
+      type: 'profile',
+      ...(canonical ? { url: canonical } : {}),
+    },
   }
 }
 

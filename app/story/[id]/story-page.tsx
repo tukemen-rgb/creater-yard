@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+import { SITE_OG, alternatesFor, storyUrl } from '../../../lib/og'
 import { StoryArticle } from '../../../components/story-article'
 import { nextStoryFromAnotherAuthor, publishedStory } from '../../../lib/stories-read'
 
@@ -29,13 +30,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     story.image && origin
       ? [{ url: `${origin}/api/images/${story.image.id}.${story.image.ext}` }]
       : undefined
+  const canonical = storyUrl(story.id)
   return {
     title: story.title,
     description: excerpt(story.body),
+    // canonical と og:url は同じ値にする。片方だけだと共有時の見え方が定まらない。
+    alternates: alternatesFor(canonical),
     openGraph: {
+      // **SITE_OG を必ず展開する。** metadata は浅くマージされるので、
+      // ここで openGraph を書くと親（layout）の og:site_name・og:locale が
+      // まるごと消える（段階 A-6 で実際に踏んだ）。
+      ...SITE_OG,
       title: story.title,
       description: excerpt(story.body),
       type: 'article',
+      ...(canonical ? { url: canonical } : {}),
       images: ogImage,
     },
   }
