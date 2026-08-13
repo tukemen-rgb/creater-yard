@@ -10,7 +10,7 @@
     "lint": "eslint . && npm run typecheck && echo 'lint OK（ESLint + 型検査）'",
     "typecheck": "tsc --noEmit",
     "api": "node server/api.mjs",
-    "test:server": "node --test server/test.mjs server/og.test.mjs",
+    "test:server": "node --test server/test.mjs server/og.test.mjs server/interview.test.mjs",
     "verify": "node scripts/verify.mjs",
     "seed": "node scripts/demo-seed.mjs"
   },

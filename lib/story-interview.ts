@@ -50,6 +50,12 @@ export function buildInterviewDraft(answers: string[]): InterviewDraft {
   }
 }
 
+export function appendInterviewTranscript(current: string, transcript: string) {
+  const before = current.trimEnd()
+  const spoken = transcript.trim()
+  return `${before}${before && spoken ? ' ' : ''}${spoken}`.slice(0, 1200)
+}
+
 export function saveInterviewDraft(draft: InterviewDraft) {
   window.localStorage.setItem(INTERVIEW_DRAFT_KEY, JSON.stringify(draft))
 }

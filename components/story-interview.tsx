@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import {
+  appendInterviewTranscript,
   buildInterviewDraft,
   clearInterviewProgress,
   INTERVIEW_QUESTIONS,
@@ -120,8 +121,9 @@ export function StoryInterview({
           label={`${question.label}への回答を音声で入力`}
           disabled={busy}
           onTranscript={(transcript) => {
-            updateAnswer(transcript)
-            void advance(transcript)
+            const combinedAnswer = appendInterviewTranscript(answer, transcript)
+            updateAnswer(combinedAnswer)
+            void advance(combinedAnswer)
           }}
         />
         <p className="interview__voice-note">音声は聞き取り後、自動で次の質問へ進みます。</p>
