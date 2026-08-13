@@ -44,6 +44,7 @@ test('同じ質問の進行処理を重複実行しない', () => {
 test('固定質問のヒアリングをAI処理と誤表示しない', () => {
   const source = readFileSync(new URL('../components/story-interview.tsx', import.meta.url), 'utf8')
   assert.match(source, />Storyヒアリング</)
-  assert.match(source, /回答はAIへ送信しません/)
+  assert.match(source, /CreatorYard独自のAI\/APIへ回答を送信しません/)
+  assert.match(source, /ブラウザ提供者側で処理される場合があります/)
   assert.doesNotMatch(source, />AIヒアリング</)
 })
