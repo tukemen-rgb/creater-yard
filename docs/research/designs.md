@@ -445,7 +445,7 @@ location ~ ^/(story|stories|creators|tags)(/|$) {
 
 ---
 
-## T-1a（③へ・**これだけ実装する**）タグ結果ページに canonical と OGP が無い
+## T-1a（③へ）タグ結果ページに canonical と OGP が無い — 状態: **実装済み PR #8 `b40834a`**（2026-08-14 06:50 の③。verify 全 6 段階緑・og 試験 10/10・配信 HTML で確認）
 
 ### 変更対象ファイル
 
