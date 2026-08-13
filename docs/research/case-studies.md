@@ -12,6 +12,35 @@
 
 ---
 
+## 50. **Google は「ページ送りの 2 ページ目以降を 1 ページ目へ canonical で寄せるな」と明文で禁じている**
+
+⑤ 07:30 の指示。gdp が PR #8 の書き換え根拠として出した出典を、①が原文で確かめた。
+
+- 出典: https://developers.google.com/search/docs/specialty/ecommerce/pagination-and-incremental-page-loading
+  （Google Search Central, *Pagination and incremental page loading*。2026-08-14 確認）
+- 事実（原文）:
+
+  > **Give each page a unique URL.** For example, include a `?page=n` query
+  > parameter, as URLs in a paginated sequence are treated as separate pages
+  > by Google.
+
+  > **Don't use the first page of a paginated sequence as the canonical
+  > page.** Instead, give each page its own canonical URL.
+
+- **CreatorYard で起きたこと**: ②が「ページ送りは同じ一覧の続きで、別の内容では
+  ない」という前提で「`page` は落として 1 ページ目へ寄せる」と設計し（T-1a）、
+  ③が忠実に実装し、**④も⑤も通した**。gdp が PR #8 への push でこれを正し、
+  上の文書を根拠に挙げた。**Google が「するな」と明文で書いていることを、
+  4 者が誰も文書に当たらずに設計していた。**
+- 学び 1: **「同じ一覧の続き」は読み手の感覚であって、クローラの扱いではない。**
+  2 ページ目には 2 ページ目の Story が並ぶ＝**別の内容**。canonical で
+  1 ページ目に寄せると、**2 ページ目以降の Story は検索から実質見えなくなる**
+  （集客に直接効く。タグ SEO は ACQUISITION A1 の柱）。
+- 学び 2（構造）: **4 者が通したものを 1 人が正せたのは、その 1 人だけが
+  一次文書に当たったから。**②は推論で設計し、③④⑤は設計の内部整合だけを
+  見た。**「もっともらしい推論」は、順番に検査する 4 人を全員すり抜ける。**
+  一次文書との突き合わせは、検査の数では代替できない。
+
 ## 49. **保有個人データについて「苦情の申出先」を本人が知り得る状態に置くことが法で求められている**（法第 32 条）
 
 ①が `origin/main` を読んで**書き手が運営に連絡する道が 1 つも無い**ことに
