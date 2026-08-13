@@ -647,6 +647,16 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   })
   assert.equal(draft.status, 201)
 
+  // 部分更新で status を送らなくても、下書きを勝手に公開しない。
+  // Store 単体だけでなく、実際の PUT API が省略項目をそのまま渡す経路も守る。
+  const partialDraft = await call('PUT', `/api/stories/${draft.data.story.id}`, {
+    token,
+    body: { body: 'まだ公開しない追記' },
+  })
+  assert.equal(partialDraft.status, 200)
+  assert.equal(partialDraft.data.story.status, 'draft')
+  assert.equal(partialDraft.data.story.publishedAt, null)
+
   // 一覧には公開分だけ
   const listing = await call('GET', '/api/stories.json')
   assert.equal(listing.data.total, 1)
