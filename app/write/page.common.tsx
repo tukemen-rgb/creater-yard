@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import {
@@ -58,6 +58,7 @@ function WriteInner() {
   const [loadedEditId, setLoadedEditId] = useState('')
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [busy, setBusy] = useState(false)
+  const saveLockRef = useRef(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [optionalFieldsOpen, setOptionalFieldsOpen] = useState(false)
   const [interviewActive, setInterviewActive] = useState(startsWithInterview)
@@ -160,10 +161,12 @@ function WriteInner() {
     value.split(/[,、，]/).map((item) => item.trim()).filter(Boolean)
 
   const save = async (saveStatus: 'public' | 'draft') => {
+    if (saveLockRef.current) return
     if (imageUploading) {
       setError('画像の確認が終わるまでお待ちください。')
       return
     }
+    saveLockRef.current = true
     setBusy(true)
     setError('')
     const payload = {
@@ -185,6 +188,7 @@ function WriteInner() {
       router.push(saveStatus === 'public' ? `/story/${data.story.id}/` : '/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '保存できませんでした。')
+      saveLockRef.current = false
       setBusy(false)
     }
   }
