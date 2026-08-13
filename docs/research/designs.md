@@ -133,7 +133,7 @@ export function handleFeedPath(handle: string) {
 
 ---
 
-## I-1'-3a「`lib/og.ts` を関数と試験だけ移す」— 状態: **未実装**（次の実装対象の候補）
+## I-1'-3a「`lib/og.ts` を関数と試験だけ移す」— 状態: **実装済み（gdp が `5fcbaca` で実施）**
 
 **画面には繋がない。**単体で緑にできる範囲だけ。
 
@@ -175,7 +175,7 @@ export function handleFeedPath(handle: string) {
 
 ---
 
-## I-1'-3b「画面に繋ぐ＋RSS の発見導線」— 状態: **未実装**（3a の後）
+## I-1'-3b「画面に繋ぐ＋RSS の発見導線」— 状態: **実装済み PR #4 `b97c703`**（canonical・og:url・作者別 RSS。**一覧の可視リンクは未**）
 
 gdp の A-6 条件 1・2・3 をここで満たす。**gdp が「3b と同じ batch に集約」と指定した。**
 
