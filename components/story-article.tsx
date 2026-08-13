@@ -109,8 +109,9 @@ export function StoryArticle({ story, nextStory }: { story: Story; nextStory?: S
           <ul className="story__sources">
             {story.sources.map((s) => (
               <li key={s.url}>
-                {/* 外部サイトへ評価と参照元を渡さない。追跡クエリも付けない */}
-                <a href={s.url} rel="nofollow noopener" target="_blank">
+                {/* 評価を渡さない(nofollow)・元の窓を触らせない(noopener)・
+                    **参照元を送らない(noreferrer)**。noopener だけでは Referer は出る */}
+                <a href={s.url} rel="nofollow noopener noreferrer" target="_blank">
                   {s.label}
                 </a>
               </li>

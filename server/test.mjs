@@ -358,6 +358,15 @@ test('根拠リンク: https だけを受け、上限を守り、空で消える
     StoryError,
   )
 
+  // URL に埋め込まれた認証情報は落とす（公開ページに user:pass を載せない）
+  const withCreds = stories.create(AUTHOR, {
+    title: 'creds',
+    body: 'y'.repeat(30),
+    sources: [{ url: 'https://user:pass@github.com/o/r/commit/abc' }],
+  })
+  assert.equal(withCreds.sources[0].url, 'https://github.com/o/r/commit/abc')
+  assert.ok(!withCreds.sources[0].url.includes('user:pass'))
+
   // 空で送れば消える（PUT は置き換え）
   const cleared = stories.update(made.id, AUTHOR, { title: made.title, body: made.body })
   assert.equal(cleared.sources, undefined)

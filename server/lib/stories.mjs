@@ -213,6 +213,11 @@ function normalizeSources(value) {
     if (url.protocol !== 'https:') {
       throw new StoryError('根拠リンクに使えるのは https:// で始まる URL だけです。')
     }
+    // **URL に埋め込まれた認証情報を落とす。** private のクローン URL などを
+    // そのまま貼られると、公開 Story のページに user:pass が載って外へ出る。
+    // 弾かずに落とすのは、リンク自体は正しく、貼った本人に悪意が無いことが多いため。
+    url.username = ''
+    url.password = ''
     const at = String(item?.at ?? '').trim()
     out.push({
       kind: SOURCE_KINDS.has(item?.kind) ? item.kind : 'manual',
