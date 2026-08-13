@@ -12,6 +12,61 @@
 
 ---
 
+## 45. **JSON Merge Patch（RFC 7396）は「無い」と「null」を別物として定義している**
+
+gdp が 08-14 に見つけた不具合（下記 44）の直し方が、**14 年前から
+標準として存在する意味論とまったく同じ**だった。偶然ではなく、
+これは**繰り返し踏まれてきた穴**という証拠なので事例として残す。
+
+- 出典: https://www.rfc-editor.org/rfc/rfc7396.html
+  （*JSON Merge Patch*, RFC 7396, October 2014。2026-08-14 確認）
+- 事実（原文）:
+
+  > If the provided merge patch contains members that do not appear
+  > within the target, those members are added. If the target does contain
+  > the member, the value is replaced. **Null values in the merge patch are
+  > given special meaning to indicate the removal of existing values in
+  > the target.**
+
+  つまり **「項目が無い＝触らない」「null が入っている＝消す」**を
+  はっきり別の意味に分けている。
+- 学び: gdp の直し（`input.sources === undefined` なら現状維持、
+  明示的な `[]` / `null` のときだけ削除）は、**RFC 7396 と同じ形**に
+  独立にたどり着いている。**この形が正しいことは規格で裏が取れている**ので、
+  以後 CreatorYard の更新処理はこの意味論を基準にしてよい。
+  ただし RFC 7396 は「配列は丸ごと置換」と定めており（部分更新できない）、
+  `sources` を 1 件だけ消す操作は**別に考える**必要がある。
+
+## 44. **PUT は「全部入れ替え」。名前が PUT なのに部分更新をすると項目が消える**
+
+**この事例は他社ではなく CreatorYard 自身で起きた**（08-14、gdp が発見）。
+規格の側に何と書いてあるかを出典つきで残す。
+
+- 出典: https://www.rfc-editor.org/rfc/rfc5789.html
+  （*PATCH Method for HTTP*, RFC 5789, March 2010。2026-08-14 確認）
+- 事実（原文）:
+
+  > The PUT method is already defined to overwrite a resource with a
+  > complete new body, and cannot be reused to do partial changes.
+
+  > In a PUT request, the enclosed entity is considered to be a modified
+  > version of the resource stored on the origin server, and the client is
+  > requesting that the **stored version be replaced**. With PATCH, however,
+  > the enclosed entity contains a **set of instructions** describing how a
+  > resource currently residing on the origin server should be modified.
+
+- **CreatorYard で実際に起きたこと**: `PUT /api/stories/<id>` は名前どおり
+  「全部入れ替え」で実装されている（`update()` の `...fields`）。ところが
+  **画面の編集フォームは `sources` を持っていない**。自動記録から作った
+  Story を書き手が本文だけ直して保存すると、フォームが送らなかった
+  `sources` が `undefined` → 空で上書きされ、**根拠リンクが黙って消えた**。
+  発見は gdp（PR #4 コメント 2026-08-14）、直しは `388afe9` / `654dd70`。
+- 学び: **「PUT だから全部送ってくるはず」は、画面がその項目を持っていない
+  瞬間に崩れる。**送る側（画面）と受ける側（API）の項目一覧がずれた時点で、
+  ずれた項目は**消える側に倒れる**。`image` には最初から現状維持の
+  ガードがあったのに `sources` には無かった。**ガードが項目ごとの
+  手当てになっていると、3 つ目で必ず忘れる**（→ 提案 08-14 00:10）。
+
 ## 43. 再ビルドの回し方 — **cron は重なりを防がない。systemd timer は防ぐ**
 
 ⑤ 07:37 の指示 2（段階 B の下ごしらえ）。
