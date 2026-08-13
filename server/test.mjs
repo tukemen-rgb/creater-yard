@@ -367,8 +367,19 @@ test('根拠リンク: https だけを受け、上限を守り、空で消える
   assert.equal(withCreds.sources[0].url, 'https://github.com/o/r/commit/abc')
   assert.ok(!withCreds.sources[0].url.includes('user:pass'))
 
-  // 空で送れば消える（PUT は置き換え）
-  const cleared = stories.update(made.id, AUTHOR, { title: made.title, body: made.body })
+  // 手動編集フォームは sources を送らない。本文だけの更新では根拠を保持する。
+  const edited = stories.update(made.id, AUTHOR, {
+    title: made.title,
+    body: `${made.body}編集`,
+  })
+  assert.deepEqual(edited.sources, made.sources)
+
+  // 明示的な空配列なら削除する
+  const cleared = stories.update(made.id, AUTHOR, {
+    title: edited.title,
+    body: edited.body,
+    sources: [],
+  })
   assert.equal(cleared.sources, undefined)
 
   // 手で書いた Story には付かない（「根拠が無い」と見せない）
