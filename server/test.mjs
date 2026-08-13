@@ -387,6 +387,71 @@ test('根拠リンク: https だけを受け、上限を守り、空で消える
   assert.equal(byHand.sources, undefined)
 })
 
+test('部分更新: 送られてこなかった項目は触らない（U-1）', () => {
+  process.env.CY_SITE_ORIGIN = 'https://creatoryard.io'
+  const stories = freshStories('story-partial-update')
+
+  // ---- status を送らない更新で、下書きが公開されない ----
+  //
+  // これが U-1 でいちばん重い。#validate は status 未指定を public に倒すので、
+  // 送り忘れると**書き手が公開していないものが公開され、publishedAt まで入る**。
+  // 一度 RSS で配られると取り消せない（RFC 6721: フィードから消しても、
+  // 受け取った側にそれを知る手段が無い）。
+  const draft = stories.create(AUTHOR, {
+    status: 'draft', title: '下書きのまま', body: 'd'.repeat(30),
+  })
+  assert.equal(draft.status, 'draft')
+  assert.equal(draft.publishedAt, null)
+
+  const edited = stories.update(draft.id, AUTHOR, { body: `${draft.body}足した` })
+  assert.equal(edited.status, 'draft', 'status を送らなければ下書きのまま')
+  assert.equal(edited.publishedAt, null, 'publishedAt も入らない')
+
+  // 外へ出る経路でも確かめる（レコードだけ見て満足しない。gdp の C-7 (2)(3)）
+  assert.equal(stories.latestPublic({ limit: 30 }).length, 0, '一覧に出ない')
+  const xml = buildStoriesFeed({
+    title: 't', link: 'https://creatoryard.io/stories/', description: 'd',
+    stories: stories.latestPublic({ limit: 30 }),
+  })
+  assert.ok(!xml.includes('下書きのまま'), 'RSS に題が出ない')
+  assert.ok(!xml.includes(`/story/${draft.id}/`), 'RSS に URL が出ない')
+
+  // ---- title を送らない更新が通る（既存の値が混ざってから検査される）----
+  const kept = stories.update(draft.id, AUTHOR, { body: 'e'.repeat(40) })
+  assert.equal(kept.title, '下書きのまま', 'title は残る')
+
+  // ---- 明示的に公開したときは、今までどおり公開される（C-7 (4)）----
+  const opened = stories.update(draft.id, AUTHOR, { status: 'public' })
+  assert.equal(opened.status, 'public')
+  assert.ok(opened.publishedAt, '公開時に publishedAt が入る')
+  assert.equal(stories.latestPublic({ limit: 30 }).length, 1)
+
+  // ---- 混ぜても検査は緩まない ----
+  assert.throws(
+    () => stories.update(opened.id, AUTHOR, { body: 'みじかい' }),
+    StoryError,
+    '公開中に下限を割る本文は 400 のまま',
+  )
+
+  // ---- 他の任意項目も、送らなければ残る／明示的な空で消える ----
+  const rich = stories.create(AUTHOR, {
+    title: 'いろいろ', body: 'f'.repeat(30),
+    toolTags: ['Godot'], topicTags: ['影'],
+    hurdle: { text: '影が二重', status: 'open' },
+    gameUrl: 'https://play-game-yard.com/g/abc',
+  })
+  const touched = stories.update(rich.id, AUTHOR, { body: `${rich.body}g` })
+  assert.deepEqual(touched.toolTags, ['godot'], 'toolTags は残る（正規化で小文字）')
+  assert.deepEqual(touched.topicTags, ['影'], 'topicTags は残る')
+  assert.equal(touched.hurdle?.text, '影が二重', 'hurdle は残る')
+  assert.equal(touched.gameUrl, rich.gameUrl, 'gameUrl は残る')
+
+  const wiped = stories.update(rich.id, AUTHOR, { toolTags: [], hurdle: null })
+  assert.deepEqual(wiped.toolTags, [], '明示的な空配列なら消える')
+  assert.equal(wiped.hurdle, null, '明示的な null なら消える')
+  assert.deepEqual(wiped.topicTags, ['影'], '送っていない側は巻き添えにしない')
+})
+
 test('つまずき欄: 本文と未解決/解決を持て、本人以外は触れない（SPEC §1）', () => {
   const stories = freshStories('story-hurdle')
 
@@ -422,8 +487,14 @@ test('つまずき欄: 本文と未解決/解決を持て、本人以外は触�
   )
   assert.equal(stories.get(made.id).hurdle.status, 'resolved')
 
-  // 空で送れば消える（PUT は置き換え）
-  const cleared = stories.update(made.id, AUTHOR, { title: made.title, body: made.body })
+  // 送らなければ残る（U-1。**この試験の註釈は「空で送れば」と書いてあったのに、
+  // コードは hurdle を送っていなかった。**古い実装は「送らない＝消す」だったので
+  // 両者の食い違いに気づけないまま緑だった）
+  const untouched = stories.update(made.id, AUTHOR, { title: made.title, body: made.body })
+  assert.equal(untouched.hurdle?.status, 'resolved', '送らなければ触らない')
+
+  // 空で送れば消える（註釈どおりの意味に直した）
+  const cleared = stories.update(made.id, AUTHOR, { hurdle: null })
   assert.equal(cleared.hurdle, null)
 
   // 上限を超えた本文は切り詰める（緩めない）
