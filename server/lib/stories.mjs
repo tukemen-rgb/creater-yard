@@ -376,6 +376,7 @@ export class StoryStore {
     const next = {
       ...record,
       ...fields,
+      sources: input.sources === undefined ? record.sources : fields.sources,
       image: image === undefined ? (record.image ?? null) : image,
       updatedAt: nowIso,
       // 最初に公開した時刻を保つ。公開→下書き→再公開で時系列が飛ばないように。
