@@ -12,6 +12,64 @@
 
 ---
 
+## 47. **`alt=""` は「読み上げなくてよい」という明示の指定。情報を持つ画像に付けると内容が丸ごと消える**
+
+gdp が 2026-08-14 に指摘した件（Issue #1
+[#issuecomment-5283715483](https://github.com/tukemen-rgb/creater-yard/issues/1#issuecomment-5283715483)）。
+**①が `origin/main` を読んで裏を取った。**
+
+- 出典: https://www.w3.org/WAI/tutorials/images/decision-tree/
+  （*An `alt` Decision Tree*, W3C Web Accessibility Initiative。2026-08-14 確認）
+- 事実（原文）:
+  - 情報を持つ画像 —— 「Use a **brief description of the image** in a way that
+    conveys that meaning in the `alt` attribute.」
+  - 装飾の画像 —— 「Use an **empty `alt` attribute**」（purely decorative /
+    not intended for users のとき）
+- **CreatorYard の現物**（`origin/main` `38a76eb`）:
+  - `components/story-article.tsx:39` … **`alt=""`**
+  - `app/write/page.common.tsx:436` … **`alt=""`**
+  - `lib/api.ts:22-27` の `StoryImage` は **`id` / `ext` / `width` / `height` の
+    4 つだけ。説明を入れる場所がそもそも無い**
+- 学び: **`alt=""` は「空欄」ではなく「装飾です」という宣言。**
+  Story の画像は多くの場合**制作の途中経過やつまずいている画面**＝
+  本文の一部なので、宣言の中身が事実と食い違っている。
+  **書き手が「見てほしい」と思って貼ったものが、読み上げ利用者には
+  存在しないことになる。**
+
+## 46. **「`npm audit` 0 件」は、測った瞬間の値でしかない**
+
+**08-13 に「high 0 件・critical 0 件・合計 0 件」と記録した同じツリーが、
+08-14 には high 3 件を出した。**コードは 1 行も変わっていない。
+
+- 出典: https://github.com/advisories/GHSA-2v37-7h3g-55p8
+  （*nanoid: custom generators can loop indefinitely when size is zero*。
+  **CVE-2026-67213 / High・CVSS 8.2 / 公開 2026-07-29**。2026-08-14 確認）
+- 事実（原文）:
+
+  > nanoid (Nano ID) before 5.1.6 contains an **infinite loop** in the
+  > `customAlphabet` and `customRandom` functions. When these functions are
+  > configured with a **size of 0**, the internal generation loop never
+  > satisfies its exit condition and **spins indefinitely, hanging the
+  > calling thread**.
+
+  直った版は **3.3.18** と **5.1.6**。
+- **CreatorYard の現物**: `origin/main` の `package-lock.json:4070` に
+  **`nanoid` 3.3.17**。経路は **next → postcss → nanoid**（間接依存）。
+  gdp が **PR #5** で `overrides.nanoid=3.3.18` を出した
+  （`package.json` と lock の **2 ファイル・+5/-4** だけ）。
+- 学び 1: **「監査は緑」は日付とセットでなければ意味を持たない。**
+  PR #4 の本文には「`npm audit`: high 0件（2026-08-13、最終lock）」と
+  **日付つきで**書いてあった。**その書き方は正しかった** —— 日付が無ければ、
+  いま読んだ人は「いまも 0 件」と読む。
+- 学び 2: **助言の公開日（07-29）は、0 件と記録した日（08-13）より前。**
+  なぜ 08-13 の測定で出なかったのかは**確かめられていない**
+  （`npm audit` が見る登録簿と GitHub Advisory の同期には差がありうるが、
+  **確かめていないので断定しない**）。**確かなのは「同じツリーで結果が変わった」
+  ことだけ。**公開前ゲートの監査は、**公開の直前にもう一度測る**必要がある。
+- 学び 3: **これは依存を増やす話ではない。**`nanoid` は既に入っている
+  間接依存で、`overrides` は**版を留める**だけ。CLAUDE.md の
+  「実行時は next / react / react-dom の 3 つだけ」は破っていない。
+
 ## 45. **JSON Merge Patch（RFC 7396）は「無い」と「null」を別物として定義している**
 
 gdp が 08-14 に見つけた不具合（下記 44）の直し方が、**14 年前から
