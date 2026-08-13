@@ -40,6 +40,34 @@ export function tagUrl(tag: string): string | null {
   return absoluteUrl(`/tags/${encodeURIComponent(tag)}/`)
 }
 
+/**
+ * タグで絞った Story 一覧の正規 URL。
+ *
+ * `/stories/?tool=A&page=2` と `/stories/?page=2&tool=A` は**別 URL で同じ中身**
+ * になるので、**1 本に正規化して canonical に出す**。`page` は落として
+ * 1 ページ目へ寄せる（ページ送りは同じ一覧の続きで、別の内容ではない）。
+ *
+ * `tool` と `topic` が両方来たら **`tool` を優先**する。両方を canonical に
+ * 入れると、また 2 本になるため。
+ *
+ * **タグ長の上限（`STORY_LIMITS.tagMax` = 24）を超える値には canonical を
+ * 出さない。**保存できないタグなので結果は必ず 0 件で、長い文字列を
+ * `<head>` に載せる意味がない（`<head>` を膨らませる入口にしない）。
+ * サーバー側の定数を直接は読めないので、**ここに写している。
+ * 上限を変えるときは両方**（`server/lib/stories.mjs` の `STORY_LIMITS.tagMax`）。
+ */
+const CANONICAL_TAG_MAX = 24
+
+export function storiesFilterUrl(tool?: string, topic?: string): string | null {
+  const origin = siteOrigin()
+  if (!origin) return null
+  const axis = tool?.trim() ? 'tool' : topic?.trim() ? 'topic' : ''
+  const value = (axis === 'tool' ? tool : axis === 'topic' ? topic : '')?.trim() ?? ''
+  if (!axis) return `${origin}/stories/`
+  if (value.length > CANONICAL_TAG_MAX) return null
+  return `${origin}/stories/?${axis}=${encodeURIComponent(value)}`
+}
+
 /** 作者ページの正規 URL。 */
 export function handleUrl(handle: string): string | null {
   return absoluteUrl(`/creators/${handle}/`)

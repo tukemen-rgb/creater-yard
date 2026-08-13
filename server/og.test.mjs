@@ -10,6 +10,7 @@ import {
   ogDescription,
   SITE_FEED,
   SITE_OG,
+  storiesFilterUrl,
   storyUrl,
   tagUrl,
 } from '../lib/og.ts'
@@ -106,4 +107,40 @@ test('SITE_OG は共有項目だけを持つ', () => {
   assert.equal(SITE_OG.siteName, 'CreatorYard')
   assert.equal(SITE_OG.locale, 'ja_JP')
   assert.ok(!('type' in SITE_OG))
+})
+
+test('タグで絞った一覧の canonical は 1 本に正規化する', () => {
+  withOrigin('https://creatoryard.io', () => {
+    // 絞り込みなしは一覧そのもの
+    assert.equal(storiesFilterUrl(), 'https://creatoryard.io/stories/')
+    assert.equal(storiesFilterUrl('', ''), 'https://creatoryard.io/stories/')
+
+    // 軸ごとに 1 本
+    assert.equal(storiesFilterUrl('Godot'), 'https://creatoryard.io/stories/?tool=Godot')
+    assert.equal(storiesFilterUrl('', '影'), 'https://creatoryard.io/stories/?topic=%E5%BD%B1')
+
+    // 両方来たら tool を優先（両方入れるとまた 2 本になる）
+    assert.equal(storiesFilterUrl('Godot', '影'), 'https://creatoryard.io/stories/?tool=Godot')
+
+    // page は canonical に入れない（?tool=A&page=1 と ?page=1&tool=A を 1 本に寄せる）
+    assert.ok(!storiesFilterUrl('Godot').includes('page='))
+
+    // 前後の空白は軸の判定にも値にも持ち込まない
+    assert.equal(storiesFilterUrl('  '), 'https://creatoryard.io/stories/')
+
+    // 保存できない長さのタグには canonical を出さない（<head> を膨らませない）
+    assert.equal(storiesFilterUrl('あ'.repeat(25)), null)
+    assert.ok(storiesFilterUrl('あ'.repeat(24)))
+
+    // 山括弧やクォートは encode されて属性値を割らない
+    const injected = storiesFilterUrl('"><script>')
+    assert.ok(!injected.includes('<'))
+    assert.ok(!injected.includes('"'))
+  })
+
+  // origin 未設定なら canonical を作らない（仮 URL を出さない）
+  withOrigin(null, () => {
+    assert.equal(storiesFilterUrl('Godot'), null)
+    assert.equal(storiesFilterUrl(), null)
+  })
 })

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { SITE_FEED } from '../../lib/og'
+import { alternatesFor, SITE_FEED, SITE_OG, storiesFilterUrl } from '../../lib/og'
 import Link from 'next/link'
 
 import { StoryCard } from '../../components/story-card'
@@ -21,11 +21,25 @@ type Props = { searchParams: Promise<{ tool?: string; topic?: string; page?: str
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { tool, topic } = await searchParams
   const filter = tool || topic
+  const title = filter ? `「${filter}」の Story` : 'Creator Story'
+  const description = filter
+    ? `「${filter}」に関する制作記録（Creator Story）の一覧。`
+    : 'つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。'
+  const canonical = storiesFilterUrl(tool, topic)
   return {
-    title: filter ? `「${filter}」の Story` : 'Creator Story',
-    description: filter
-      ? `「${filter}」に関する制作記録（Creator Story）の一覧。`
-      : 'つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。',
+    title,
+    description,
+    alternates: alternatesFor(canonical),
+    openGraph: {
+      // **展開を忘れると親の og:site_name・og:locale が丸ごと消える。**
+      // Next の metadata は shallow merge で、子が openGraph を書くと
+      // 親の入れ子はまとめて置き換わる（この罠はこの repo で 2 回踏んでいる）。
+      ...SITE_OG,
+      title,
+      description,
+      type: 'website',
+      ...(canonical ? { url: canonical } : {}),
+    },
   }
 }
 
