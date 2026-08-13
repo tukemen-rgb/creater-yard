@@ -48,21 +48,35 @@ export function saveInterviewDraft(draft: InterviewDraft) {
   window.localStorage.setItem(INTERVIEW_DRAFT_KEY, JSON.stringify(draft))
 }
 
-export function takeInterviewDraft(): InterviewDraft | null {
+function readInterviewDraft(removeAfterRead: boolean): InterviewDraft | null {
   try {
     const raw = window.localStorage.getItem(INTERVIEW_DRAFT_KEY)
     if (!raw) return null
     const value = JSON.parse(raw) as Partial<InterviewDraft>
     if (typeof value.title !== 'string' || typeof value.body !== 'string' || typeof value.hurdleText !== 'string') {
+      window.localStorage.removeItem(INTERVIEW_DRAFT_KEY)
       return null
     }
-    window.localStorage.removeItem(INTERVIEW_DRAFT_KEY)
+    if (removeAfterRead) window.localStorage.removeItem(INTERVIEW_DRAFT_KEY)
     return {
       title: value.title.slice(0, 80),
       body: value.body.slice(0, 8000),
       hurdleText: value.hurdleText.slice(0, 200),
     }
   } catch {
+    try {
+      window.localStorage.removeItem(INTERVIEW_DRAFT_KEY)
+    } catch {
+      // Storage may be entirely unavailable (for example, in a restricted browser mode).
+    }
     return null
   }
+}
+
+export function hasInterviewDraft() {
+  return Boolean(readInterviewDraft(false))
+}
+
+export function takeInterviewDraft(): InterviewDraft | null {
+  return readInterviewDraft(true)
 }

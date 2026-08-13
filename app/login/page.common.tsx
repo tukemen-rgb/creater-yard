@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
-import { INTERVIEW_DRAFT_KEY } from '../../lib/story-interview'
+import { hasInterviewDraft } from '../../lib/story-interview'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -24,8 +24,7 @@ export default function LoginPage() {
         body: { handle, password },
       })
       saveSession(data.token, data.account)
-      const hasInterviewDraft = Boolean(window.localStorage.getItem(INTERVIEW_DRAFT_KEY))
-      router.push(hasInterviewDraft ? '/write/?restore=interview' : '/stories/')
+      router.push(hasInterviewDraft() ? '/write/?restore=interview' : '/stories/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'ログインできませんでした。')
       setBusy(false)
