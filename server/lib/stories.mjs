@@ -361,6 +361,16 @@ export class StoryStore {
   }
 
   /**
+   * 更新で入れ替わりうる項目。**`#validate` が返すキーとそろえること。**
+   * ここに無い項目（`id` / `authorId` / `createdAt` など）は書き手が
+   * 触れるものではないので、混ぜる対象にしない。
+   */
+  static #MERGEABLE = [
+    'status', 'title', 'body', 'tools', 'toolTags', 'topicTags',
+    'gameUrl', 'hurdle', 'sources',
+  ]
+
+  /**
    * @param {object} [options]
    * @param {object|null|undefined} [options.image] undefined なら現状維持、
    *   null なら外す、オブジェクトなら差し替え（検査済みのものだけ渡すこと）。
@@ -371,12 +381,29 @@ export class StoryStore {
     if (record.authorId !== account.id) {
       throw new StoryError('この Story を編集できるのは本人だけです。', 403)
     }
-    const fields = this.#validate(input)
+    // **送られてこなかった項目は、既存の値を混ぜてから検査する。**
+    //
+    // `#validate` は入力に無い項目を「空の正常値」にして返すので、
+    // 素直に `...fields` すると**画面が送らなかった項目が消える**。
+    // 実際に `sources`（画面に欄が無い）で起き、`status` を送り忘れると
+    // **下書きが公開されて RSS まで配られる**状態だった。
+    //
+    // 判定は**入力のキーが在るかどうか**だけを見る（`Object.hasOwn`）。
+    // 正規化関数の戻り値では判定しない —— `normalizeTags(null)` は `[]`、
+    // `normalizeHurdle(未指定)` は `null`、**`normalizeSources(null)` は
+    // `undefined`** と、そろっていないため。
+    //
+    // **検査は「混ぜた結果」に対して走る**ので、上限も必須も
+    // 保存される値そのものに効く（送られた項目だけを検査すると緩む）。
+    const merged = {}
+    for (const key of StoryStore.#MERGEABLE) {
+      merged[key] = Object.hasOwn(input, key) ? input[key] : record[key]
+    }
+    const fields = this.#validate(merged)
     const nowIso = new Date(this.now()).toISOString()
     const next = {
       ...record,
       ...fields,
-      sources: input.sources === undefined ? record.sources : fields.sources,
       image: image === undefined ? (record.image ?? null) : image,
       updatedAt: nowIso,
       // 最初に公開した時刻を保つ。公開→下書き→再公開で時系列が飛ばないように。
