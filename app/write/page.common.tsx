@@ -58,7 +58,7 @@ function WriteInner() {
   const [loadedEditId, setLoadedEditId] = useState('')
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [busy, setBusy] = useState(false)
-  const saveLockRef = useRef(false)
+  const storyOperationLockRef = useRef(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [optionalFieldsOpen, setOptionalFieldsOpen] = useState(false)
   const [interviewActive, setInterviewActive] = useState(startsWithInterview)
@@ -161,12 +161,12 @@ function WriteInner() {
     value.split(/[,、，]/).map((item) => item.trim()).filter(Boolean)
 
   const save = async (saveStatus: 'public' | 'draft') => {
-    if (saveLockRef.current) return
+    if (storyOperationLockRef.current) return
     if (imageUploading) {
       setError('画像の確認が終わるまでお待ちください。')
       return
     }
-    saveLockRef.current = true
+    storyOperationLockRef.current = true
     setBusy(true)
     setError('')
     const payload = {
@@ -188,15 +188,19 @@ function WriteInner() {
       router.push(saveStatus === 'public' ? `/story/${data.story.id}/` : '/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '保存できませんでした。')
-      saveLockRef.current = false
+      storyOperationLockRef.current = false
       setBusy(false)
     }
   }
 
   const remove = async () => {
-    if (!editId) return
+    if (!editId || storyOperationLockRef.current) return
+    storyOperationLockRef.current = true
     // 消す前に 1 回だけ確かめる。記録は本人のものなので、確認さえ取れば止めない
-    if (!window.confirm('この Story を削除します。元に戻せません。よろしいですか？')) return
+    if (!window.confirm('この Story を削除します。元に戻せません。よろしいですか？')) {
+      storyOperationLockRef.current = false
+      return
+    }
     setBusy(true)
     try {
       await api<{ ok: boolean }>(`/api/stories/${editId}`, { method: 'DELETE', auth: true })
@@ -204,6 +208,7 @@ function WriteInner() {
       router.push('/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '削除できませんでした。')
+      storyOperationLockRef.current = false
       setBusy(false)
     }
   }
