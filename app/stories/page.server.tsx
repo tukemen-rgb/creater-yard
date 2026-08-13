@@ -25,7 +25,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const description = filter
     ? `「${filter}」に関する制作記録（Creator Story）の一覧。`
     : 'つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。'
-  const canonical = storiesFilterUrl(tool, topic, page)
+  // 本文と同じ一覧結果を使い、範囲外の page を実在する最終ページへ丸める。
+  // 生の page を使うと、空一覧の ?page=2 などが 1 ページ目と同じ本文なのに
+  // 別 canonical を名乗ってしまう。
+  const listing = publishedStories({ page: Number(page) || 1, tool: tool ?? '', topic: topic ?? '' })
+  const canonical = storiesFilterUrl(tool, topic, String(listing.page))
   return {
     title,
     description,
