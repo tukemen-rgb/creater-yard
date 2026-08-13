@@ -1,6 +1,9 @@
 node_modules/
 .next/
+.next-static/
+.next-server/
 out/
 next-env.d.ts
 *.log
 .DS_Store
+tsconfig.tsbuildinfo

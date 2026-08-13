@@ -41,8 +41,9 @@ Claude は作業のたびに Issue #1 へ報告し、ChatGPT のレビューも�
 | D-CY1 | **やる**（CreatorYard を建てる） |
 | D-CY2 | **別ドメイン・別リポジトリの姉妹サービス**（GAMEYARD の URL・検索資産に触らない） |
 | D-CY3 | **MVP は Creator Story のみ**（Guild/Help/Mentor は人が集まってから） |
-| D-CY4 | **決済は持たない。本人の外部決済リンクのみ**（Booth/Stripe 等） |
+| D-CY4 | **決済は持たない。本人の外部決済リンクのみ**（Booth/Stripe 等）。※収益戦略決定（下の「収益」）との整合を社長に確認中 — docs/REVENUE.md の Q1 |
 | 集客 | 多チャネル方針。優先順位: GAMEYARD 内導線 → Discord → X → ジャム → タグ SEO |
+| 収益 | **2026-08-06 決定: 2 つの経済圏**。GAMEYARD=作品の経済圏（広告。第三者 JS なし）、CreatorYard=Creator Economy（Creator Partner・イベント・販売系）。詳細と未確定事項は docs/REVENUE.md |
 
 ## 4. まだ決まっていないこと（人待ち）
 
@@ -54,10 +55,24 @@ Claude は作業のたびに Issue #1 へ報告し、ChatGPT のレビューも�
 
 ## 5. いまの状態と次の実装
 
-- 済み: Next.js 土台（静的ビルド緑）・SPEC・準備中トップページ
-- **次: Story の実装**。順序 — ①アカウント（GAMEYARD の自前認証方式を
-  流用）→ ② Story 投稿・下書き → ③ 一覧・個人ページ（Timeline の原型）
-  → ④ つまずきタグ。詳細は `SPEC.md`
+**MVP は実装済み**（2026-08-06。SPEC §1 の全機能＋公開準備）:
+
+- アカウント（GAMEYARD の scrypt 認証を流用）・Story 投稿・下書き・
+  一覧・個人ページ・つまずきタグ・画像添付（GAMEYARD の画像検査を流用）・
+  パスワード再設定（SMTP 未設定の間は「使えない」と明示）
+- **2 モード構成**: 固定ページは静的、Story 系（/story/ /creators/
+  /stories/ /tags/）は server モードの Next.js が HTML で返す（タグ SEO の
+  前提）。仕組みは README「2 モード構成」と next.config.mjs のコメント
+- 配備一式は `deploy/`（GO-LIVE.md が手順書）。sitemap は CY_SITE_ORIGIN
+  設定後に有効化
+- 検証は `npm run lint` と `npm run test:server`（node:test）と両モードの
+  build。サーバーの実装は `server/`（api.mjs＋lib/）、読み出し専用の
+  ビューは `lib/stories-read.ts`
+
+**人待ち（決まれば動ける）**: main 取り込み可否 / ドメイン（＋画像を
+GAMEYARD 同様の別オリジンにするか）/ 公開時期 / SMTP 設定。
+経緯と判断材料は Issue #1 のコメント列にある。
+
 - **撤退条件が先に決めてある**: 公開 30 日で書き手 10 人・Story 30 本に
   届かなければ機能追加を止めて社長に再判断を仰ぐ（`SPEC.md` §4）
 

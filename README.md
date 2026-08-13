@@ -9,9 +9,16 @@
 
 ## 状態
 
-**MVP 開発中（未公開）。** 最初の機能は **Creator Story**（制作記録）だけに
+**MVP 実装済み（未公開）。** 最初の機能は **Creator Story**（制作記録）だけに
 絞る。相手がいないと成立しない機能（Guild / Help Wanted / Mentor）は、
 人が集まってから解放する（空の部屋を最初の利用者に見せない）。
+
+動くもの: アカウント（ハンドル＋パスワード、GAMEYARD の自前認証を流用）、
+Story の投稿・編集・削除・下書き、画像添付（GAMEYARD の画像検査を流用。
+多重形式・展開爆弾・SVG を入口で断る）、一覧（新着順）、個人ページ
+（Timeline の原型）、つまずきタグ（ツール×トピックの 2 軸）と索引、
+GAMEYARD 作品への手動リンク、パスワード再設定（メール。SMTP を設定する
+まで API は「使えない」と明示する — 実装していないふりも、あるふりもしない）。
 
 ## 決まっていること
 
@@ -36,7 +43,31 @@ ACQUISITION / CEO_REVIEW）にある。**ここに複製しない**（2 か所�
 
 ```sh
 npm ci
-npm run dev      # 開発サーバー
+npm run dev      # 開発サーバー（:3000）
+npm run api      # Story API（:8798。依存ゼロの Node サーバー）
 npm run lint     # ESLint + 型検査
 npm run build    # 静的書き出し（out/）
+npm run test:server  # サーバー側の通し試験（node:test）
+npm run verify   # 公開手前まで一発（lint→試験→両ビルド→出力検証）
+npm run seed     # 開発用のデモデータ投入（API 経由・localhost 限定）
 ```
+
+開発中はサイト（:3000）と API（:8798）が別ポートになるので、API 側を
+`CY_ALLOW_ORIGIN=http://localhost:3000 npm run api` と起動して CORS を
+明示的に開ける。本番は同一オリジン（リバースプロキシで `/api` を API へ
+寄せる）を想定していて、その場合 CORS は閉じたまま。データは
+`server/store/`（1 件 1 JSON。コミットしない）。
+
+### 2 モード構成（GAMEYARD と同じ型）
+
+- `SITE_MODE=static`（既定の `npm run build`）… 固定ページ（トップ・
+  ログイン・書く画面など）を `out/` に書き出す。CDN・静的ホスティング用
+- `SITE_MODE=server`（`npm run build:server` → `npm run start:server`）…
+  Story の本文（`/story/<id>/`）・一覧（`/stories/`）・書き手ページ
+  （`/creators/<handle>/`）・タグ索引（`/tags/`）をリクエスト時に組み立てて
+  HTML で返す。本文が HTML に入ることがタグ SEO の前提
+- 前段（nginx など）は静的ファイルがあればそれを返し、無いパス
+  （`/story/` `/creators/` `/stories/` `/tags/` `/api/`）を server モードへ回す
+- `npm run dev` は server モードで立ち上がる（全ルートが動く）。
+  下書きのプレビューだけは実 URL ではなく `/story/?id=` （本人トークン
+  つきでブラウザから API を読む）
