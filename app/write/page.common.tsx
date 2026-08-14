@@ -13,6 +13,7 @@ import {
   type Story,
   type StoryImage,
 } from '../../lib/api'
+import { SITE_FEED } from '../../lib/og'
 import { VoiceInput } from '../../components/voice-input'
 import { StoryInterview } from '../../components/story-interview'
 import {
@@ -479,8 +480,18 @@ function WriteInner() {
           )}
         </div>
       </form>
+      {/* 公開が何をするかを、押す前に全部言う（designs I-6）。
+          3 つの要素を必ず保つ:
+            (1) RSS に載ること（全体と作者別の 2 本あるが、文言では分けない）
+            (2) 下書きに戻せること —— これを落として (3) だけ書くと脅しになる
+            (3) 戻しても、RSS で配信済みのものには効かないこと
+              （RSS 2.0 には配信の取り消しを伝える口が無い。RFC 6721 参照）
+          RSS の口は CY_SITE_ORIGIN が無いと 503 を返す。本番は設定済み。
+          **将来 RSS を止めるなら、この文も一緒に直すこと**（文言が嘘になる）。 */}
       <p className="notice">
-        公開すると <Link prefetch={false} href="/stories/">Story 一覧</Link> とあなたの個人ページに載ります。
+        公開すると <Link prefetch={false} href="/stories/">Story 一覧</Link>・あなたの個人ページ・
+        <a href={SITE_FEED}>RSS</a> に載ります。
+        あとで下書きに戻せますが、RSS で受け取った人の手元からは消えません。
         下書きはあなたにしか見えません。
       </p>
     </div>
