@@ -12,6 +12,30 @@
 
 ---
 
+## 55. **5 秒を超える自動再生には「止める手段」が要る — WCAG 2.2 SC 2.2.2（Pause, Stop, Hide）**
+
+PR #13（ホームの 27 秒背景動画）を出した直後に、①が自分たちの実装を
+外部基準に当てて見つけた改善点。
+
+- 出典: https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html
+  （W3C, Understanding SC 2.2.2。2026-08-14 確認）
+- 事実（原文）:
+
+  > For any moving, blinking or scrolling information that (1) **starts
+  > automatically**, (2) **lasts more than five seconds**, and (3) is
+  > **presented in parallel with other content**, there is **a mechanism
+  > for the user to pause, stop, or hide it** unless the movement,
+  > blinking, or scrolling is part of an activity where it is essential
+
+- **CreatorYard への当てはめ**: PR #13 の背景動画は 3 条件がすべて成立する
+  （自動開始・27 秒・見出しや CTA と並行表示）。実装済みの
+  `prefers-reduced-motion` フォールバックは **OS で設定した人にしか効かない**。
+  設定していない人が動きを止める手段が、いまは無い
+- 学び: **「装飾だから読み上げから外す」（aria-hidden）と「動きを止められる」
+  は別の要求。**前者は済んでいるが後者が残っている。動きが苦手な読み手
+  （前庭障害・注意の散りやすさ）は書き手候補にも普通にいる —— 書き手の
+  体験の観点でも、止めるボタン 1 つは価値がある
+
 ## 54. **暦日バグは「試験を持つ組織」でも本番まで届く — Windows Azure の閏日全面障害（2012）**
 
 ⑤の指示（gdp の 6 例目「試験が実装と誤前提を共有すると検出できない」の
