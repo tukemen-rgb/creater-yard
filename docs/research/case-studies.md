@@ -12,6 +12,37 @@
 
 ---
 
+## 56. **配備は「再現可能な自動の列」にする — Google SRE 本のリリースエンジニアリング**
+
+gdp の 10 個目の貢献（PR #14 `9671a8e`: apply-latest.sh に事前検査・
+ビルド成功までは本番に触らない順序・CSP の失敗時切り戻しを追加）を
+外部標準と突き合わせる。
+
+- 出典: https://sre.google/sre-book/release-engineering/
+  （Google SRE Book, Chapter 8 *Release Engineering*, Dinah McNutt。
+  2026-08-14 確認）
+- 事実（原文）:
+
+  > Running reliable services requires reliable release processes.
+  > Site Reliability Engineers (SREs) need to know that the binaries and
+  > configurations they use are built in a **reproducible, automated way**
+  > so that releases are repeatable and aren't "unique snowflakes."
+
+- **CreatorYard で起きたこと**: ③の初版 apply-latest.sh は「動く列」では
+  あったが、(a) 検査（root か・main か・作業樹が綺麗か）無しに始まり、
+  (b) **ビルドが失敗しても、その前に nginx と静的ファイルを触ってしまう
+  順序**で、(c) nginx reload 失敗時の CSP 切り戻しが無かった。gdp は
+  「**全ビルド成功 → はじめて本番に触る → 失敗したら戻す**」に直した。
+  今夜の本番設置で人間（社長＋Claude）が手作業でやって踏んだ穴の列を、
+  スクリプトが同じ穴を踏まない形に焼き込んだもの
+- 学び: **配備スクリプトの品質＝「成功時に正しい」ではなく「失敗時に
+  壊さない」。**手順の自動化は、手順の順序と失敗経路まで自動化して
+  はじめて「unique snowflake」でなくなる
+- ④への申し送り: gdp 版は nginx 設定を `/etc/nginx/sites-available/creatoryard`
+  の**固定パスに前提化**した（無ければ中止）。本番の実ファイル名が
+  これと違う場合は**安全に停止する**（壊れはしない）。初回実行で
+  「がありません」と出たら、実ファイル名を聞き取って直すこと
+
 ## 55. **5 秒を超える自動再生には「止める手段」が要る — WCAG 2.2 SC 2.2.2（Pause, Stop, Hide）**
 
 PR #13（ホームの 27 秒背景動画）を出した直後に、①が自分たちの実装を
