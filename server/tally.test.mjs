@@ -39,8 +39,20 @@ const SEED = [
   { status: 'draft', authorId: AUTHOR_A, authorHandle: HANDLE_A, title: 'a3' },
 ]
 
+const tokyoToday = () => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('ja-JP', {
+      timeZone: 'Asia/Tokyo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date()).map(({ type, value }) => [type, value]),
+  )
+  return `${parts.year}-${parts.month}-${parts.day}`
+}
+
 const utcDay = (offsetDays) => {
-  const d = new Date()
+  const d = new Date(`${tokyoToday()}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + offsetDays)
   return d.toISOString().slice(0, 10)
 }
@@ -79,7 +91,7 @@ test('出力にハンドルも authorId も含まれない（合計だけを出�
 })
 
 test('不正な日付引数は使い方を出して終了コード 2（store は読まない）', () => {
-  for (const bad of ['2026-9-13', '20260913', 'あした', '2026-13-99']) {
+  for (const bad of ['2026-9-13', '20260913', 'あした', '2026-13-99', '2026-02-30']) {
     const result = run(seedStore(SEED), [bad])
     assert.equal(result.status, 2, `${bad} を受け付けてはいけない`)
     assert.match(result.stderr, /使い方/)
