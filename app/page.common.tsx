@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import Link from 'next/link'
+import HeroVideo from './hero-video'
 
 /**
  * トップページ。MVP（Creator Story）が動くようになったので、
@@ -13,29 +14,15 @@ import Link from 'next/link'
  * 素材を置いて再ビルドするだけで背景動画が現れる（コード変更不要）。
  */
 const MEDIA_DIR = path.join(process.cwd(), 'public', 'media')
-const hasHeroVideo = fs.existsSync(path.join(MEDIA_DIR, 'hero.mp4'))
+const rightsApproved = fs.existsSync(path.join(MEDIA_DIR, 'RIGHTS_APPROVED'))
+const hasHeroVideo = rightsApproved && fs.existsSync(path.join(MEDIA_DIR, 'hero.mp4'))
 const hasHeroWebm = fs.existsSync(path.join(MEDIA_DIR, 'hero.webm'))
 
 export default function Home() {
   return (
     <div className={hasHeroVideo ? 'hero hero--video' : 'hero'}>
       {hasHeroVideo && (
-        /* 装飾なので aria-hidden で読み上げから外す。素材自体が無音だが、
-           muted は自動再生の条件でもあるため外さない。読込に失敗しても
-           poster と本文・導線だけで全部が読める */
-        <video
-          className="hero__video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster="/media/hero-poster.jpg"
-          aria-hidden="true"
-        >
-          {hasHeroWebm && <source src="/media/hero.webm" type="video/webm" />}
-          <source src="/media/hero.mp4" type="video/mp4" />
-        </video>
+        <HeroVideo hasWebm={hasHeroWebm} />
       )}
       <div className="hero__content">
         <h1>
