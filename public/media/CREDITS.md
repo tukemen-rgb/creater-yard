@@ -3,25 +3,34 @@
 `hero.mp4` / `hero.webm`（27 秒・9 カット・無音）と `hero-poster.jpg` は
 以下の素材から 2026-08-14 に制作した。
 
-## 本番利用を止めている権利確認（2026-08-14）
+## 権利確認の経緯
 
-配布ページを再確認した結果、カット 3・4・6・7 の無料版は
-**Mixkit Restricted License（個人利用のみ）**だった。CreatorYard での
-公開利用はできないため、商用利用可能な素材へ差し替え、各配布ページを
-再確認するまで `RIGHTS_APPROVED` を置かない。アプリはこのファイルがない
-限り video 要素を生成しない。
+- 初版はカット 1〜7 をすべて Mixkit とし、サイト共通の Free License を
+  前提にしていた。**gdp の再確認で、うち 4 本（旧カット 3・4・6・7）の
+  配布ページが Restricted License（個人利用のみ）だと判明**
+- Claude が 4 本すべてのページを独立に再取得して追認し、**商用利用可の
+  素材へ差し替えた**（Mixkit の Seoul/Singapore 系は全て Restricted
+  だったため、都市 2 本は Pexels から調達）
+- **全 9 カットの配布ページを 1 本ずつ確認し直した**のが下の表。
+  以後、素材を差し替えるときは必ずページ単位でライセンス表示を確認し、
+  この表と `RIGHTS_APPROVED` を更新すること
 
-## カット 1〜7: Mixkit 素材（取得日 2026-08-14）
+## カット一覧（各配布ページのライセンス表示・2026-08-14 確認）
 
-| カット | 内容 | 配布ページ | 2026-08-14 の表示 |
+| カット | 内容 | 配布元 | ページ表示 |
 | --- | --- | --- | --- |
 | 1 | 東京の夜景（レインボーブリッジ） | https://mixkit.co/free-stock-video/city-of-tokyo-at-night-4383/ | Free License（商用可） |
 | 2 | PC を操作する手元 | https://mixkit.co/free-stock-video/close-up-shot-of-a-person-typing-on-a-laptop-1808/ | Free License（商用可） |
-| 3 | 韓国・ソウルの夜景（タイムラプス） | https://mixkit.co/free-stock-video/seoul-city-time-lapse-at-night-30126/ | **Restricted License（個人利用のみ・要差し替え）** |
-| 4 | デスクトップを見る人物 | https://mixkit.co/free-stock-video/intensely-focused-young-man-working-on-a-computer-48503/ | **Restricted License（個人利用のみ・要差し替え）** |
+| 3 | 韓国・ソウルの夜景（漢江・タイムラプス） | https://www.pexels.com/video/vibrant-night-cityscape-with-traffic-timelapse-38035115/ （作者: Jueon Kim。タグに Seoul / South Korea） | Pexels license（Free to use・商用可） |
+| 4 | 机上の PC に向かう人物 | https://mixkit.co/free-stock-video/engineer-working-on-his-computers-in-his-workshop-29990/ | Free License（商用可） |
 | 5 | ニューヨークの夜景 | https://mixkit.co/free-stock-video/new-york-buildings-at-night-pan-shot-4330/ | Free License（商用可） |
-| 6 | PC 画面に向かう人物（肩越し） | https://mixkit.co/free-stock-video/computer-hacker-logging-a-website-with-code-47321/ | **Restricted License（個人利用のみ・要差し替え）** |
-| 7 | シンガポールの夜景（マリーナベイ） | https://mixkit.co/free-stock-video/singapore-cityscape-and-harbor-at-night-30998/ | **Restricted License（個人利用のみ・要差し替え）** |
+| 6 | PC 画面と向き合う人物（コードの画面） | https://mixkit.co/free-stock-video/software-developer-working-while-drinks-coffee-1730/ | Free License（商用可） |
+| 7 | シンガポールの夜景（マリーナベイ） | https://www.pexels.com/video/lights-display-on-the-marina-bay-sands-at-night-5138460/ （作者: Pjiong） | Pexels license（Free to use・商用可） |
+
+- Mixkit Free License: https://mixkit.co/license/#videoFree
+  （商用利用可・改変可・クレジット表記不要）
+- Pexels license: https://www.pexels.com/license/
+  （商用利用可・改変可・クレジット表記不要）
 
 ## カット 8〜9: 自作（権利は本プロジェクト）
 
