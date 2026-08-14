@@ -13,7 +13,114 @@ UTC 実装＋UTC 前提の試験が緑のまま通った教訓。事例 54 = Azu
 
 ---
 
-## 2026-08-14 16:30 JST **マージ後手順の再点検（I-5・I-7・I-8）** — ⑤ 15:30 の指示。新規設計なし・実装再開時に迷わない形へ
+## 2026-08-14 18:00 JST **V-1「ホームの 27 秒背景動画」（Issue #12・社長最優先）** — 状態: **素材待ち**（素材が `public/media/` に入った周の③が最初にやる。**素材が無い間は実装しない** — 壊れた video 要素を本番へ出さないため）
+
+Issue #12 の確定仕様を実装に落とす。**gdp の指示どおり、着手は素材取得後・
+専用 Draft PR で。**この設計は「素材が届いた瞬間に③が迷わず動ける」ための前倒し。
+
+### 素材の所在（2026-08-14 18:00 時点の確認結果）
+
+- creater-yard の**全ブランチ・全履歴**: 動画・poster・ロゴ素材なし（検索済み）
+- `tukemen-rgb/site`（GAMEYARD）の main＋claude 枝: なし（検索済み）
+- 両本番サイトの配信物: なし（検索済み）
+- ChatGPT Library: 完成動画なし（gdp 確認・Issue #12 記載）
+- **未確認は本番 VPS のファイルシステムだけ**（社長のみ実行可能）:
+  `find /opt /var/www -type f \( -name '*.mp4' -o -name '*.webm' -o -name '*.mov' \) 2>/dev/null`
+
+### 期待する素材（どちらかが `public/media/` に入れば着手）
+
+- **(A) 完成動画**: `hero.mp4`（＋可能なら `hero.webm`）＋poster 用静止画
+- **(B) 9 本の元動画**: 結合・クロスフェードの再構成が必要
+  （この環境に ffmpeg は無い。導入可否を含め、そのとき判断）
+
+### 変更対象ファイル（素材取得後）
+
+- `app/page.tsx` — hero を video 対応に（下記の素材ゲート込み）
+- `app/globals.css` — オーバーレイ・発光・reduced-motion・スマホ調整
+- `public/media/hero.mp4`・`hero-poster.jpg`（＋任意で `hero.webm`）
+- `server/home-hero.test.mjs`（新規・ソース検査）
+- 権利記録: `public/media/CREDITS.md`（#12 の要求。素材の出所・ライセンス）
+
+### 方式の要点 — **素材ゲート（ビルド時 fs 判定）**
+
+ホームは両モードで静的 prerender なので、**ビルド時に
+`fs.existsSync('public/media/hero.mp4')` を判定し、無ければ video 要素を
+出力しない**（現行の静的 hero のまま）。これで:
+
+- 素材が無いビルドでも**壊れた video 要素が本番に出ない**（#12 の禁止事項を
+  仕組みで担保。人が忘れても壊れない）
+- 素材を入れて再ビルドするだけで video が現れる（コード変更不要）
+
+### video 要素の形（#12 の実装条件をそのまま）
+
+```tsx
+<video autoPlay muted loop playsInline preload="metadata"
+  poster="/media/hero-poster.jpg" aria-hidden="true"
+  className="hero__video">
+  <source src="/media/hero.webm" type="video/webm" />{/* あれば */}
+  <source src="/media/hero.mp4" type="video/mp4" />
+</video>
+```
+
+- **音声は配信しない**（素材自体を無音で作る。muted は二重の保険）
+- **`aria-hidden="true"`＝装飾扱い**で読み上げから外す（#12 の要求）
+- `controls` なし・`src` は **`/media/` 始まりの自ホストのみ**（第三者 URL 禁止）
+
+### 画・文字（#12 の演出指定）
+
+- 暗いオーバーレイ: hero に `linear-gradient` の擬似要素を重ね、
+  全カットで白文字のコントラストを保つ
+- メイン文言は現行のまま「つくる過程に、居場所を。」（**すでに #12 の指定と
+  一致**。変更しない）。白文字＋**暖色オレンジの発光**は `text-shadow` で
+- テキストと CTA は従来より下へ（flex の配置変更。都市名は表示しない）
+- スマホ: `object-fit: cover`＋`object-position` で映像中心を上へ約 38px
+  （上 38px/下 76px トリミング相当。**実素材で実寸調整**）。ロゴカットが
+  中央固定で切れないことをブラウザで実測
+
+### prefers-reduced-motion（JS を足さずに）
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  .hero__video { display: none; }
+  .hero--video { background-image: url('/media/hero-poster.jpg'); }
+}
+```
+
+`preload="metadata"` と組み合わせ、reduce 環境では自動再生しない。
+**JS は 1 行も足さない**（第三者 JS なし・自前 JS も増やさない）。
+
+### 試験計画（`server/home-hero.test.mjs`・ソース検査＋配信 HTML）
+
+1. video 要素に `muted`・`autoPlay`・`loop`・`playsInline`・
+   `aria-hidden` がすべて在る（ソース検査）
+2. `src`/`poster` が **`/media/` 始まりのみ**（第三者 URL の混入を機械で禁止）
+3. **素材ゲートの fs 判定が在る**（素材なしビルドで video が出ないことの根拠）
+4. reduced-motion の CSS 規則が在る
+5. 素材ありビルドの配信 HTML に video が在り、**素材を外したビルドでは無い**
+   （両状態のビルドで実測）
+
+### 受入確認（#12 のまま・③の Draft PR で）
+
+360px スマホ・タブレット・PC の実ブラウザ（Playwright）／無音 27 秒ループ／
+動画 404 でも poster・見出し・CTA 表示／横スクロールなし／`npm run verify`
+全段階／**本番反映前に動画容量と初回表示時間を記録**。
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| 第三者動画 URL の混入 | 試験 2 が `/media/` 始まり以外を機械的に落とす |
+| 巨大ファイルで初回表示が劣化 | `preload="metadata"`＋poster 先行表示＋容量の記録（受入条件） |
+| トラッキング・Cookie の混入 | 追加しない（自ホスト配信のみ。試験 2 が外部参照を禁止） |
+| 権利不明の素材 | `public/media/CREDITS.md` に出所・ライセンスを記録してから PR |
+
+### 順序
+
+**素材が届いた周の③が最初にやる**（社長最優先指示）。それまでは既存の
+マージ待ち（#11〜#6）と解禁対応表（16:30）の運用を継続。#7 などの
+セキュリティ修正のマージは並行して維持（gdp の指示どおり）。
+
+ — ⑤ 15:30 の指示。新規設計なし・実装再開時に迷わない形へ
 
 マージ待ち 6 本が入り始めたとき、③が**どの PR のマージで何が解禁され、
 最初に何をするか**を 1 か所で引けるようにする。すべて実物で再確認済み。
