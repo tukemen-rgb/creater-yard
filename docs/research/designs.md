@@ -13,7 +13,87 @@ UTC 実装＋UTC 前提の試験が緑のまま通った教訓。事例 54 = Azu
 
 ---
 
-## 2026-08-14 18:00 JST **V-1「ホームの 27 秒背景動画」（Issue #12・社長最優先）** — 状態: **実装済み PR #13 `6e04314`**（社長指示によりフリー素材から再制作。素材ゲート・両ビルド・実ブラウザ 2 画面・reduced-motion まで検証済み）
+## 2026-08-14 18:30 JST **V-1a「背景動画の一時停止ボタン」** — 状態: **未実装**（③へ・**前提: PR #13 のマージ後**。同じファイル群を触るため）
+
+①の 18:10 の提案（事例 55 = WCAG 2.2 SC 2.2.2）を設計に落とす。
+**時刻帯の点検: 日付・時刻は扱わない**（新様式の確認）。
+
+### 何を
+
+ホーム背景動画の隅に**一時停止/再生の小さなボタン 1 つ**。5 秒を超える
+自動再生に「止める手段」を付け、WCAG 2.2.2 の 3 条件成立状態を解消する。
+
+### 方式 — video とボタンを 1 つの小さな client component に
+
+いまの video は server component（page.common.tsx）内。onClick には
+client component が要るため、**video＋ボタンを `components/hero-video.tsx`
+（'use client'）へ移し**、素材ゲートの結果だけを props で渡す:
+
+```tsx
+// page.common.tsx（素材ゲートはサーバー側に残す）
+{hasHeroVideo && <HeroVideo webm={hasHeroWebm} />}
+```
+
+```tsx
+// components/hero-video.tsx（新規・'use client'）
+// ref で video を持ち、ボタンで paused ? play() : pause() を切り替える。
+// 状態は保存しない（毎訪問リセット。装飾のために保存領域を使わない）
+<video ref={videoRef} className="hero__video" autoPlay muted loop
+  playsInline preload="metadata" poster="/media/hero-poster.jpg"
+  aria-hidden="true">…</video>
+<button type="button" className="hero__toggle"
+  aria-pressed={paused} onClick={toggle}>
+  {paused ? '背景の動きを動かす' : '背景の動きを止める'}
+</button>
+```
+
+- **ラベルは機能の言葉**（「一時停止」より「背景の動きを止める」が対象を
+  明確にする）。テキストそのものをボタンに出す（アイコンだけにしない —
+  小さな ⏸ アイコンは意味が伝わらない人がいる）
+- client component でも SSR で video タグは HTML に入る（初期表示は不変）
+- **React の onClick は addEventListener 方式**なので、PR #6 の CSP
+  （`script-src-attr 'none'`）とも両立する
+- `prefers-reduced-motion` の CSS フォールバック（video 非表示）は
+  そのまま。reduce 環境ではボタンも意味が無いので **CSS で一緒に隠す**
+
+### 変更対象ファイル（PR #13 マージ後・小さな 1 PR）
+
+- `components/hero-video.tsx`（新規・'use client'）
+- `app/page.common.tsx` — video ブロックを component 呼び出しに置換
+- `app/globals.css` — `.hero__toggle`（右下隅・半透明地・44px タップ領域）
+  ＋ reduced-motion でボタンも隠す 1 行
+- `server/home-hero.test.mjs` — 検査対象パスの更新＋追加 3 件（下記）
+
+### データモデル／経路・画面
+
+**変更なし。**保存もネットワークも増えない（localStorage も使わない —
+①の提案どおり毎訪問リセット）。
+
+### 試験計画（既存 5 件の対象パス更新＋3 件）
+
+1. ボタンが `aria-pressed` と**機能の言葉のラベル**を持つ（ソース検査）
+2. `paused` の切り替えが `play()/pause()` を呼ぶ（ソース検査）
+3. **ブラウザ実測（③の受入）**: クリックで動画が止まる・もう一度で動く・
+   reduced-motion ではボタンごと出ない
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| client component 追加による面の増加 | 増えるのは onClick 1 つ。外部通信ゼロ・保存ゼロ・第三者 JS ゼロ（試験で `fetch`/`localStorage` の不在をソース検査） |
+| ボタンの誤爆（本文導線との混同） | 右下隅・「背景の…」で対象を明示・`type="button"` |
+
+### ④⑤への申し送り（このターンの観測・V-1a とは別件）
+
+**gdp が PR #6 に CSP 変更を push**（`6b472bc`・`script-src` に
+`'unsafe-inline'` 追加＋`script-src-attr 'none'`）。②が本番を実測した事実:
+**本番の応答ヘッダは厳格版 CSP のまま**だが、**トップの HTML には
+インライン初期化 script（`self.__next_f`）が実在** — gdp の言う矛盾は
+本番で現に起きている。「検査を緩めない」の線に関わるため、**裁定は⑤**。
+④は (a) 本番でブラウザ Console の CSP 違反の実否 (b) 対話機能（登録・
+投稿）が現状の厳格 CSP で本当に動いているのか、を独立確認すること。
+
+ — 状態: **実装済み PR #13 `6e04314`**（社長指示によりフリー素材から再制作。素材ゲート・両ビルド・実ブラウザ 2 画面・reduced-motion まで検証済み）
 
 Issue #12 の確定仕様を実装に落とす。**gdp の指示どおり、着手は素材取得後・
 専用 Draft PR で。**この設計は「素材が届いた瞬間に③が迷わず動ける」ための前倒し。
