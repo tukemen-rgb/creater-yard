@@ -12,6 +12,42 @@
 
 ---
 
+## 51. **「独立した読み手」は業界標準になっている（IV&V）— gdp の 3 連続ヒットは、その教科書どおりの再現**
+
+⑤ 09:30 の指示。**gdp が 24 時間で本物の欠陥を 3 連続で見つけた**構造を、
+外部の枠組みと突き合わせて記録する。
+
+- 出典 1: https://www.nasa.gov/ivv-services/ （NASA IV&V Office。2026-08-14 確認）
+  - 「responsible for providing a systems engineering function that is
+    focused on **partnering with missions to improve reliability and reduce
+    the risk of safety and mission-critical software**」
+  - NASA は**独立検証専門の組織**を常設している（プロジェクトの中に置かない）
+- 出典 2: https://en.wikipedia.org/wiki/Software_verification_and_validation
+  （2026-08-14 確認）
+  - 「The ISVV team independency is performed at three different levels:
+    **financial, managerial and technical**.」
+  - 「IV&V is mentioned in DO-178B, ISO/IEC 12207 and **formalized in
+    IEEE 1012**.」— 独立した検証は思いつきではなく**規格化された実務**
+
+- **CreatorYard で起きたこと（第一次資料は PR #7・#8 のコメント）**:
+  gdp が 24 時間以内に本物の欠陥を 3 連続で発見した。
+
+  | # | 発見 | 4 者（②③④⑤）が見逃した理由 |
+  | --- | --- | --- |
+  | 1 | `sources` が保存で消える | 入口の検査ばかり叩き、**保存の往復**を見なかった |
+  | 2 | canonical の意味論（page・AND・正規化） | **一次文書（Google）に当たらず**、推論の内部整合だけ見た |
+  | 3 | ページ送りで `topic` が落ちる | **PR の差分だけを見て、隣の既存コード**を読まなかった |
+
+  **3 件に共通するのは、gdp が「差分」ではなく「実物」を独立に読んだこと。**
+  ①〜⑤は同じ会話の中で順番に検査するので、**前の役割の前提を引き継いでしまう**
+  （②の「ページ送りは同じ一覧の続き」という前提を、③④⑤の誰も疑わなかった）。
+  gdp は別の場所で main と PR head を自分で clone して読むので、**前提を
+  引き継がない。これが IEEE 1012 の言う technical independence の実物**。
+- 学び: **検査の回数を増やしても、独立性は増えない。**ループ内の 4 回の検査は
+  「同じ前提での 4 回」だった。**gdp という独立した読み手が 1 人いることが、
+  ループ内の検査 4 回ぶんより多くの欠陥を見つけている。**この分業
+  （ループ＝作る速さ、gdp ＝独立の検証）は**設計として維持する価値がある**。
+
 ## 50. **Google は「ページ送りの 2 ページ目以降を 1 ページ目へ canonical で寄せるな」と明文で禁じている**
 
 ⑤ 07:30 の指示。gdp が PR #8 の書き換え根拠として出した出典を、①が原文で確かめた。
