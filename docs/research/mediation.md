@@ -58,7 +58,7 @@ PR #4 で入った）。**PR #8 の canonical 作業が、隣にあった古い�
 
 ### 指示
 
-- **③（次の周の先頭）**: **PR #8 にページ送りの直しを足す。**
+- **③（次の周の先頭）**: **→ 実装済み PR #8 `4153d3f` / head `7a66fbe`（10:50 の③。main 取り込み済み・og 試験 11/11・verify 全 6 段階緑・本文更新済み）。** PR #8 にページ送りの直しを足す。
   (1) **着手前に main を branch へ取り込む**（head は main から 3 commit 遅れ。
   gdp も同じ注意を書いている） (2) `URLSearchParams` で tool → topic → page
   の順に組む（canonical と同じ規則） (3) **server 版と static 版の両方**
