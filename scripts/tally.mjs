@@ -28,16 +28,35 @@ const DATA_DIR = process.env.CY_DATA_DIR ?? path.join(ROOT, 'server', 'store')
 const STORIES_DIR = path.join(DATA_DIR, 'stories')
 
 const GOAL = { writers: 10, stories: 30 } // SPEC §4 の数字。変えるのは人
+const TALLY_TIME_ZONE = 'Asia/Tokyo'
+const tokyoDay = (date) => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('ja-JP', {
+      timeZone: TALLY_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date).map(({ type, value }) => [type, value]),
+  )
+  return `${parts.year}-${parts.month}-${parts.day}`
+}
+
+const parseCalendarDay = (value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const parsed = new Date(`${value}T00:00:00Z`)
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return null
+  return parsed
+}
 
 const judgeArg = process.argv[2]
 let judgeDate = null
 if (judgeArg !== undefined) {
   // 判定日は YYYY-MM-DD だけを受ける。緩く解釈しない（1 日ずれると判定がずれる）
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(judgeArg) || Number.isNaN(Date.parse(`${judgeArg}T00:00:00Z`))) {
+  judgeDate = parseCalendarDay(judgeArg)
+  if (!judgeDate) {
     console.error('使い方: node scripts/tally.mjs [判定日 YYYY-MM-DD]')
     process.exit(2)
   }
-  judgeDate = new Date(`${judgeArg}T00:00:00Z`)
 }
 
 let publicCount = 0
@@ -64,11 +83,14 @@ for (const name of entries) {
 }
 
 const today = new Date()
-const stamp = today.toISOString().slice(0, 10)
+// 本番運用は日本時間。UTC 日付のままだと JST 00:00〜08:59 に前日扱いになる。
+const stamp = tokyoDay(today)
 console.log(`${stamp}: 公開 Story ${publicCount} 本 / 書き手 ${writerIds.size} 人`)
 
 if (judgeDate) {
-  const days = Math.ceil((judgeDate.getTime() - today.getTime()) / 86_400_000)
+  // 時刻ではなく暦日の差を取る。当日の何時に実行しても同じ残日数になる。
+  const todayDate = new Date(`${stamp}T00:00:00Z`)
+  const days = Math.round((judgeDate.getTime() - todayDate.getTime()) / 86_400_000)
   const clock = days >= 0 ? `残り ${days} 日` : `超過 ${-days} 日`
   console.log(`（判定日 ${judgeArg} まで${clock}。目標: 書き手 ${GOAL.writers} 人・Story ${GOAL.stories} 本）`)
 }
