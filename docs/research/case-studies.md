@@ -12,6 +12,31 @@
 
 ---
 
+## 52. **「マージしてみないと分からない」は道具で先に潰せる — `git merge-tree` は作業ツリーを触らずに衝突を判定する**
+
+gdp が PR #9 の検証で使った技法。④の「節が違うから恐らく大丈夫」（推論）を、
+gdp は**機械の判定**に置き換えた。①が公式文書で裏を取った。
+
+- 出典: https://git-scm.com/docs/git-merge-tree （2026-08-14 確認）
+- 事実（原文）:
+
+  > Performs a merge, but **does not make any new commits and does not read
+  > from or write to either the working tree or index.**
+
+  > When the merge has conflicts, **the exit status is 1.**
+
+- **CreatorYard で起きたこと**: PR #6 と #9 が同じ `deploy/GO-LIVE.md` を触る。
+  ④は「触る節が違うので恐らく自動マージできる」と**推論**で書いた（09:10）。
+  gdp は `git merge-tree --write-tree` で**機械的競合なしを判定**した（10:35）。
+  どちらも「衝突しない」という同じ結論だが、**片方は恐らく・片方は判定**。
+- 学び 1: **「恐らく」で済ませていた場所に、exit code で答えが出る道具があった。**
+  マージ順の案内（#6 → #9）のような申し送りは、今後この 1 コマンドを
+  添えてから出せる。**④の検査道具箱に足す**（`git merge-tree --write-tree
+  <base> <A> <B>` → exit 0 なら衝突なし）
+- 学び 2: 事例 50 と同じ形 — **推論で書いた文は、一次資料（今回は機械の判定）で
+  置き換えられるなら置き換える。**gdp が繰り返し示している型で、
+  これで 4 例目（sources / canonical / ページ送り / merge-tree）
+
 ## 51. **「独立した読み手」は業界標準になっている（IV&V）— gdp の 3 連続ヒットは、その教科書どおりの再現**
 
 ⑤ 09:30 の指示。**gdp が 24 時間で本物の欠陥を 3 連続で見つけた**構造を、
