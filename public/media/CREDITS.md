@@ -3,22 +3,25 @@
 `hero.mp4` / `hero.webm`（27 秒・9 カット・無音）と `hero-poster.jpg` は
 以下の素材から 2026-08-14 に制作した。
 
-## カット 1〜7: Mixkit のフリー素材（取得日 2026-08-14）
+## 本番利用を止めている権利確認（2026-08-14）
 
-ライセンス: **Mixkit Stock Video Free License**
-（https://mixkit.co/license/#videoFree）
-— 商用利用可・改変可・クレジット表記不要。再配布制限は「素材単体の
-再配布」に対するもので、編集して映像作品に組み込む本利用は許可範囲。
+配布ページを再確認した結果、カット 3・4・6・7 の無料版は
+**Mixkit Restricted License（個人利用のみ）**だった。CreatorYard での
+公開利用はできないため、商用利用可能な素材へ差し替え、各配布ページを
+再確認するまで `RIGHTS_APPROVED` を置かない。アプリはこのファイルがない
+限り video 要素を生成しない。
 
-| カット | 内容 | 出所 |
-| --- | --- | --- |
-| 1 | 東京の夜景（レインボーブリッジ） | https://mixkit.co/free-stock-video/city-of-tokyo-at-night-4383/ |
-| 2 | PC を操作する手元 | https://mixkit.co/free-stock-video/close-up-shot-of-a-person-typing-on-a-laptop-1808/ |
-| 3 | 韓国・ソウルの夜景（タイムラプス） | https://mixkit.co/free-stock-video/seoul-city-time-lapse-at-night-30126/ |
-| 4 | デスクトップを見る人物 | https://mixkit.co/free-stock-video/intensely-focused-young-man-working-on-a-computer-48503/ |
-| 5 | ニューヨークの夜景 | https://mixkit.co/free-stock-video/new-york-buildings-at-night-pan-shot-4330/ |
-| 6 | PC 画面に向かう人物（肩越し） | https://mixkit.co/free-stock-video/computer-hacker-logging-a-website-with-code-47321/ |
-| 7 | シンガポールの夜景（マリーナベイ） | https://mixkit.co/free-stock-video/singapore-cityscape-and-harbor-at-night-30998/ |
+## カット 1〜7: Mixkit 素材（取得日 2026-08-14）
+
+| カット | 内容 | 配布ページ | 2026-08-14 の表示 |
+| --- | --- | --- | --- |
+| 1 | 東京の夜景（レインボーブリッジ） | https://mixkit.co/free-stock-video/city-of-tokyo-at-night-4383/ | Free License（商用可） |
+| 2 | PC を操作する手元 | https://mixkit.co/free-stock-video/close-up-shot-of-a-person-typing-on-a-laptop-1808/ | Free License（商用可） |
+| 3 | 韓国・ソウルの夜景（タイムラプス） | https://mixkit.co/free-stock-video/seoul-city-time-lapse-at-night-30126/ | **Restricted License（個人利用のみ・要差し替え）** |
+| 4 | デスクトップを見る人物 | https://mixkit.co/free-stock-video/intensely-focused-young-man-working-on-a-computer-48503/ | **Restricted License（個人利用のみ・要差し替え）** |
+| 5 | ニューヨークの夜景 | https://mixkit.co/free-stock-video/new-york-buildings-at-night-pan-shot-4330/ | Free License（商用可） |
+| 6 | PC 画面に向かう人物（肩越し） | https://mixkit.co/free-stock-video/computer-hacker-logging-a-website-with-code-47321/ | **Restricted License（個人利用のみ・要差し替え）** |
+| 7 | シンガポールの夜景（マリーナベイ） | https://mixkit.co/free-stock-video/singapore-cityscape-and-harbor-at-night-30998/ | **Restricted License（個人利用のみ・要差し替え）** |
 
 ## カット 8〜9: 自作（権利は本プロジェクト）
 
