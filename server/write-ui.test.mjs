@@ -38,4 +38,8 @@ test('公開の注意書きは、RSS・戻せること・配信済みには効�
   assert.match(notice, /下書きに戻せ/, '戻せることを言う（落とすと脅しになる）')
   assert.match(notice, /消えません/, '配信済みには効かないことを言う')
   assert.match(notice, /下書きはあなたにしか見えません/, '既存の約束を消していない')
+  assert.ok(
+    source.indexOf('公開すると') < source.indexOf("onClick={() => save('public')}"),
+    '注意書きは公開ボタンより前に置く',
+  )
 })
