@@ -112,7 +112,9 @@ tail -n 5 /var/log/nginx/access.log
 
 ## 5. 公開後の確認（上から順に）
 
-- [ ] `https://<ドメイン>/` … トップが出る（静的）
+- [ ] `https://<ドメイン>/` … **実ブラウザで**見出しと「Story を読む」
+      「書き始める」が出る（HTML の取得だけでは初期化失敗を検出できない）
+- [ ] ブラウザの Console に CSP 違反や `Connection closed` が出ていない
 - [ ] `https://<ドメイン>/api/health` … `{"ok":true}`
 - [ ] 新規登録 → Story 公開 → `/story/<id>/` が **HTML に本文入り**で出る
 - [ ] 画像を付けて公開 → 表示される
