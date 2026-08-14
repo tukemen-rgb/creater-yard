@@ -98,6 +98,76 @@ a:hover {
 .hero {
   padding-block: 48px 24px;
 }
+
+/* 背景動画つきヒーロー（Issue #12）。動画は装飾で、無くても全文が読める。
+   video 要素自体は app/page.tsx の素材ゲートが出し分ける */
+.hero--video {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.hero__video {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  /* 上 38px・下 76px をトリミングし映像の中心を上へ寄せる（Issue #12 の指定） */
+  top: -38px;
+  height: calc(100% + 114px);
+  object-fit: cover;
+  object-position: 50% 50%;
+  z-index: 0;
+}
+/* 暗いオーバーレイ。全カットで白文字のコントラストを保つ */
+.hero--video::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(16, 12, 8, 0.5) 0%,
+    rgba(16, 12, 8, 0.62) 55%,
+    rgba(20, 15, 10, 0.82) 100%
+  );
+  z-index: 1;
+}
+.hero__content {
+  position: relative;
+  z-index: 2;
+}
+/* テキストと CTA は従来案より下へ（Issue #12）。動画の見せ場を上に残す */
+.hero--video .hero__content {
+  padding: 176px 24px 24px;
+}
+.hero--video h1 {
+  color: #fff;
+  /* 白文字＋暖色オレンジの発光アクセント */
+  text-shadow:
+    0 0 22px rgba(255, 140, 58, 0.45),
+    0 2px 12px rgba(0, 0, 0, 0.65);
+}
+.hero--video .eyebrow {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+.hero--video .hero__lede {
+  color: #eae4dc;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75);
+}
+@media (max-width: 480px) {
+  /* スマホでも見出し・CTA・ロゴが画面外へ切れないよう控えめに */
+  .hero--video .hero__content {
+    padding: 128px 16px 16px;
+  }
+}
+/* 動きを抑える設定の人には自動再生しない。poster を静止背景として敷く */
+@media (prefers-reduced-motion: reduce) {
+  .hero__video {
+    display: none;
+  }
+  .hero--video {
+    background: url('/media/hero-poster.jpg') center / cover no-repeat;
+  }
+}
+
 .eyebrow {
   color: var(--accent);
   font-size: 0.85rem;
