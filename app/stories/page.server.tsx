@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { alternatesFor, SITE_FEED, SITE_OG, storiesFilterUrl } from '../../lib/og'
+import { alternatesFor, SITE_FEED, SITE_OG, storiesFilterUrl, storiesListPath } from '../../lib/og'
 import Link from 'next/link'
 
 import { StoryCard } from '../../components/story-card'
@@ -52,12 +52,9 @@ export default async function StoriesPage({ searchParams }: Props) {
   const listing = publishedStories({ page: Number(page) || 1, tool, topic })
 
   const filterLabel = tool || topic
-  const filterQuery = tool
-    ? `tool=${encodeURIComponent(tool)}`
-    : topic
-      ? `topic=${encodeURIComponent(topic)}`
-      : ''
-  const pageHref = (n: number) => `/stories/?${filterQuery ? `${filterQuery}&` : ''}page=${n}`
+  // ページ送りは絞り込み条件を落とさない（tool と topic の両方を保持。
+  // 以前は片方を捨てていて、AND 絞り込みの 2 条件目が「次へ」で消えていた）
+  const pageHref = (n: number) => storiesListPath(tool, topic, n)
 
   return (
     <div className="page">

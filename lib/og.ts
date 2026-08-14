@@ -76,6 +76,28 @@ export function storiesFilterUrl(tool?: string, topic?: string, page?: string): 
   return `${origin}/stories/${query ? `?${query}` : ''}`
 }
 
+/**
+ * 一覧の中で使う相対リンク（ページ送りなど）。**絞り込み条件を落とさない。**
+ *
+ * 以前は `tool ? … : topic ? …` の三項演算子で片方しか残さず、
+ * `?tool=Godot&topic=影` で「次へ」を押すと **AND 条件の topic が黙って
+ * 消えていた**（gdp が 2026-08-14 に検出）。canonical（storiesFilterUrl）と
+ * 同じ tool → topic → page の順で、**両方を保持**する。
+ *
+ * canonical と違い、**値は正規化しない**（利用者が打った表記のまま運ぶ。
+ * 照合は一覧側が正規化するので結果は同じ。正規化した URL へ勝手に
+ * 書き換えると、戻るボタンの履歴が汚れる）。origin も付けない
+ * （サイト内の遷移リンクなので、環境に依存させない）。
+ */
+export function storiesListPath(tool?: string, topic?: string, page?: number): string {
+  const params = new URLSearchParams()
+  if (tool?.trim()) params.set('tool', tool)
+  if (topic?.trim()) params.set('topic', topic)
+  if (Number.isFinite(page) && (page as number) > 1) params.set('page', String(page))
+  const query = params.toString()
+  return `/stories/${query ? `?${query}` : ''}`
+}
+
 /** 作者ページの正規 URL。 */
 export function handleUrl(handle: string): string | null {
   return absoluteUrl(`/creators/${handle}/`)
