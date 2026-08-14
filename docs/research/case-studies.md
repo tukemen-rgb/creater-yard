@@ -12,6 +12,25 @@
 
 ---
 
+## 58. **PARTNER-OFFER の Behance 側も検証完了 — 記述どおり。ただし直接取得は 403 で、索引確認である旨を残す**
+
+事例 57 の残り（Behance 側 2 リンク）を①が検証した。
+
+- 出典: https://help.behance.net/hc/en-us/articles/25287666847643-FAQ-How-do-I-create-a-new-Freelance-Job ／
+  https://help.behance.net/hc/en-us/articles/8832406918811-Guide-Hire-Me
+  （2026-08-15 確認。**両ページとも直接取得は 403（bot 保護）**のため、
+  検索索引で題名・URL の一致と要旨を確認した — 確認の強度は
+  「原文引用」より一段弱い。ここを隠さない）
+- 事実（索引の要旨）: Freelance Job は依頼者の照会に対しフリーランサーが
+  「Create Proposal」で正式提案を返し、**Stripe / PayPal で決済**される。
+  Hire Me はフリーランサーが受注可否と仕事種別を示す機能
+- **検証結果**: OFFER の「依頼者と制作者を仕事・提案・支払いへつなぐ」は
+  **記述どおり**。これで OFFER の競合根拠は GitHub Sponsors（事例 57）・
+  Behance の両方が検証済みになった
+- 学び: **取得できない出典は「確認の強度」を明記して使う**（初回サイクルの
+  TIGSource 403 → 不採用の前例と違い、今回は索引が題名と要旨まで一致した
+  ので採用。ただし原文引用はできない、と書き分ける）
+
 ## 57. **Partner 商品の競合根拠を①が検証 — GitHub Sponsors の引用は「概ね正・引用位置が 1 段浅い」**
 
 PR #3 の枝に新文書 `docs/PARTNER-OFFER.md`（初回商品「制作過程→作品公開
