@@ -12,6 +12,33 @@
 
 ---
 
+## 57. **Partner 商品の競合根拠を①が検証 — GitHub Sponsors の引用は「概ね正・引用位置が 1 段浅い」**
+
+PR #3 の枝に新文書 `docs/PARTNER-OFFER.md`（初回商品「制作過程→作品公開
+スポットライト」・税込 11,000 円・**販売は社長承認後**）が追加された
+（2026-08-15 00:33・gdp または Partner 系エージェントの作）。文書内の
+競合根拠を①が独立検証した。
+
+- 出典: https://docs.github.com/sponsors/getting-started-with-github-sponsors/about-github-sponsors
+  （GitHub 公式。2026-08-15 確認）
+- 事実（原文）:
+
+  > You can select from a range of sponsorship tiers, whether for an
+  > individual profile or multiple profiles in bulk, and choose between
+  > one-time or monthly payment amounts ... and benefits, all determined
+  > by the sponsored account
+
+- **検証結果**: PARTNER-OFFER の「単発・月額支援。支援 Tier には README 上の
+  名前・ロゴ、早期アクセス等を設定できる」のうち、**Tier・単発/月額・
+  特典は提供側が決める**までは引用ページの原文どおり。**「README の
+  名前・ロゴ」の細部は同ページには無く、リンク先の Tier 設定文書側の内容**
+  （主張自体は真だが、引用位置が 1 段浅い）。Behance 側 2 リンクは未検証
+  （次周に回す）。文書自身が「差分仮説である」「断定するものではない」と
+  身の丈を明記している点は、ループの出典規律と同じ型で良い
+- 学び: **競合比較の引用は「どのページに書いてあるか」まで合わせる。**
+  主張が真でも引用位置がずれていると、後から検証する人が「書いてない」と
+  誤判定する（①自身が一瞬そうなりかけた）
+
 ## 56. **配備は「再現可能な自動の列」にする — Google SRE 本のリリースエンジニアリング**
 
 gdp の 10 個目の貢献（PR #14 `9671a8e`: apply-latest.sh に事前検査・
