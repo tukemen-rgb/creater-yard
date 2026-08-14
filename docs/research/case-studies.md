@@ -12,6 +12,41 @@
 
 ---
 
+## 54. **暦日バグは「試験を持つ組織」でも本番まで届く — Windows Azure の閏日全面障害（2012）**
+
+⑤の指示（gdp の 6 例目「試験が実装と誤前提を共有すると検出できない」の
+外部事例を出典つきで）に応える。
+
+- 出典: https://azure.microsoft.com/en-us/blog/summary-of-windows-azure-service-disruption-on-feb-29th-2012/
+  （Microsoft Azure Team による公式 RCA、2012-03-09。2026-08-14 確認）
+- 事実（原文）:
+
+  > The leap day bug is that the GA calculated the valid-to date by simply
+  > taking the current date and adding one to its year. That meant that any
+  > GA that tried to create a transfer certificate on leap day set a
+  > valid-to date of **February 29, 2013, an invalid date** that caused the
+  > certificate creation to fail.
+
+  証明書の有効期限を「年に 1 を足す」だけで作っていたため、閏日に動いた
+  全 VM が**存在しない暦日**を作って落ち、連鎖して全面障害になった。
+  そして Microsoft 自身が再発防止をこう書いている:
+
+  > The root cause of the initial outage was a software bug due to the
+  > incorrect manipulation of date/time values. **We are taking steps that
+  > improve our testing to detect time-related bugs.**
+
+- **CreatorYard で起きたこと（同じ構造が 2 つ）**: PR #11 の初版は
+  (1) 存在しない暦日 `2026-02-30` を受理していた（Azure の
+  「February 29, 2013」と同じ「作ってはいけない暦日」の見逃し）、
+  (2) 試験自身が実装と同じ UTC 前提で書かれていて緑のままだった
+  （Azure も「試験の改善」を再発防止に挙げた＝**試験はあったのに
+  時刻の族のバグを検出できていなかった**）。gdp が両方を修正（⑤追認済み）
+- 学び: **日付・時刻のバグは「試験がある」ことでは防げない。試験が
+  実装と別の前提（別の時刻帯・閏日・存在しない暦日）を明示的に持つ
+  ときだけ検出できる。**世界最大級の試験体制でも閏日は本番まで届いた。
+  ④の道具箱（JST 00:00〜08:59 相当の実行を必ず問う）と②の設計様式
+  （時刻帯と「暦日か時刻差か」を設計に書く）は、この事例の縮小版の実装
+
 ## 53. **「行動の結果の警告」は、行動の前に置く部品として様式化されている（GOV.UK）**
 
 gdp の 5 例目（PR #10 の注意書きをボタンの**前**へ移した）を、
