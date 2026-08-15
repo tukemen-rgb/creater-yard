@@ -51,6 +51,7 @@ function WriteInner() {
   const [gameUrl, setGameUrl] = useState('')
   const [status, setStatus] = useState<'public' | 'draft'>('public')
   const [image, setImage] = useState<StoryImage | null>(null)
+  const [imageAlt, setImageAlt] = useState('')
   const [imageWarnings, setImageWarnings] = useState<string[]>([])
   const [imageUploading, setImageUploading] = useState(false)
   const [error, setError] = useState('')
@@ -95,6 +96,7 @@ function WriteInner() {
         setGameUrl(story.gameUrl)
         setStatus(story.status)
         setImage(story.image)
+        setImageAlt(story.imageAlt ?? '')
         setOptionalFieldsOpen(Boolean(
           story.tools.length
           || story.toolTags.length
@@ -179,6 +181,7 @@ function WriteInner() {
       gameUrl,
       status: saveStatus,
       imageId: image?.id ?? null,
+      imageAlt: image ? imageAlt : '',
     }
     try {
       const data = editId
@@ -439,6 +442,7 @@ function WriteInner() {
                     className="linklike"
                     onClick={() => {
                       setImage(null)
+                      setImageAlt('')
                       setImageWarnings([])
                       setHasUnsavedChanges(true)
                     }}
@@ -451,6 +455,25 @@ function WriteInner() {
                 <span key={warning} className="notice">{warning}</span>
               ))}
             </div>
+            {/* 説明の欄は画像を選んだときだけ出す。画像が無い人に
+                「画像の説明」を見せても書きようがない（設計 I-5） */}
+            {image && (
+              <label className="form__field">
+                この画像には何が写っていますか（任意・読み上げに使われます）
+                <input
+                  value={imageAlt}
+                  maxLength={120}
+                  onChange={(e) => {
+                    setImageAlt(e.target.value)
+                    setHasUnsavedChanges(true)
+                  }}
+                  placeholder="例: 当たり判定のズレを赤い枠で示した画面"
+                />
+                <span className="form__hint">
+                  空のままでも保存できます（飾りの画像なら、それが正しい答えです）。
+                </span>
+              </label>
+            )}
             <label className="form__field">
               GAMEYARD の作品リンク（任意）
               <input

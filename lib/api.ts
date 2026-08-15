@@ -48,6 +48,13 @@ export type Story = {
     | null
   gameUrl: string
   image: StoryImage | null
+  /**
+   * 画像の説明（代替テキスト）。**画像とは別の項目**にしてある
+   * （設計 I-5 の (b) 案。同じ画像を送り直す更新を `resolveImage` が
+   * 「変更なし」に畳むため、説明を画像の中に置くと説明だけの編集が効かない）。
+   * 空文字は「説明なし＝装飾扱い」で、`alt=""` として出す。
+   */
+  imageAlt: string
   status: 'public' | 'draft'
   createdAt: string
   updatedAt: string

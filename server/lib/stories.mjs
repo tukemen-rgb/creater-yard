@@ -39,6 +39,8 @@ export const STORY_LIMITS = {
   gameUrlMax: 300,
   /** つまずき欄の本文。SPEC §1 の「短文」。緩めるのは人の判断（CLAUDE.md）。 */
   hurdleMax: 200,
+  /** 画像の説明（代替テキスト）。読み上げで 1 息に収まる長さ。緩めるのは人の判断。 */
+  imageAltMax: 120,
   /** 根拠リンク（sources）。件数・URL 長・表示名の上限。緩めるのは人の判断。 */
   sources: 20,
   sourceUrlMax: 300,
@@ -96,6 +98,10 @@ function byTagName(a, b) {
  * 本文が空なら `null` を返す。PUT は置き換えなので、空で送れば消える。
  * 解決数の公開カウンタは作らない（SPEC の但し書き）。
  */
+function normalizeImageAlt(value) {
+  return cleanText(value, STORY_LIMITS.imageAltMax).replace(/\n/g, ' ').trim()
+}
+
 function normalizeHurdle(value) {
   const text = cleanText(value?.text, STORY_LIMITS.hurdleMax)
   if (!text) return null
@@ -326,6 +332,7 @@ export class StoryStore {
       gameUrl: normalizeGameUrl(input.gameUrl),
       hurdle: normalizeHurdle(input.hurdle),
       sources: normalizeSources(input.sources),
+      imageAlt: normalizeImageAlt(input.imageAlt),
     }
   }
 
@@ -367,7 +374,7 @@ export class StoryStore {
    */
   static #MERGEABLE = [
     'status', 'title', 'body', 'tools', 'toolTags', 'topicTags',
-    'gameUrl', 'hurdle', 'sources',
+    'gameUrl', 'hurdle', 'sources', 'imageAlt',
   ]
 
   /**
@@ -401,10 +408,15 @@ export class StoryStore {
     }
     const fields = this.#validate(merged)
     const nowIso = new Date(this.now()).toISOString()
+    const nextImage = image === undefined ? (record.image ?? null) : image
+    // 画像を外したら説明も消す。説明は画像を説明するためだけの文で、
+    // 画像の無い説明は読み上げにも表示にも出しようがない（設計 I-5 の (b) 案は
+    // 説明を独立した項目にした代わりに、この後始末を 1 行で持つと決めた）。
+    if (!nextImage) fields.imageAlt = ''
     const next = {
       ...record,
       ...fields,
-      image: image === undefined ? (record.image ?? null) : image,
+      image: nextImage,
       updatedAt: nowIso,
       // 最初に公開した時刻を保つ。公開→下書き→再公開で時系列が飛ばないように。
       publishedAt: fields.status === 'public' ? (record.publishedAt ?? nowIso) : record.publishedAt,
@@ -539,6 +551,8 @@ export function publicStory(record) {
     sources: record.sources ?? null,
     gameUrl: record.gameUrl ?? '',
     image: record.image ?? null,
+    // 既存の記録には無い項目なので既定は空文字（＝説明なし・装飾扱い）
+    imageAlt: record.imageAlt ?? '',
     status: record.status,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
