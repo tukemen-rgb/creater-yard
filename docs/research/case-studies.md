@@ -12,6 +12,34 @@
 
 ---
 
+## 59. **フォームの磨き込みは見た目でなく規範から — NN/g のフォーム設計 10 箇条と「工房の夜」刷新**
+
+社長指示のデザイン刷新（PR #15・globals.css のみ・2026-08-15）を、
+外部のユーザビリティ規範と突き合わせて記録する。
+
+- 出典: https://www.nngroup.com/articles/web-form-design/
+  （Nielsen Norman Group, *Website Forms Usability: Top 10 Recommendations*,
+  Kathryn Whitenton。2026-08-15 確認）
+- 事実（原文）:
+
+  > Labels should be **close to the fields they describe** (immediately
+  > above the field for mobile and shorter desktop forms, ...)
+
+- **刷新でやったこと・やらなかったこと**:
+  - ラベルは**欄の直上**の既存構造を維持（規範どおり。placeholder を
+    ラベル代わりにしない — placeholder は薄い例示のみに落とした）
+  - 見た目の変更は CSS だけで、**44px タップ領域・focus-visible・
+    prefers-reduced-motion の約束は不変**（フォーカスリングは outline から
+    琥珀の box-shadow リングへ置き換えたが、可視であることは維持）
+  - 「AI っぽさ」の正体を推測でなく列挙して潰した: 単色平面の羅列／
+    既定フォーム部品／のっぺり背景／**ダークテーマに浮くクリーム色の
+    つまずきカード（実在した不整合）**
+- 学び: **「カッコよく」は装飾の追加ではなく、(a) 不整合の解消と
+  (b) 奥行き（層・光・影）の設計。**規範が決めている部分（ラベル位置・
+  可視フォーカス）は動かさず、規範が決めていない部分（色・層・質感）で
+  差を作る。なお本記事にフォーカス可視性の項は無い（そこは WCAG 2.4.7 の
+  領分 — 未引用のため主張しない）
+
 ## 58. **PARTNER-OFFER の Behance 側も検証完了 — 記述どおり。ただし直接取得は 403 で、索引確認である旨を残す**
 
 事例 57 の残り（Behance 側 2 リンク）を①が検証した。
