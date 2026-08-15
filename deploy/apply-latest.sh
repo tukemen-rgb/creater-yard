@@ -87,6 +87,43 @@ printf 'web(3001): '
 curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3001/
 printf 'api      : '
 curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8798/api/health
-printf 'CSP      : '
+printf '設定CSP  : '
 grep -o "script-src [^;]*" "$NGINX_SITE" | head -1
+
+# 設定ファイルではなく、Cloudflare経由の公開レスポンスまで反映されたことを確認する。
+# reload直後の一時差を許容し、最大30秒だけ再試行する。
+PUBLIC_CSP=
+attempt=1
+while [ "$attempt" -le 6 ]; do
+  PUBLIC_CSP=$(
+    curl --fail --silent --show-error --head https://creatoryard.io/ 2>/dev/null |
+      tr -d '\r' |
+      sed -n 's/^content-security-policy: //p' |
+      head -1
+  ) || true
+  case "$PUBLIC_CSP" in
+    *"script-src 'self' 'unsafe-inline'"*"script-src-attr 'none'"*)
+      break
+      ;;
+  esac
+  sleep 5
+  attempt=$((attempt + 1))
+done
+
+case "$PUBLIC_CSP" in
+  *"script-src 'self' 'unsafe-inline'"*"script-src-attr 'none'"*)
+    printf '公開CSP  : %s\n' "$PUBLIC_CSP"
+    ;;
+  *)
+    echo "公開レスポンスのCSPが未反映です: $PUBLIC_CSP" >&2
+    exit 1
+    ;;
+esac
+
+if ! curl --fail --silent --show-error https://creatoryard.io/ |
+  grep -q 'つくる過程に、'; then
+  echo "公開ホームの本文を確認できません" >&2
+  exit 1
+fi
+echo "公開本文  : OK（見出しを確認）"
 echo "終わり。ブラウザで https://creatoryard.io/ を再読み込みして確認"
