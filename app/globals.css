@@ -1,19 +1,39 @@
 /* CreatorYard の基礎スタイル。
    GAMEYARD とレイアウト文法（container / site-header / hero）を揃え、
-   色相だけ工房の電球色（アンバー）に変える（BRAND.md の方向性）。 */
+   色相は工房の電球色（アンバー）（BRAND.md の方向性）。
+
+   2026-08-15 デザイン刷新（社長指示: 既製っぽさからの脱却）:
+   - 「工房の夜」= 深い漆黒の下地＋層で重ねる面＋琥珀の光。単色の平面を
+     やめ、面ごとに微かなグラデーションと上辺のハイライトで奥行きを出す
+   - フォームは道具として磨く: 沈んだ入力面・琥珀のフォーカスリング・
+     押した感のあるボタン
+   - つまずきカード群が明るいクリーム地でダークテーマから浮いていた
+     不整合を解消（同じ夜の面に統一）
+   - 動きは prefers-reduced-motion を尊重（動く装飾はすべて no-preference 内）
+   クラス名と 44px のタップ領域・focus-visible の約束は変えていない。 */
 
 :root {
-  --bg: #191410;
-  --bg-soft: #241d16;
-  --bg-elevated: #2c241b;
-  --border: #3a2f22;
-  --border-strong: #4d3e2c;
-  --text: #f2e9dd;
-  --text-muted: #b3a493;
+  --bg: #0e0b08;
+  --bg-soft: #181209;
+  --bg-elevated: #221a10;
+  --bg-input: #0b0906;
+  --border: #2e2517;
+  --border-strong: #453721;
+  --edge-light: rgba(255, 214, 150, 0.08); /* 面の上辺に置く光 */
+  --text: #f4ecdf;
+  --text-muted: #b0a08c;
   --accent: #f0a63c;
+  --accent-bright: #ffc069;
+  --accent-deep: #d97f1e;
   --accent-text: #221708;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --glow: rgba(240, 166, 60, 0.28);
+  --danger-border: #7a3a2a;
+  --danger-text: #f0b5a0;
+  --ok-border: #2f6b52;
+  --ok-text: #9fd8bd;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow-card: 0 1px 0 var(--edge-light) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -22,12 +42,24 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* 単色ではなく、上方に琥珀の残光がある夜の下地 */
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(240, 166, 60, 0.07), transparent 70%),
+    radial-gradient(900px 500px at 85% 10%, rgba(120, 70, 20, 0.06), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family:
     'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', system-ui,
     sans-serif;
+  font-feature-settings: 'palt';
   line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(240, 166, 60, 0.35);
+  color: #fff;
 }
 
 a {
@@ -36,6 +68,13 @@ a {
 }
 a:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .container {
@@ -44,16 +83,23 @@ a:hover {
   padding-inline: 20px;
 }
 
+/* ---- ヘッダー: 浮かせて、下の内容を透かす ---- */
+
 .site-header {
-  border-bottom: 1px solid var(--border);
-  background: rgba(25, 20, 16, 0.9);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid rgba(240, 166, 60, 0.12);
+  background: rgba(14, 11, 8, 0.72);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
 .site-header__inner {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  padding-block: 14px;
+  padding-block: 12px;
 }
 .brand {
   display: inline-flex;
@@ -61,6 +107,7 @@ a:hover {
   gap: 8px;
   font-weight: 700;
   font-size: 1.15rem;
+  letter-spacing: 0.01em;
   color: var(--text);
 }
 .brand:hover {
@@ -68,6 +115,7 @@ a:hover {
 }
 .brand__mark {
   color: var(--accent);
+  text-shadow: 0 0 14px var(--glow);
 }
 .brand__tag {
   font-size: 0.8rem;
@@ -84,31 +132,142 @@ a:hover {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding-inline: 11px;
-  border-radius: var(--radius-sm);
+  padding-inline: 12px;
+  border-radius: 999px;
   font-size: 0.9rem;
   color: var(--text-muted);
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .site-nav a:hover {
-  background: var(--bg-soft);
+  background: rgba(240, 166, 60, 0.1);
   color: var(--text);
   text-decoration: none;
 }
+.site-nav__primary {
+  color: var(--accent);
+  font-weight: 600;
+  border: 1px solid rgba(240, 166, 60, 0.35);
+}
+.site-nav__primary:hover {
+  border-color: var(--accent);
+}
+
+/* ---- ヒーロー ---- */
 
 .hero {
-  padding-block: 48px 24px;
+  padding-block: 56px 24px;
 }
+
+/* 背景動画つきヒーロー（Issue #12）。動画は装飾で、無くても全文が読める。
+   video 要素自体は app/page.tsx の素材ゲートが出し分ける */
+.hero--video {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 214, 150, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  /* JS 無効時と reduced-motion 時は静止画だけを見せる */
+  background: url('/media/hero-poster.jpg') center / cover no-repeat;
+}
+.hero__video {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  /* 上 38px・下 76px をトリミングし映像の中心を上へ寄せる（Issue #12 の指定） */
+  top: -38px;
+  height: calc(100% + 114px);
+  object-fit: cover;
+  object-position: 50% 50%;
+  z-index: 0;
+}
+/* 暗いオーバーレイ。全カットで白文字のコントラストを保つ。
+   下端は下地の色へ溶かし、ページと動画の境目を消す */
+.hero--video::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(14, 11, 8, 0.5) 0%,
+    rgba(14, 11, 8, 0.58) 55%,
+    rgba(14, 11, 8, 0.92) 100%
+  );
+  z-index: 1;
+}
+.hero__content {
+  position: relative;
+  z-index: 2;
+}
+.hero__motion-control {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(14, 11, 8, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.hero__motion-control:hover {
+  border-color: #fff;
+  background: rgba(14, 11, 8, 0.8);
+}
+.hero__motion-control:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+/* テキストと CTA は従来案より下へ（Issue #12）。動画の見せ場を上に残す */
+.hero--video .hero__content {
+  padding: 176px 28px 28px;
+}
+.hero--video h1 {
+  color: #fff;
+  /* 白文字＋暖色オレンジの発光アクセント */
+  text-shadow:
+    0 0 26px rgba(255, 140, 58, 0.5),
+    0 2px 14px rgba(0, 0, 0, 0.7);
+}
+.hero--video .eyebrow {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+.hero--video .hero__lede {
+  color: #ece5db;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+@media (max-width: 480px) {
+  /* スマホでも見出し・CTA・ロゴが画面外へ切れないよう控えめに */
+  .hero--video .hero__content {
+    padding: 128px 16px 16px;
+  }
+}
+/* video はクライアント側でも生成しない。ここは静止画の表示を明示する。 */
+@media (prefers-reduced-motion: reduce) {
+  .hero--video {
+    background: url('/media/hero-poster.jpg') center / cover no-repeat;
+  }
+}
+
 .eyebrow {
   color: var(--accent);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 .hero h1 {
-  font-size: clamp(1.9rem, 5vw, 3rem);
-  line-height: 1.35;
-  margin: 8px 0 16px;
+  font-size: clamp(2rem, 5.5vw, 3.2rem);
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  margin: 10px 0 16px;
+  font-weight: 700;
 }
 .hero__line {
   display: block;
@@ -120,21 +279,26 @@ a:hover {
 }
 
 .plan {
-  margin-top: 32px;
-  padding: 24px;
-  background: var(--bg-soft);
+  margin-top: 36px;
+  padding: 26px 28px;
+  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-soft));
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
 }
 .plan h2 {
   margin-top: 0;
   font-size: 1.15rem;
+  letter-spacing: 0.01em;
 }
 .plan ul {
   padding-inline-start: 1.2em;
 }
 .plan li {
   margin-block: 10px;
+}
+.plan li::marker {
+  color: var(--accent);
 }
 .plan__note {
   margin-bottom: 0;
@@ -143,9 +307,9 @@ a:hover {
 }
 
 .site-footer {
-  margin-top: 64px;
+  margin-top: 72px;
   border-top: 1px solid var(--border);
-  padding-block: 24px;
+  padding-block: 28px;
   color: var(--text-muted);
   font-size: 0.9rem;
 }
@@ -153,13 +317,14 @@ a:hover {
 /* ---- ページ共通 ---- */
 
 .page {
-  padding-block: 32px;
+  padding-block: 36px;
 }
 .page--narrow {
   max-width: 560px;
 }
 .page h1 {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
+  letter-spacing: 0.01em;
   margin-block: 0 8px;
 }
 .page__lede {
@@ -174,30 +339,45 @@ a:hover {
 .hero__actions {
   display: flex;
   gap: 12px;
-  margin-block: 20px;
+  margin-block: 22px;
 }
 
 .notice {
-  padding: 10px 14px;
-  background: var(--bg-soft);
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(240, 166, 60, 0.06), transparent),
+    var(--bg-soft);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 0.95rem;
 }
 .notice--error {
-  border-color: #7a3a2a;
-  color: #f0b5a0;
+  border-color: var(--danger-border);
+  border-left-color: #c9573a;
+  color: var(--danger-text);
 }
 
 /* ---- Story カード・本文 ---- */
 
 .story-card {
-  padding: 18px 20px;
+  padding: 20px 22px;
   margin-block: 14px;
-  background: var(--bg-soft);
+  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-soft));
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: 0 1px 0 var(--edge-light) inset;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .story-card {
+    transition: transform 0.18s ease, border-color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .story-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(240, 166, 60, 0.4);
+    box-shadow: 0 1px 0 var(--edge-light) inset, 0 14px 34px rgba(0, 0, 0, 0.4);
+  }
 }
 .story-card__title {
   margin: 0;
@@ -210,6 +390,10 @@ a:hover {
   max-width: 100%;
   color: var(--text);
   overflow-wrap: anywhere;
+}
+.story-card__title a:hover {
+  color: var(--accent-bright);
+  text-decoration: none;
 }
 .story-card__meta {
   margin-block: 4px 8px;
@@ -242,17 +426,20 @@ a:hover {
   align-items: center;
   min-height: 44px;
   max-width: 100%;
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
-  background: var(--bg-elevated);
+  background: linear-gradient(180deg, rgba(240, 166, 60, 0.08), transparent),
+    var(--bg-elevated);
   color: var(--accent);
   font-size: 0.85rem;
   overflow-wrap: anywhere;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 .tag:hover {
   text-decoration: none;
   border-color: var(--accent);
+  color: var(--accent-bright);
 }
 .tag--topic {
   color: var(--text);
@@ -260,7 +447,7 @@ a:hover {
 
 .badge {
   margin-inline-start: 8px;
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 400;
@@ -322,33 +509,51 @@ a:hover {
   font-size: 1.1rem;
 }
 
-/* ---- フォーム ---- */
+/* ---- フォーム: 道具として磨く ---- */
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 .form__field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
+  gap: 7px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 .form__field input,
-.form__field textarea {
-  padding: 10px 12px;
-  background: var(--bg-soft);
+.form__field textarea,
+.form__field select {
+  padding: 12px 14px;
+  background: var(--bg-input);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   color: var(--text);
   font: inherit;
+  font-weight: 400;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) inset;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form__field input::placeholder,
+.form__field textarea::placeholder {
+  color: rgba(176, 160, 140, 0.55);
 }
 .form__field input:focus,
-.form__field textarea:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
+.form__field textarea:focus,
+.form__field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35) inset,
+    0 0 0 3px var(--glow);
+}
+.form__field textarea {
+  line-height: 1.7;
+  resize: vertical;
 }
 .form__actions {
   display: flex;
@@ -363,17 +568,17 @@ a:hover {
   margin-block-end: 18px;
 }
 .auth-panel {
-  padding: 24px;
-  background: var(--bg-soft);
+  padding: 28px;
+  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-soft));
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
 }
 .auth-panel .form__field input {
-  min-height: 46px;
-  background: var(--bg);
+  min-height: 48px;
 }
 .auth-panel__submit {
-  min-height: 46px;
+  min-height: 48px;
   width: 100%;
 }
 .auth-panel__links {
@@ -394,13 +599,30 @@ a:hover {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-soft);
+  overflow: hidden;
 }
 .optional-fields summary {
-  padding: 12px;
+  padding: 13px 14px;
   color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  list-style: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.optional-fields summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-inline-end: 8px;
+  color: var(--accent);
+  transition: transform 0.15s ease;
+}
+.optional-fields[open] summary::before {
+  transform: rotate(90deg);
+}
+.optional-fields summary:hover {
+  color: var(--text);
+  background: rgba(240, 166, 60, 0.05);
 }
 .optional-fields[open] summary {
   border-bottom: 1px solid var(--border);
@@ -409,36 +631,63 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 18px 16px;
 }
 
 .button {
   display: inline-block;
-  padding: 9px 18px;
+  padding: 10px 20px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--accent);
-  background: var(--accent);
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, var(--accent-bright), var(--accent-deep));
   color: var(--accent-text);
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 6px 18px rgba(240, 166, 60, 0.22);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .button {
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  }
+  .button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.25) inset,
+      0 10px 24px rgba(240, 166, 60, 0.3);
+  }
+  .button:active {
+    transform: translateY(0);
+  }
 }
 .button:hover {
   text-decoration: none;
-  filter: brightness(1.08);
+  filter: brightness(1.05);
 }
 .button:disabled {
   opacity: 0.5;
   cursor: default;
+  transform: none;
+  box-shadow: none;
 }
 .button--ghost {
-  background: transparent;
+  background: rgba(240, 166, 60, 0.06);
+  border-color: rgba(240, 166, 60, 0.45);
   color: var(--accent);
+  box-shadow: none;
+}
+.button--ghost:hover {
+  border-color: var(--accent);
+  background: rgba(240, 166, 60, 0.12);
 }
 .button--danger {
   background: transparent;
-  border-color: #7a3a2a;
-  color: #f0b5a0;
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+  box-shadow: none;
 }
 
 .linklike {
@@ -475,7 +724,7 @@ a:hover {
   color: var(--accent);
   font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
 }
 .interview__progress {
   margin-block: 20px 0;
@@ -495,10 +744,11 @@ a:hover {
   margin: 0;
 }
 .interview__card {
-  padding: 20px;
+  padding: 24px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  background: var(--bg-soft);
+  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-soft));
+  box-shadow: var(--shadow-card);
 }
 .interview__card h2 {
   margin-block: 0 8px;
@@ -506,7 +756,6 @@ a:hover {
 }
 .interview__card textarea {
   min-height: 132px;
-  background: var(--bg);
 }
 .interview__voice-note {
   margin-block: 6px 0;
@@ -526,22 +775,18 @@ a:hover {
 
 .account-box {
   margin-block: 32px;
-  padding: 20px 24px;
-  background: var(--bg-soft);
+  padding: 22px 26px;
+  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-soft));
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: 0 1px 0 var(--edge-light) inset;
 }
 .account-box h2 {
   margin-block-start: 0;
   font-size: 1.1rem;
 }
 .account-box--danger {
-  border-color: #7a3a2a;
-}
-
-.site-nav__primary {
-  color: var(--accent);
-  font-weight: 600;
+  border-color: var(--danger-border);
 }
 
 .story__image {
@@ -551,6 +796,7 @@ a:hover {
   margin-block: 20px 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 .form__image-preview {
@@ -565,19 +811,6 @@ a:hover {
   border-radius: var(--radius-sm);
 }
 
-.form__field select {
-  padding: 10px 12px;
-  background: var(--bg-soft);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font: inherit;
-}
-.form__field select:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
-}
-
 .story__report {
   margin-top: 32px;
   font-size: 0.85rem;
@@ -589,18 +822,23 @@ a:hover {
 .site-footer__links {
   font-size: 0.85rem;
 }
+
+/* ---- つまずき（hurdle）: 夜の面に統一。
+   以前はクリーム色の明るい面でダークテーマから浮いていた ---- */
+
 .hurdle-editor {
   margin: 0;
-  padding: 1rem;
-  border: 1px solid var(--line, #d8d4ca);
-  border-radius: 1rem;
-  background: #fffaf0;
-  color: #3f2a20;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(208, 108, 60, 0.08), transparent 60%),
+    var(--bg-soft);
+  color: var(--text);
 }
 
 .form__hint {
   margin: 0 0 0.75rem;
-  color: var(--muted, #625f58);
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -612,49 +850,61 @@ a:hover {
 }
 
 .choice-chip {
-  padding: 0.55rem 0.85rem;
-  border: 1px solid #c9c3b7;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  background: #fff;
-  color: inherit;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font: inherit;
   cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease,
+    background-color 0.15s ease;
+}
+.choice-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .choice-chip--active {
   border-color: #d06c3c;
-  background: #fff0e7;
-  color: #853817;
+  background: rgba(208, 108, 60, 0.16);
+  color: #ffb28a;
 }
 
 .choice-chip--resolved {
-  border-color: #27866b;
-  background: #e8f7f1;
-  color: #155c49;
+  border-color: var(--ok-border);
+  background: rgba(47, 107, 82, 0.16);
+  color: var(--ok-text);
 }
 
 .hurdle-card {
   margin: 1.5rem 0;
-  padding: 1.25rem;
-  border: 1px solid #e5b79e;
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, #fff7ee 0%, #fff 72%);
-  color: #3f2a20;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid rgba(224, 138, 90, 0.4);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, rgba(208, 108, 60, 0.14), transparent 65%),
+    var(--bg-soft);
+  color: var(--text);
+  box-shadow: 0 1px 0 var(--edge-light) inset;
 }
 
 .hurdle-card--resolved {
-  border-color: #9bcdbd;
-  background: linear-gradient(135deg, #ebf9f4 0%, #fff 72%);
+  border-color: rgba(80, 160, 128, 0.45);
+  background: linear-gradient(160deg, rgba(47, 107, 82, 0.16), transparent 65%),
+    var(--bg-soft);
 }
 
 .hurdle-card__eyebrow {
   margin: 0 0 0.4rem;
-  color: #a14b25;
+  color: #ff9c66;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
-.hurdle-card--resolved .hurdle-card__eyebrow { color: #197057; }
+.hurdle-card--resolved .hurdle-card__eyebrow {
+  color: var(--ok-text);
+}
 
 .hurdle-card__text {
   margin: 0;
@@ -665,7 +915,7 @@ a:hover {
 
 .hurdle-card__note {
   margin: 0.65rem 0 0;
-  color: var(--muted, #625f58);
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -673,20 +923,20 @@ a:hover {
   display: grid;
   gap: 0.3rem;
   margin: 0.9rem 0;
-  padding: 0.8rem 0.9rem;
+  padding: 0.8rem 1rem;
   border-left: 3px solid #d06c3c;
-  border-radius: 0 0.7rem 0.7rem 0;
-  background: #fff7ee;
-  color: #3f2a20;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: linear-gradient(90deg, rgba(208, 108, 60, 0.12), transparent 80%);
+  color: var(--text);
 }
 
 .story-card__hurdle--resolved {
-  border-left-color: #27866b;
-  background: #ebf9f4;
+  border-left-color: var(--ok-border);
+  background: linear-gradient(90deg, rgba(47, 107, 82, 0.14), transparent 80%);
 }
 
 .story-card__hurdle span {
-  color: var(--muted, #625f58);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 700;
 }
