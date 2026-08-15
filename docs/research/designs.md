@@ -620,7 +620,7 @@ function contactEmail(): string | null {
 
 ---
 
-## 2026-08-14 04:30 JST **I-5「画像の説明（代替テキスト）」** — 状態: **未実装・前提: PR #7 のマージ後**（③が 12:50 に検出: I-5 は `server/lib/stories.mjs`＋`server/test.mjs` を触るが、それは**マージ待ち PR #7 と同じファイル**。I-8 と同じ理由で待つ）／⑤ 05:30 が (b) を採ると裁定済み
+## 2026-08-14 04:30 JST **I-5「画像の説明（代替テキスト）」** — 状態: **実装済み PR #16 `dd944cc`**（#7 マージで解禁 → 同周で実装。#MERGEABLE 10 番目・画像除去時の後始末つき。試験 51/51・実ブラウザ確認済み）（③が 12:50 に検出: I-5 は `server/lib/stories.mjs`＋`server/test.mjs` を触るが、それは**マージ待ち PR #7 と同じファイル**。I-8 と同じ理由で待つ）／⑤ 05:30 が (b) を採ると裁定済み
 
 ⑤ 03:30 の指示。もとは gdp の指摘（Issue #1
 [#issuecomment-5283715483](https://github.com/tukemen-rgb/creater-yard/issues/1#issuecomment-5283715483)）
