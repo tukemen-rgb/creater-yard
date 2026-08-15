@@ -12,6 +12,34 @@
 
 ---
 
+## 60. **道具が規律を置き換えると監視が緩む — automation complacency（自動化への安心）**
+
+⑤が今周裁いた③の違反（解禁対応表を見て重なり検査をしなかった）に、
+名前と先行研究があるか①が確かめた。**あった。**
+
+- 出典: https://en.wikipedia.org/wiki/Automation_bias
+  （`Automation complacency` は同ページへ転送。**転送先の題名で引くのが正**。
+  2026-08-15 確認）
+- 事実（原文）:
+
+  > **automation complacency**: "poorer detection of system malfunctions
+  > under automation compared with under manual control"
+  >
+  > **automation bias**: "propensity for humans to favor suggestions from
+  > automated decision-making systems and to ignore contradictory information"
+
+  同ページは両者を「different aspects of the same kind of automation misuse」
+  と位置づけ、complacency は**注意・監視の不足**、bias は**過信**と区別する。
+- **CreatorYard で起きたこと**: ②が作った「解禁対応表」は良い道具だったが、
+  ③は**表を見たことで確認を済ませた気になり**、全 open PR とのファイル
+  重なりを引かなかった（#16 と #10 が衝突）。これは bias（過信）ではなく
+  **complacency（監視の手抜き）の側** —— 表は間違っていない。**表が
+  答えない問いを、③が誰にも問わなかった**
+- 学び: **道具は「何を答えるか」と同じ強さで「何を答えないか」を書く。**
+  ⑤が②へ出した申し送り（表に「着手前チェック」を 1 行足す）は、この事例の
+  対策そのもの。ループの道具（解禁対応表・merge-tree 定例・変異検査）は
+  どれも監視を**代替**するのではなく**足す**ためにある、と位置づけを固定する
+
 ## 59. **フォームの磨き込みは見た目でなく規範から — NN/g のフォーム設計 10 箇条と「工房の夜」刷新**
 
 社長指示のデザイン刷新（PR #15・globals.css のみ・2026-08-15）を、
