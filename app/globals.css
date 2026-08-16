@@ -40,6 +40,13 @@
   box-sizing: border-box;
 }
 
+/* 全幅ヒーローが横スクロールバーを生まないようにする（社長指示: PC で余白が
+   多い → 背景を横いっぱいに）。hidden ではなく clip を使うのは、hidden が
+   スクロール容器を作って sticky ヘッダーを壊すため。clip は壊さない。 */
+html {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   /* 単色ではなく、上方に琥珀の残光がある夜の下地 */
@@ -160,24 +167,37 @@ a:hover {
 
 /* 背景動画つきヒーロー（Issue #12）。動画は装飾で、無くても全文が読める。
    video 要素自体は app/page.tsx の素材ゲートが出し分ける */
+/* 全幅に抜く（社長指示 2026-08-16: PC で左右の余白が広すぎる）。
+   main.container（最大 960px・中央寄せ）の中に居るので、その中央基準で
+   ビューポート幅まで押し広げる。読む文字のほうは中まで戻す（.hero__content）。
+   はみ出しは html の overflow-x: clip が受ける。 */
 .hero--video {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius);
-  border: 1px solid rgba(255, 214, 150, 0.12);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  /* 全幅なので角丸と影は意味を失う。上辺の線だけ残してヘッダーと縁を切る */
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(255, 214, 150, 0.1);
+  box-shadow: none;
+  padding-block: 0;
+  /* 横に広がるぶん、縦は画面に対して決める。低い画面でも読める上限つき */
+  min-height: min(76vh, 660px);
+  display: flex;
+  align-items: flex-end;
   /* JS 無効時と reduced-motion 時は静止画だけを見せる */
   background: url('/media/hero-poster.jpg') center / cover no-repeat;
 }
 .hero__video {
   position: absolute;
-  left: 0;
+  inset: 0;
   width: 100%;
-  /* 上 38px・下 76px をトリミングし映像の中心を上へ寄せる（Issue #12 の指定） */
-  top: -38px;
-  height: calc(100% + 114px);
+  height: 100%;
   object-fit: cover;
-  object-position: 50% 50%;
+  /* 映像の中心をやや上へ（Issue #12 の意図）。全幅では固定 px のトリミングだと
+     画面幅ごとに切れ方が変わるので、object-position で指定する */
+  object-position: 50% 42%;
   z-index: 0;
 }
 /* 暗いオーバーレイ。全カットで白文字のコントラストを保つ。
@@ -197,6 +217,7 @@ a:hover {
 .hero__content {
   position: relative;
   z-index: 2;
+  width: 100%;
 }
 .hero__motion-control {
   position: absolute;
@@ -224,9 +245,12 @@ a:hover {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
-/* テキストと CTA は従来案より下へ（Issue #12）。動画の見せ場を上に残す */
+/* テキストと CTA は従来案より下へ（Issue #12）。動画の見せ場を上に残す。
+   全幅になったので、読む列だけ container と同じ幅に戻して左端を揃える */
 .hero--video .hero__content {
-  padding: 176px 28px 28px;
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 160px 20px 44px;
 }
 .hero--video h1 {
   color: #fff;
@@ -242,10 +266,17 @@ a:hover {
   color: #ece5db;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
 }
+@media (max-width: 560px) {
+  /* 縦長の画面では 16:9 の映像から切り出せる幅が狭く、上寄せだと空だけが
+     写る。街並みが入る位置まで下げる */
+  .hero__video {
+    object-position: 50% 62%;
+  }
+}
 @media (max-width: 480px) {
   /* スマホでも見出し・CTA・ロゴが画面外へ切れないよう控えめに */
   .hero--video .hero__content {
-    padding: 128px 16px 16px;
+    padding: 128px 16px 20px;
   }
 }
 /* video はクライアント側でも生成しない。ここは静止画の表示を明示する。 */
@@ -278,32 +309,90 @@ a:hover {
   max-width: 60ch;
 }
 
+/* ---- いまできること ----
+   2026-08-16 作り直し（社長指示: AI 感からの脱却・デジタル庁デザインシステムを
+   参考に）。参考にしたのは色そのものではなく、あちらが決めている**規則**:
+
+   - 本文は原則 16 CSS px 以上。14px は制約のあるレイアウトのみ、
+     14px 未満は原則不可（DADS タイポグラフィ）。以前の注記 0.9rem＝14.4px は
+     制約が無いのに小さくしていたので、本文と同じ大きさに戻した
+   - 行間は用途で決める。見出し 140% / 本文 150〜160% /
+     認知負荷を下げたい本文 170〜175%（DADS）。見出しと本文で変える
+   - 字間は 0 が既定、大きい見出しに 1%、小さい 1 行要素に 2%（DADS）
+   - グレーは「見た目」ではなく**白に対するコントラスト比**で選ぶ
+     （DADS では Gray-420 が 3:1、Gray-536 が 4.5:1 の目安）
+
+   見た目としてやめたこと: 面のグラデーション・落ち影・角丸の箱・
+   箇条書きの点。**差は装飾ではなく、字の大きさ・行間・1 本の罫線で出す。**
+   出典: https://design.digital.go.jp/dads/foundations/typography/
+        https://design.digital.go.jp/dads/foundations/color/color-palette/ */
+
 .plan {
-  margin-top: 36px;
-  padding: 26px 28px;
-  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-soft));
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
+  margin-block: 56px 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
-.plan h2 {
-  margin-top: 0;
-  font-size: 1.15rem;
+.plan__title {
+  margin: 0 0 4px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--accent);
+  font-size: 1.375rem; /* 22px */
+  line-height: 1.4; /* 見出しは 140% */
   letter-spacing: 0.01em;
+  font-weight: 700;
 }
-.plan ul {
-  padding-inline-start: 1.2em;
+.plan__list {
+  margin: 0;
 }
-.plan li {
-  margin-block: 10px;
+/* 罫線 1 本で区切る。最後の項目には引かない（囲まないための線であって、
+   箱を作るための線ではない） */
+.plan__item {
+  padding-block: 24px;
+  /* 広い画面では「名前｜説明」の 2 段組にする。3 枚のカードを並べる形は、
+     どのサービスにもある売り文句の並べ方（社長の言う AI 感）そのものなので
+     採らない。定義の一覧＝文書の形にすると、横幅も素直に埋まる。 */
+  display: grid;
+  gap: 6px 32px;
+  /* 区切りは --border（対背景 1.30:1）だと見えないので --border-strong
+     （1.70:1）を使う。囲いを外したぶん、この線が構造を担っている */
+  border-bottom: 1px solid var(--border-strong);
 }
-.plan li::marker {
-  color: var(--accent);
+.plan__item:last-of-type {
+  border-bottom: none;
+}
+.plan__item dt {
+  margin: 0 0 6px;
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--text);
+}
+.plan__item dd {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 1rem; /* 16px。本文はこれ以上小さくしない */
+  line-height: 1.75; /* 読ませたい本文なので 175% 側 */
+  color: var(--text-muted);
+}
+@media (min-width: 720px) {
+  .plan__item {
+    grid-template-columns: 15rem 1fr;
+    align-items: baseline;
+  }
+  .plan__item dt {
+    margin-bottom: 0;
+  }
 }
 .plan__note {
-  margin-bottom: 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  margin: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-strong);
+  color: var(--text-muted); /* 対背景 7.71:1 — 小さくしない代わりに色で沈める */
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 .site-footer {
