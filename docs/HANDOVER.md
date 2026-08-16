@@ -40,10 +40,10 @@ Claude は作業のたびに Issue #1 へ報告し、ChatGPT のレビューも�
 | --- | --- |
 | D-CY1 | **やる**（CreatorYard を建てる） |
 | D-CY2 | **別ドメイン・別リポジトリの姉妹サービス**（GAMEYARD の URL・検索資産に触らない） |
-| D-CY3 | **MVP は Creator Story のみ**（Guild/Help/Mentor は人が集まってから） |
-| D-CY4 | **決済は持たない。本人の外部決済リンクのみ**（Booth/Stripe 等）。※収益戦略決定（下の「収益」）との整合を社長に確認中 — docs/REVENUE.md の Q1 |
+| D-CY3 | **MVP は Creator Story のみ**。※2026-08-16 の収益戦略決定で、出品（スキル・Recipe・テンプレート・Mentor の陳列）は**前倒し**が決定。Guild / Help Wanted は据え置き |
+| D-CY4 | **決済は持たない。本人の外部決済リンクのみ**（Booth/Stripe 等）。収益戦略決定後も**維持で確定**（販売系は外部リンク、Partner は請求書ベース — docs/REVENUE.md） |
 | 集客 | 多チャネル方針。優先順位: GAMEYARD 内導線 → Discord → X → ジャム → タグ SEO |
-| 収益 | **2026-08-06 決定: 2 つの経済圏**。GAMEYARD=作品の経済圏（広告。第三者 JS なし）、CreatorYard=Creator Economy（Creator Partner・イベント・販売系）。詳細と未確定事項は docs/REVENUE.md |
+| 収益 | **2026-08-16 決定: 2 つの経済圏**。GAMEYARD=作品の経済圏（広告。第三者 JS なし）、CreatorYard=Creator Economy（Creator Partner・イベント・販売系）。詳細と未確定事項は docs/REVENUE.md |
 
 ## 4. まだ決まっていないこと（人待ち）
 

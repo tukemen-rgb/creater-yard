@@ -589,6 +589,7 @@ a:hover {
 .site-footer__links {
   font-size: 0.85rem;
 }
+<<<<<<< HEAD
 .hurdle-editor {
   margin: 0;
   padding: 1rem;
@@ -725,4 +726,20 @@ a:hover {
   .interview__actions .button {
     width: 100%;
   }
+}
+
+.badge--type {
+  margin-inline-start: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.offer-external {
+  margin-block: 24px;
+}
+.offer-external__note {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: 60ch;
 }

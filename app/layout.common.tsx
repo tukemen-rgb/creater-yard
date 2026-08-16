@@ -42,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link prefetch={false} href="/stories/">Story</Link>
               <Link prefetch={false} href="/saved/">保存したStory</Link>
               <Link prefetch={false} href="/tags/">タグ</Link>
+              <Link prefetch={false} href="/market/">マーケット</Link>
               <a href="https://play-game-yard.com/">GAMEYARD</a>
               <NavAuth />
             </nav>

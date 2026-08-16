@@ -3,7 +3,9 @@ import { SITE_OG, alternatesFor, handleFeedPath, handleUrl } from '../../../lib/
 import { notFound } from 'next/navigation'
 
 import { StoryCard } from '../../../components/story-card'
+import { OfferCard } from '../../../components/offer-card'
 import { Pager } from '../../../components/pager'
+import { publishedOffers } from '../../../lib/offers-read'
 import { creatorStories } from '../../../lib/stories-read'
 
 /**
@@ -46,11 +48,22 @@ export default async function CreatorPage({ params, searchParams }: Props) {
   const { page } = await searchParams
   if (!HANDLE_RE.test(handle)) notFound()
   const listing = creatorStories(handle, Number(page) || 1)
-  if (listing.total === 0) notFound()
+  const offerListing = publishedOffers({ handle })
+  // 実在の判定は「公開している何か」があるかで行う（Story か出品）
+  if (listing.total === 0 && offerListing.total === 0) notFound()
 
   return (
     <div className="page">
       <h1 className="creator-page__title">{handle} の記録</h1>
+      {offerListing.total > 0 && (
+        <section className="tag-section">
+          <h2>出品</h2>
+          {offerListing.offers.map((offer) => (
+            <OfferCard key={offer.id} offer={offer} showAuthor={false} />
+          ))}
+        </section>
+      )}
+      {listing.total > 0 && listing.page === 1 && offerListing.total > 0 && <h2>Story</h2>}
       {listing.stories.map((story) => (
         <StoryCard key={story.id} story={story} showAuthor={false} />
       ))}

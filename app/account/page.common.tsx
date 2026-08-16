@@ -11,9 +11,11 @@ import {
   getHandle,
   saveSession,
   type Account,
+  type Offer,
   type Story,
 } from '../../lib/api'
 import { StoryCard } from '../../components/story-card'
+import { OfferCard } from '../../components/offer-card'
 
 /**
  * 自分のページ。下書きを含む自分の Story と、アカウントの操作。
@@ -24,6 +26,7 @@ export default function AccountPage() {
   const [account, setAccount] = useState<Account | null>(null)
   const [mine, setMine] = useState<Story[] | null>(null)
   const [mineError, setMineError] = useState('')
+  const [myOffers, setMyOffers] = useState<Offer[] | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
@@ -47,6 +50,9 @@ export default function AccountPage() {
         const detail = err instanceof ApiError ? err.message : '読み込めませんでした。'
         setMineError(`Story の読み込みに失敗しました。${detail}`)
       })
+    api<{ offers: Offer[] }>('/api/mine/offers', { auth: true })
+      .then((data) => setMyOffers(data.offers))
+      .catch(() => setMyOffers([]))
   }, [router])
 
   const changePassword = async (e: React.FormEvent) => {
@@ -122,6 +128,8 @@ export default function AccountPage() {
       <p className="page__lede">
         <Link prefetch={false} href="/write/">新しい Story を書く</Link>
         {' ・ '}
+        <Link prefetch={false} href="/sell/">出品する</Link>
+        {' ・ '}
         <Link prefetch={false} href={`/creators/${account.handle}/`}>
           公開ページを見る
         </Link>
@@ -167,6 +175,13 @@ export default function AccountPage() {
           </p>
         )}
       </section>
+
+      {myOffers !== null && myOffers.length > 0 && (
+        <section>
+          <h2>出品</h2>
+          {myOffers.map((offer) => <OfferCard key={offer.id} offer={offer} showAuthor={false} />)}
+        </section>
+      )}
 
       <section className="account-box">
         <h2>パスワード変更</h2>

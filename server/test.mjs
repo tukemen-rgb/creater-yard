@@ -487,6 +487,59 @@ test('RSS: CY_SITE_ORIGIN が無ければ配らない（嘘の URL を購読者�
   }
 })
 
+// ---- 出品 ----
+
+test('出品: 陳列と外部リンクだけを持ち、決済情報は持たない', async () => {
+  const { OfferStore, OfferError } = await import('./lib/offers.mjs')
+  const offers = new OfferStore({ dir: path.join(TMP, 'offers') })
+
+  const record = offers.create(AUTHOR, {
+    type: 'skill',
+    title: 'ドット絵のキャラクター描きます',
+    body: '16×16〜32×32。納期・点数は相談で決めます。実績は私の Story を見てください。',
+    priceLabel: '¥3,000〜',
+    externalUrl: 'https://example.booth.pm/items/12345',
+  })
+  assert.equal(record.status, 'public')
+  // 金額の数値・在庫・購入記録という概念そのものが無い
+  assert.equal(typeof record.priceLabel, 'string')
+  assert.ok(!('price' in record) && !('stock' in record))
+
+  // 外部リンクは https のみ。http も javascript: も URL ごと拒否
+  for (const bad of ['http://example.com/x', 'javascript:alert(1)', 'ftp://x.example/y', 'not-a-url']) {
+    assert.throws(
+      () => offers.create(AUTHOR, { type: 'skill', title: 'ng', body: 'x'.repeat(20), externalUrl: bad }),
+      OfferError,
+    )
+  }
+  // 公開には外部リンクが必須（行き先のない出品は並べない）
+  assert.throws(
+    () => offers.create(AUTHOR, { type: 'mentor', title: 'ng', body: 'x'.repeat(20) }),
+    OfferError,
+  )
+  // 下書きならリンク未定でも保存できる
+  const draft = offers.create(AUTHOR, {
+    type: 'mentor',
+    title: '（準備中）Godot の相談のります',
+    body: '',
+    status: 'draft',
+  })
+  assert.equal(draft.status, 'draft')
+
+  // 一覧は公開分だけ。種別で絞れる
+  assert.equal(offers.listPublic().total, 1)
+  assert.equal(offers.listPublic({ type: 'mentor' }).total, 0)
+  assert.throws(() => offers.listPublic({ type: 'nonsense' }), OfferError)
+
+  // 他人は編集も削除もできない
+  assert.throws(() => offers.update(record.id, OTHER, { type: 'skill', title: 'x', body: 'y'.repeat(20), externalUrl: record.externalUrl }), OfferError)
+  assert.throws(() => offers.remove(record.id, OTHER), OfferError)
+
+  // 退会で全部消える
+  assert.equal(offers.removeByAuthor(AUTHOR.id), 2)
+  assert.equal(offers.listPublic().total, 0)
+})
+
 // ---- 通報 ----
 
 test('通報: 受付番号が返り、運営が状態を更新できる', async () => {
@@ -601,6 +654,30 @@ test('HTTP: 登録 → 投稿 → 読む → 直す → 退会まで', async () 
   // メール未設定の環境では、再設定は「使えない」と正直に答える
   const resetOff = await call('POST', '/api/auth/reset', { body: { handle: 'httpwriter' } })
   assert.equal(resetOff.status, 503)
+
+  // 出品: 公開 → 一覧 → 下書きは他人に 404
+  const offerPub = await call('POST', '/api/offers', {
+    token,
+    body: {
+      type: 'template',
+      title: 'タイトル画面のテンプレート',
+      body: 'そのまま差し替えて使える構成。配布はリンク先で。',
+      priceLabel: '無料',
+      externalUrl: 'https://example.itch.io/title-template',
+    },
+  })
+  assert.equal(offerPub.status, 201)
+  const offerDraft = await call('POST', '/api/offers', {
+    token,
+    body: { type: 'skill', title: '（下書き）', body: '', status: 'draft' },
+  })
+  assert.equal(offerDraft.status, 201)
+  const offerList = await call('GET', '/api/offers.json')
+  assert.equal(offerList.data.total, 1)
+  const offerAnon = await call('GET', `/api/offers/${offerDraft.data.offer.id}.json`)
+  assert.equal(offerAnon.status, 404)
+  const offerOwn = await call('GET', `/api/offers/${offerDraft.data.offer.id}.json`, { token })
+  assert.equal(offerOwn.status, 200)
 
   // 通報は認証なしで出せる。一覧は運営でなければ 404（存在も明かさない）
   const reported = await call('POST', '/api/reports', {

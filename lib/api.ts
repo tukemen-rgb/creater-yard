@@ -71,6 +71,36 @@ export type TagIndex = {
   topics: string[]
 }
 
+export type OfferType = 'skill' | 'recipe' | 'template' | 'mentor'
+
+export const OFFER_TYPE_LABELS: Record<OfferType, string> = {
+  skill: 'スキル',
+  recipe: 'Recipe',
+  template: 'テンプレート',
+  mentor: 'Mentor',
+}
+
+export type Offer = {
+  id: string
+  authorHandle: string
+  type: OfferType
+  title: string
+  body: string
+  priceLabel: string
+  externalUrl: string
+  status: 'public' | 'draft'
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
+}
+
+export type OfferListing = {
+  offers: Offer[]
+  total: number
+  page: number
+  totalPages: number
+}
+
 export class ApiError extends Error {
   status: number
   constructor(message: string, status: number) {

@@ -26,6 +26,12 @@
  *   POST   /api/story-image         画像の検査と保存（要ログイン。本文とは別送）
  *   GET    /api/images/<id>.<ext>   検査済み画像の配信
  *   GET    /sitemap-stories.xml     公開 Story の sitemap（CY_SITE_ORIGIN 必須）
+ *   GET    /api/offers.json         公開出品の一覧（種別・書き手で絞り込み）
+ *   GET    /api/offers/<id>.json    出品 1 件（下書きは本人だけ）
+ *   POST   /api/offers              出品する（要ログイン）
+ *   PUT    /api/offers/<id>         出品を直す（本人のみ）
+ *   DELETE /api/offers/<id>         出品を取り下げる（本人のみ）
+ *   GET    /api/mine/offers         自分の出品一覧（下書き含む。要ログイン）
  *   POST   /api/reports             通報の受付（認証不要）
  *   GET    /api/reports             通報の一覧（運営のみ）
  *   POST   /api/reports/<id>        通報の状態と対応メモの更新（運営のみ）
@@ -46,6 +52,7 @@ import { buildStoriesFeed, siteOrigin } from './lib/feed.mjs'
 import { IMAGE_LIMITS } from './lib/image.mjs'
 import { ImageStore, ImageError } from './lib/images.mjs'
 import { Mailer } from './lib/mailer.mjs'
+import { OfferStore, OfferError, publicOffer } from './lib/offers.mjs'
 import { ReportStore, ReportError, REPORT_CATEGORIES, REPORT_STATUSES } from './lib/reports.mjs'
 import { StoryStore, StoryError, STORY_LIMITS, publicStory } from './lib/stories.mjs'
 
@@ -60,6 +67,7 @@ const MAX_BODY_BYTES = 64 * 1024
 const accounts = new Accounts({ dir: path.join(DATA, 'accounts') })
 const stories = new StoryStore({ dir: path.join(DATA, 'stories') })
 const images = new ImageStore({ dir: path.join(DATA, 'images') })
+const offers = new OfferStore({ dir: path.join(DATA, 'offers') })
 const reports = new ReportStore({ dir: path.join(DATA, 'reports') })
 const gate = new Gate()
 
@@ -144,6 +152,7 @@ function sendError(res, err) {
     err instanceof AuthError ||
     err instanceof StoryError ||
     err instanceof ImageError ||
+    err instanceof OfferError ||
     err instanceof ReportError
   if (known) {
     send(res, err.status ?? 400, { error: err.message })
@@ -390,6 +399,7 @@ async function handle(req, res) {
     accounts.deleteAccount({ handle: me.handle, password: body.password })
     const removed = stories.removeByAuthor(me.id)
     images.removeByAuthor(me.id)
+    offers.removeByAuthor(me.id)
     send(res, 200, { ok: true, removedStories: removed })
     return
   }
@@ -554,6 +564,57 @@ async function handle(req, res) {
     return
   }
 
+  // ---- 出品 ----
+  if (req.method === 'GET' && p === '/api/offers.json') {
+    send(res, 200, offers.listPublic({
+      page: url.searchParams.get('page') ?? 1,
+      type: url.searchParams.get('type') ?? '',
+      handle: url.searchParams.get('handle') ?? '',
+    }))
+    return
+  }
+
+  if (req.method === 'POST' && p === '/api/offers') {
+    const me = accounts.authenticate(req)
+    const body = await readJson(req)
+    send(res, 201, { offer: publicOffer(offers.create(me, body)) })
+    return
+  }
+
+  const offerJson = /^\/api\/offers\/([A-Za-z0-9_-]{8})\.json$/.exec(p)
+  if (req.method === 'GET' && offerJson) {
+    const record = offers.get(offerJson[1])
+    if (!record) throw new OfferError('出品が見つかりません。', 404)
+    if (record.status !== 'public') {
+      const me = maybeAccount(req)
+      if (!me || me.id !== record.authorId) {
+        throw new OfferError('出品が見つかりません。', 404)
+      }
+    }
+    send(res, 200, { offer: publicOffer(record) })
+    return
+  }
+
+  const offerPath = /^\/api\/offers\/([A-Za-z0-9_-]{8})$/.exec(p)
+  if (offerPath && (req.method === 'PUT' || req.method === 'DELETE')) {
+    const me = accounts.authenticate(req)
+    if (req.method === 'PUT') {
+      const body = await readJson(req)
+      send(res, 200, { offer: publicOffer(offers.update(offerPath[1], me, body)) })
+    } else {
+      offers.remove(offerPath[1], me)
+      send(res, 200, { ok: true })
+    }
+    return
+  }
+
+  if (req.method === 'GET' && p === '/api/mine/offers') {
+    const me = accounts.authenticate(req)
+    const mine = offers.listByAuthor(me.id).map(publicOffer)
+    send(res, 200, { offers: mine, total: mine.length })
+    return
+  }
+
   // ---- 通報 ----
   if (req.method === 'POST' && p === '/api/reports') {
     const body = await readJson(req)
@@ -614,6 +675,10 @@ async function handle(req, res) {
       ...[...handles.entries()].map(
         ([handle, last]) =>
           `<url><loc>${origin}/creators/${handle}/</loc><lastmod>${last.slice(0, 10)}</lastmod></url>`,
+      ),
+      ...offers.publicIndex().map(
+        (o) =>
+          `<url><loc>${origin}/offer/${o.id}/</loc><lastmod>${o.updatedAt.slice(0, 10)}</lastmod></url>`,
       ),
     ]
     const xml =
