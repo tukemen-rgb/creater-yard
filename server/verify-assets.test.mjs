@@ -83,7 +83,7 @@ test('公開されているものと手元が同じなら OK（終了コード 0
     withMediaDir(files, async (dir) => {
       const r = await run(origin, dir)
       assert.equal(r.status, 0, r.stdout + r.stderr)
-      assert.match(r.stdout, /公開素材  : OK（2 件が手元と一致）/)
+      assert.match(r.stdout, /公開素材  : OK（全 2 件のうち 2 件が手元と一致）/)
     }),
   )
 })
@@ -121,7 +121,7 @@ test('CREDITS.md と RIGHTS_APPROVED は配布物ではないので数えない'
       async (dir) => {
         const r = await run(origin, dir)
         assert.equal(r.status, 0, r.stdout + r.stderr)
-        assert.match(r.stdout, /OK（1 件が手元と一致）/)
+        assert.match(r.stdout, /OK（全 1 件のうち 1 件が手元と一致）/)
       },
     ),
   )
@@ -162,7 +162,7 @@ test('長さを返さなくても、ETag が読めれば比べられる（一致
       withMediaDir({ 'hero.mp4': { local: 'aaaa' } }, async (dir) => {
         const r = await run(origin, dir)
         assert.equal(r.status, 0, r.stdout + r.stderr)
-        assert.match(r.stdout, /OK（1 件が手元と一致）/)
+        assert.match(r.stdout, /OK（全 1 件のうち 1 件が手元と一致）/)
       }),
   )
 })
@@ -186,5 +186,36 @@ test('長さも読める形の ETag も無ければ「比べられません」�
       assert.equal(r.status, 0, r.stdout + r.stderr)
       assert.match(r.stdout, /比べられません hero\.mp4（長さも ETag も読めません）/)
     }),
+  )
+})
+
+// ④ 05:10 の指摘 1。まとめの行が「OK」で終わり、比べられなかったものを
+// 数えていなかった。**「OK」と書けるのは分母と分子が一致しているときだけ**
+// （規則 20 の条項・⑤ 2026-08-17 の裁定 2）。
+test('分母: 比べられないものがあるとき、まとめの行に「OK」と書かない', async () => {
+  await withServer(
+    { 'ok.mp4': 'aaaa', 'weird.svg': { headers: { etag: '"opaque"' } } },
+    (origin) =>
+      withMediaDir({ 'ok.mp4': 'aaaa', 'weird.svg': { local: 'aaaa' } }, async (dir) => {
+        const r = await run(origin, dir)
+        assert.equal(r.status, 0, r.stdout + r.stderr)
+        assert.ok(!/OK（/.test(r.stdout), `まとめの行に「OK」が出ている:\n${r.stdout}`)
+        assert.match(r.stdout, /全 2 件のうち 一致 1 \/ 比べられない 1（不一致は 0）/)
+      }),
+  )
+})
+
+test('分母: 不一致があるときも、まとめの行に 3 つとも出す', async () => {
+  await withServer(
+    { 'old.mp4': 'old', 'weird.svg': { headers: { etag: '"opaque"' } }, 'ok.mp4': 'aaaa' },
+    (origin) =>
+      withMediaDir(
+        { 'old.mp4': 'new-and-longer', 'weird.svg': { local: 'x' }, 'ok.mp4': 'aaaa' },
+        async (dir) => {
+          const r = await run(origin, dir)
+          assert.equal(r.status, 2, r.stdout + r.stderr)
+          assert.match(r.stdout, /全 3 件のうち 一致 1 \/ 不一致 1 \/ 比べられない 1/)
+        },
+      ),
   )
 })
