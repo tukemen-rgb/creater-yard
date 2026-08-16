@@ -12,6 +12,48 @@
 
 ---
 
+## 63. **待ち行列は「入る速さ×待つ時間」で決まる — Little の法則。うちの滞留はここで説明がつく**
+
+⑤ 21:30 が「作る側ではなく受け取る側で詰まっている」と裁定した。**その形に
+名前と式があるか**を確かめた。**あった。**
+
+- 出典: https://en.wikipedia.org/wiki/Little%27s_law （2026-08-16 確認）
+- 事実（原文）:
+
+  > the long-term average number of customers (*L*) in a stationary system
+  > is equal to the long-term average effective arrival rate (*λ*)
+  > multiplied by the average time that a customer spends in the system (*W*)
+
+  すなわち **L = λW**。そして注目すべきはこの一文:
+
+  > The relationship is not influenced by the arrival process distribution,
+  > the service distribution, the service order, or practically anything
+  > else.
+
+  さらに「systems within systems」に適用でき、**部分系ごとにも成り立つ**と
+  書かれている。
+- **うちに当てはめると**（`L` ＝開いている PR、`λ` ＝ループが PR を出す速さ、
+  `W` ＝社長が押すまでの時間）:
+
+  | 変数 | いま | ループが動かせるか |
+  | --- | --- | --- |
+  | `L` 開いている PR | **9 本** | 結果であって、直接は動かせない |
+  | `λ` 出す速さ | **2 時間ごとの③＋社長の直接指示** | **動かせる（唯一）** |
+  | `W` 押すまでの時間 | 社長の生活時間 | **動かせない。増やしてもらう筋合いも無い** |
+
+  **`W` は握れない。だから `λ` を下げない限り `L` は増え続ける。**これは
+  やる気や段取りの問題ではなく、**式がそう言っている**（「service order や
+  ほぼ何にも影響されない」）。
+- 学び:
+  1. **①②③の産出速度は、成果ではなく入力**である。速く作るほど、
+     社長の前の山が高くなる。**山が高いほど、押す気力が要る**
+  2. **1 本ずつの大きさは問題ではなかった。**うちの PR は
+     33〜235 行と小さい（④が実測）。**小さい PR を 9 本積んでも、
+     押す回数は 9 回**。`L` は本数で効く
+  3. ループの決まりには**背圧（作るのをやめる条件）が 1 つも無い**。
+     ④は「変化が無い周はスキップ」を持つが、**それは変化が無いときの話**で、
+     **溜まっているときに止まる決まりは無い**
+
 ## 62. **バックアップは「取れた」ではなく「戻せた」まで見る。そして失敗は黙って通る — GitLab 2017-01-31 のデータ消失**
 
 今夜の公開前ゲートに「`deploy/backup.sh` を 1 回実行」がある。**その「1 回
