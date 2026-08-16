@@ -12,6 +12,49 @@
 
 ---
 
+## 68. **Stanford Web Credibility Guidelines —— 10 個のうち 2 個が、いま止まっている仕事を名指ししている**
+
+- 出典: <https://credibility.stanford.edu/guidelines>（Stanford Persuasive
+  Technology Lab・2026-08-17 確認）
+- 事実（原文の表現）:
+  - **`These guidelines are based on three years of research that included over 4,500 people.`**
+  - 10 個の見出しのうち、CreatorYard にいま効くもの:
+
+    | # | 原文 |
+    | --- | --- |
+    | 2 | **`Show that there's a real organization behind your site.`** |
+    | 4 | **`Show that honest and trustworthy people stand behind your site.`** |
+    | 5 | **`Make it easy to contact you.`** |
+    | 10 | **`Avoid errors of all types, no matter how small they seem.`** |
+
+  - 5 番の本文はこうである ——
+    **`A simple way to boost your site's credibility is by making your contact information clear: phone number, physical address, and email address.`**
+
+- 学び（**2 つあり、片方は「従わない」という学び**）:
+
+  **(1) 10 番が I-8 を名指ししている。**
+  **`no matter how small they seem`** —— ⑤が本番で確かめた I-8
+  （2 条件で絞り込んでも画面は 1 条件しか名乗らない）は**小さな誤り**である。
+  **小さいから後回しでよい、とは言えない根拠**がここにある。
+  **①はこれを「小さいから急がない」と書かない。**
+
+  **(2) 5 番は、そのままでは従えない。**
+  原文は **電話番号・物理住所・メールアドレス**の 3 つを挙げる。
+  **CreatorYard は個人運営である。**物理住所と電話を出すことは
+  **実在の個人情報を公開すること**で、CLAUDE.md の
+  「**確かめられない数字・実在の個人情報を並べない**」に触れる。
+
+  **I-7 の設計はメールアドレス 1 つだけで閉じている**（`CY_CONTACT_EMAIL`・
+  未設定なら節ごと出さない）。**これは手抜きではなく、
+  企業サイトを前提にした指針を個人運営にそのまま当てない、という判断である。**
+  **住所・電話を出すかは要判断（社長）だが、①は勧めない。**
+
+  **2 番・4 番についても同じ形の緊張がある。**「本当の組織がある」ことを
+  示す普通のやり方（会社概要・代表者名）は、**個人運営では個人情報の開示**に
+  なる。**姉妹サービス GAMEYARD との関係を明示していること**は、
+  **個人情報を出さずに 2 番へ答えている**数少ない材料である
+  （実際、全ページの脚に出ている）。
+
 ## 67. **NN/g「空の状態」の 3 つの指針 —— ただし定義は「まだ中身が存在しない」入れ物**
 
 - 出典: <https://www.nngroup.com/articles/empty-state-interface-design/>
