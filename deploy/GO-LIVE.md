@@ -89,9 +89,17 @@ nginx -t && systemctl reload nginx
 
 ```sh
 curl -s https://www.cloudflare.com/ips-v4
+curl -s https://www.cloudflare.com/ips-v6   # ← v6 も必ず取る
 # 出た範囲を deploy/nginx.conf.example の set_real_ip_from と突き合わせ、
 # 増えていたら足す。ファイル上部の「取得日」も更新する
 ```
+
+**v4 と v6 の両方を取り直すこと。**`listen 443` と `listen [::]:443` の
+両方で待ち受けているので、**片方だけ新しくすると、古いほうの脚で同じ穴が開く。**
+
+**origin に AAAA レコードを向けるなら、v6 の範囲が入っていることを先に確かめる。**
+入っていないまま AAAA を公開すると、**IPv6 で来た訪問者は全員 1 枠**になり、
+1 人がログインを失敗させるだけで**その脚の全員が締め出される。**
 
 **取り戻せているかの確認**（訪問者の IP になっているか）:
 
@@ -104,7 +112,9 @@ tail -n 5 /var/log/nginx/access.log
 
 ## 5. 公開後の確認（上から順に）
 
-- [ ] `https://<ドメイン>/` … トップが出る（静的）
+- [ ] `https://<ドメイン>/` … **実ブラウザで**見出しと「Story を読む」
+      「書き始める」が出る（HTML の取得だけでは初期化失敗を検出できない）
+- [ ] ブラウザの Console に CSP 違反や `Connection closed` が出ていない
 - [ ] `https://<ドメイン>/api/health` … `{"ok":true}`
 - [ ] 新規登録 → Story 公開 → `/story/<id>/` が **HTML に本文入り**で出る
 - [ ] 画像を付けて公開 → 表示される
