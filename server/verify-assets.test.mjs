@@ -19,17 +19,27 @@ import test from 'node:test'
 
 const SCRIPT = new URL('../deploy/verify-public-assets.sh', import.meta.url).pathname
 
-/** 与えた {名前: 中身} を /media/<名前> で配る、使い捨てのサーバー。 */
+/**
+ * 与えた {名前: 中身} を /media/<名前> で配る、使い捨てのサーバー。
+ *
+ * 値が文字列なら content-length を付けた素直な応答。
+ * 値が {headers} なら、そのヘッダーをそのまま返す（content-length を
+ * 返さない相手・圧縮している相手・ETag だけを返す相手を作るため）。
+ */
 async function withServer(files, fn) {
   const server = http.createServer((req, res) => {
     const name = decodeURIComponent(req.url.replace(/^\/media\//, ''))
-    const body = files[name]
-    if (body === undefined) {
+    const entry = files[name]
+    if (entry === undefined) {
       res.writeHead(404)
       return res.end()
     }
-    res.writeHead(200, { 'content-length': Buffer.byteLength(body) })
-    res.end(req.method === 'HEAD' ? undefined : body)
+    if (typeof entry === 'object') {
+      res.writeHead(200, entry.headers)
+      return res.end(req.method === 'HEAD' ? undefined : (entry.body ?? ''))
+    }
+    res.writeHead(200, { 'content-length': Buffer.byteLength(entry) })
+    res.end(req.method === 'HEAD' ? undefined : entry)
   })
   await new Promise((r) => server.listen(0, '127.0.0.1', r))
   const origin = `http://127.0.0.1:${server.address().port}`
@@ -44,7 +54,7 @@ async function withMediaDir(files, fn) {
   const dir = mkdtempSync(path.join(tmpdir(), 'cy-media-'))
   try {
     for (const [name, body] of Object.entries(files)) {
-      writeFileSync(path.join(dir, name), body)
+      writeFileSync(path.join(dir, name), typeof body === 'object' ? (body.local ?? '') : body)
     }
     return await fn(dir)
   } finally {
@@ -90,12 +100,15 @@ test('公開されているものが古ければ、名前と両方の大きさ�
   )
 })
 
-test('公開側に無いものも「未反映」として出す（黙って見逃さない）', async () => {
+// 3 状態にしたとき、この試験が分岐の落としを教えてくれた。
+// **404 は「分からない」ではなく「配られていない」。**長さが読めないからと
+// いって「比べられない」に流すと、公開されていない事故を見逃す。
+test('公開側に無いものは「未反映」（比べられない、ではない）', async () => {
   await withServer({}, (origin) =>
     withMediaDir({ 'hero.webm': 'xyz' }, async (dir) => {
       const r = await run(origin, dir)
-      assert.equal(r.status, 2)
-      assert.match(r.stdout, /未反映 hero\.webm（公開 取得できず \/ 手元 3）/)
+      assert.equal(r.status, 2, r.stdout + r.stderr)
+      assert.match(r.stdout, /未反映 hero\.webm（公開されていません: HTTP 404）/)
     }),
   )
 })
@@ -120,4 +133,58 @@ test('置き場が無ければ黙って飛ばす（素材を持たない構成�
     assert.equal(r.status, 0)
     assert.match(r.stdout, /確認しません/)
   })
+})
+
+// ---- 設計 O-3: 3 状態にしたぶんの試験 ----
+// ④ 03:10 が #21 に見つけた穴の手当て。content-length は RFC 9110 で MAY 
+// なので、「ある前提」で組むと、応答が正常でも「未反映」と言ってしまう。
+
+const hexEtag = (size) => `"6a81d337-${size.toString(16)}"`
+
+test('本体: 長さはあるが圧縮後の長さなら、一致とも不一致とも言わない', async () => {
+  // 手元 14 バイト。公開側は「圧縮して 3 バイトになった」と言っている。
+  // ここで 3 と 14 を比べて「未反映」と言うのが、直したかった間違い。
+  await withServer(
+    { 'hero.svg': { headers: { 'content-length': '3', 'content-encoding': 'gzip' } } },
+    (origin) =>
+      withMediaDir({ 'hero.svg': { local: 'new-and-longer' } }, async (dir) => {
+        const r = await run(origin, dir)
+        assert.equal(r.status, 0, r.stdout + r.stderr)
+        assert.match(r.stdout, /比べられません hero\.svg/)
+      }),
+  )
+})
+
+test('長さを返さなくても、ETag が読めれば比べられる（一致）', async () => {
+  await withServer(
+    { 'hero.mp4': { headers: { etag: hexEtag(4), 'transfer-encoding': 'chunked' } } },
+    (origin) =>
+      withMediaDir({ 'hero.mp4': { local: 'aaaa' } }, async (dir) => {
+        const r = await run(origin, dir)
+        assert.equal(r.status, 0, r.stdout + r.stderr)
+        assert.match(r.stdout, /OK（1 件が手元と一致）/)
+      }),
+  )
+})
+
+test('長さを返さず、ETag の後半が違えば不一致', async () => {
+  await withServer(
+    { 'hero.mp4': { headers: { etag: `W/${hexEtag(99)}` } } },
+    (origin) =>
+      withMediaDir({ 'hero.mp4': { local: 'aaaa' } }, async (dir) => {
+        const r = await run(origin, dir)
+        assert.equal(r.status, 2, r.stdout + r.stderr)
+        assert.match(r.stdout, /未反映 hero\.mp4（公開 99 \/ 手元 4）/)
+      }),
+  )
+})
+
+test('長さも読める形の ETag も無ければ「比べられません」（0 で返す・だが黙らない）', async () => {
+  await withServer({ 'hero.mp4': { headers: { etag: '"opaque-value-xyz"' } } }, (origin) =>
+    withMediaDir({ 'hero.mp4': { local: 'aaaa' } }, async (dir) => {
+      const r = await run(origin, dir)
+      assert.equal(r.status, 0, r.stdout + r.stderr)
+      assert.match(r.stdout, /比べられません hero\.mp4（長さも ETag も読めません）/)
+    }),
+  )
 })
