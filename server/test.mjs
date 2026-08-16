@@ -808,3 +808,55 @@ test('HTTP: メールが有効でも公開 origin が無ければ再設定を受
     }
   }
 })
+
+test('画像の説明: 独立した項目として保存され、部分更新で消えず、画像を外すと一緒に消える（I-5）', () => {
+  const stories = freshStories('image-alt')
+  const IMAGE = { id: 'img-aaaaaaaa', ext: 'png', width: 800, height: 600 }
+
+  // ---- 作成時に説明を持てる ----
+  const made = stories.create(AUTHOR, {
+    title: '当たり判定のズレ', body: 'a'.repeat(30),
+    imageAlt: '  当たり判定のズレを赤い枠で示した画面  ',
+  }, { image: IMAGE })
+  assert.equal(made.imageAlt, '当たり判定のズレを赤い枠で示した画面', '前後の空白は落ちる')
+
+  // ---- 説明を送らない更新で消えない（#MERGEABLE の 10 番目である根拠）----
+  const touched = stories.update(made.id, AUTHOR, { body: `${made.body}b` })
+  assert.equal(
+    touched.imageAlt,
+    '当たり判定のズレを赤い枠で示した画面',
+    '送らなければ残る（送らないと消える項目にしない）',
+  )
+
+  // ---- 説明だけの編集が効く（画像を送り直しても畳まれない）----
+  const relabeled = stories.update(made.id, AUTHOR, { imageAlt: '赤い枠が当たり判定' })
+  assert.equal(relabeled.imageAlt, '赤い枠が当たり判定', '説明だけ直せる')
+  assert.equal(relabeled.image?.id, IMAGE.id, '画像はそのまま')
+
+  // ---- 明示的な空で消える ----
+  const cleared = stories.update(made.id, AUTHOR, { imageAlt: '' })
+  assert.equal(cleared.imageAlt, '', '空で送れば消える（飾りの画像に戻す）')
+
+  // ---- 画像を外したら説明も消える（設計 I-5 (b) の後始末）----
+  const withAlt = stories.update(made.id, AUTHOR, { imageAlt: 'もう一度つける' })
+  assert.equal(withAlt.imageAlt, 'もう一度つける')
+  const unpictured = stories.update(made.id, AUTHOR, {}, { image: null })
+  assert.equal(unpictured.image, null, '画像は外れる')
+  assert.equal(unpictured.imageAlt, '', '画像の無い説明を残さない')
+
+  // ---- 上限（120 文字）で切る ----
+  const long = stories.create(AUTHOR, {
+    title: '長い説明', body: 'c'.repeat(30), imageAlt: 'あ'.repeat(300),
+  }, { image: IMAGE })
+  assert.equal(long.imageAlt.length, 120, '上限で切る（緩めるのは人の判断）')
+
+  // ---- 改行は 1 行に畳む（alt 属性に改行は入れない）----
+  const multiline = stories.create(AUTHOR, {
+    title: '改行入り', body: 'd'.repeat(30), imageAlt: '上の行\n下の行',
+  }, { image: IMAGE })
+  assert.equal(multiline.imageAlt, '上の行 下の行', '改行は空白へ')
+
+  // ---- 既存の記録（imageAlt を持たない）は空文字として読める ----
+  const legacy = publicStory({ ...made, imageAlt: undefined })
+  assert.equal(legacy.imageAlt, '', '古い記録でも壊れない')
+})
