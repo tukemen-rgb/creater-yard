@@ -17,27 +17,43 @@
 今夜の公開前ゲートに「`deploy/backup.sh` を 1 回実行」がある。**その「1 回
 実行」が検査として成立しているか**を、外部の事故で確かめた。
 
-- 出典: Availability Digest "GitLab Suffers Massive Backup Failure Due to a
-  Fat Finger"（Sombers Associates, Inc. / W. H. Highleyman、2017 年 4 月号。
-  https://www.availabilitydigest.com/public_articles/1204/gitlab.pdf
-  2026-08-16 確認）。同記事は GitLab 公式の事後報告
-  （https://about.gitlab.com/blog/postmortem-of-database-outage-of-january-31/
-  2017-02-10）を出典として挙げている
-- **確かめられなかったこと**: GitLab 公式の事後報告そのものは、こちらの
-  取得元から **403 で読めなかった**。以下は上記二次資料で読めた記述であり、
-  原文の言い回しとは異なる可能性がある
-- 事実（記事の記述）:
+**（2026-08-16 20:10 に出典を差し替え。⑤ 19:30 の裁定 3。初出時は
+「原本が 403 で読めない」として二次資料から引いたが、④が別の道具で
+引き直すと読めた。いまは原文 2 本が一次出典で、二次資料は補助。)**
+
+- 出典 1（速報・**「5 系統」の出どころ**）:
+  https://about.gitlab.com/blog/gitlab-dot-com-database-incident/
+  （GitLab、2017-02-01。2026-08-16 確認）
+- 出典 2（事後報告・**「気づけなかった」の出どころ**）:
+  https://about.gitlab.com/blog/postmortem-of-database-outage-of-january-31/
+  （GitLab、2017-02-10。2026-08-16 確認）
+- 出典 3（補助・全体の要約と "no ownership"）: Availability Digest
+  "GitLab Suffers Massive Backup Failure Due to a Fat Finger"
+  （Sombers Associates, Inc. / W. H. Highleyman、2017 年 4 月号。
+  https://www.availabilitydigest.com/public_articles/1204/gitlab.pdf ）
+- **取得についての注記（それ自体が学び）**: 原文 2 本は、最初に使った
+  取得口では **403**、別の口では **200**。しかも出典 1 は
+  **redirect を追わないと 307 で止まる**。**「読めない」は、相手が拒んだ
+  ことと道具が黙ったことを区別しない**（⑤ 19:30 の申し送り 1）
+- 事実（**原文**）:
   - 2017-01-31、担当者が待機系のつもりで**本番のデータディレクトリを消し**、
-    約 300 GB が失われた。復旧まで約 36 時間
-  - > GitLab stated that none of its five deployed backup/replication
-    > technologies were working reliably or were set up in the first place
-  - 定時のバックアップは **PostgreSQL 9.2 の道具で 9.6 のデータを取ろうと
-    していて失敗**していた。しかも **"it failed silently without
-    notification"** ——「失敗を知らせるメールが DMARC の署名不備で弾かれて
-    いた」ため、**誰も失敗に気づいていなかった**
+    約 300 GB が失われた。復旧まで約 36 時間（出典 3）
+  - 出典 1（速報）より:
+    > Our backups to S3 apparently don't work either: the bucket is empty
+    > So in other words, out of five backup/replication techniques deployed
+    > none are working reliably or set up in the first place.
+  - 出典 2（事後報告）より —— **これが本件のいちばん重い一文**:
+    > This in turn resulted in `pg_dump` terminating with an error. While
+    > notifications are enabled for any cronjobs that error, these
+    > notifications are sent by email. For GitLab.com we use DMARC.
+    > Unfortunately DMARC was not enabled for the cronjob emails, resulting
+    > in them being rejected by the receiver. **This means we were never
+    > aware of the backups failing, until it was too late.**
+  - 出典 1 には**もう 1 つの「黙って」**も出てくる:
+    > `pg_basebackup` will silently wait for a master to initiate the
+    > replication process
   - > Why weren't the backup and restore processes tested on a regular
-    > basis? Because there was no ownership.
-  - > backups don't matter if you can't restore your database from them
+    > basis? Because there was no ownership.（出典 3）
 - 学び（CreatorYard に効くところ）:
   1. **「戻せた」までは、うちは既に満たしている。** `deploy/backup.sh` は
      既定で `BACKUP_DRILL=1`、取った直後に一時ディレクトリへ展開して
