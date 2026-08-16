@@ -12,6 +12,47 @@
 
 ---
 
+## 62. **バックアップは「取れた」ではなく「戻せた」まで見る。そして失敗は黙って通る — GitLab 2017-01-31 のデータ消失**
+
+今夜の公開前ゲートに「`deploy/backup.sh` を 1 回実行」がある。**その「1 回
+実行」が検査として成立しているか**を、外部の事故で確かめた。
+
+- 出典: Availability Digest "GitLab Suffers Massive Backup Failure Due to a
+  Fat Finger"（Sombers Associates, Inc. / W. H. Highleyman、2017 年 4 月号。
+  https://www.availabilitydigest.com/public_articles/1204/gitlab.pdf
+  2026-08-16 確認）。同記事は GitLab 公式の事後報告
+  （https://about.gitlab.com/blog/postmortem-of-database-outage-of-january-31/
+  2017-02-10）を出典として挙げている
+- **確かめられなかったこと**: GitLab 公式の事後報告そのものは、こちらの
+  取得元から **403 で読めなかった**。以下は上記二次資料で読めた記述であり、
+  原文の言い回しとは異なる可能性がある
+- 事実（記事の記述）:
+  - 2017-01-31、担当者が待機系のつもりで**本番のデータディレクトリを消し**、
+    約 300 GB が失われた。復旧まで約 36 時間
+  - > GitLab stated that none of its five deployed backup/replication
+    > technologies were working reliably or were set up in the first place
+  - 定時のバックアップは **PostgreSQL 9.2 の道具で 9.6 のデータを取ろうと
+    していて失敗**していた。しかも **"it failed silently without
+    notification"** ——「失敗を知らせるメールが DMARC の署名不備で弾かれて
+    いた」ため、**誰も失敗に気づいていなかった**
+  - > Why weren't the backup and restore processes tested on a regular
+    > basis? Because there was no ownership.
+  - > backups don't matter if you can't restore your database from them
+- 学び（CreatorYard に効くところ）:
+  1. **「戻せた」までは、うちは既に満たしている。** `deploy/backup.sh` は
+     既定で `BACKUP_DRILL=1`、取った直後に一時ディレクトリへ展開して
+     **Story の件数を照合**し、合わなければ `die` する。GO-LIVE.md も
+     「復元訓練 OK のログを見る」と書いている。**今夜の「1 回実行」は、
+     ただの実行ではなく復元試験**であり、ゲートとしては見た目より強い
+  2. **満たしていないのは 2 つ目の教訓のほう。** GitLab を沈めた決め手は
+     「取れていなかったこと」ではなく「**取れていないと誰も知らなかった
+     こと**」だった。うちの `creatoryard-backup.timer` が止まる／毎晩
+     `die` で落ちる、のどちらが起きても、**気づく仕組みがいまは無い**。
+     `deploy/healthcheck.sh` が見ているのは API・web・ディスクの 3 つで、
+     バックアップには一切触れていない
+  3. **持ち主がいない検査は回らない**（"no ownership"）。うちは人が 1 人な
+     ので、**人の記憶ではなく既に回っている仕組みに相乗りさせる**しかない
+
 ## 61. **検査は「正しく作ったか」だけでなく「確かめたいものを見ているか」を問う — Boehm の verification / validation**
 
 ⑤が今周見つけた事故（「push した」と報告したが、リモートには上がって
