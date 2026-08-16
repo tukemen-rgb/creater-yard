@@ -95,10 +95,19 @@ test('1 本も無ければ「まだ 1 度も取れていない」と鳴る', () 
   })
 })
 
-test('置き場そのものが無ければ黙って飛ばす（別経路で取る構成を壊さない）', () => {
-  const out = run({ BACKUP_DIR: '/nonexistent-creatoryard-backups' })
+// 初版は「置き場が無ければ黙って飛ばす」だった。backup.sh は置き場を
+// mkdir -p で作るので、1 度も取っていないサーバーにだけ置き場が無い
+// ——「いちばん危ない状態だけが静か」になっていたので期待を反転した。
+test('置き場そのものが無ければ鳴る（1 度も取れていない状態を黙らせない）', () => {
+  const problems = backupProblems(run({ BACKUP_DIR: '/nonexistent-creatoryard-backups' }))
+  assert.equal(problems.length, 1)
+  assert.match(problems[0], /置き場がありません/)
+})
+
+test('BACKUP_CHECK=0 のときだけ黙る（別経路で取る構成を壊さない）', () => {
+  const out = run({ BACKUP_DIR: '/nonexistent-creatoryard-backups', BACKUP_CHECK: '0' })
   assert.deepEqual(backupProblems(out), [])
-  assert.match(out, /バックアップ: 確認しません/)
+  assert.match(out, /バックアップ: 確認しません（BACKUP_CHECK=0）/)
 })
 
 test('名前の形が違うファイルは書庫として数えない', () => {
@@ -117,6 +126,28 @@ test('閾値は環境変数で上げられる', () => {
     const out = run({ BACKUP_DIR: dir, BACKUP_MAX_AGE_HOURS: '100' })
     assert.deepEqual(backupProblems(out), [])
     assert.match(out, /バックアップ: 40 時間前/)
+  })
+})
+
+// 境界を両側から挟んで、閾値の位置そのものを固定する。
+// 片側（0 時間・40 時間）だけでは -ge を -gt にずらす変異が素通りする
+// ——④の変異検査が実際にそれを見つけた。
+test('境界: ちょうど閾値の時間が経っていたら鳴る（36 時間以上）', () => {
+  withBackupDir((dir) => {
+    putArchive(dir, 'creatoryard-20260815-000000Z.tar.gz', 36)
+    const problems = backupProblems(run({ BACKUP_DIR: dir }))
+    assert.equal(problems.length, 1, '閾値ちょうどで鳴っていない')
+    assert.match(problems[0], /最後のバックアップから 36 時間/)
+  })
+})
+
+test('境界: 閾値に 1 時間足りなければ鳴らない', () => {
+  withBackupDir((dir) => {
+    // 35.9 時間前 → 切り捨てで age_h は 35。閾値を 35 に下げる変異を捕らえる
+    putArchive(dir, 'creatoryard-20260815-010000Z.tar.gz', 35.9)
+    const out = run({ BACKUP_DIR: dir })
+    assert.deepEqual(backupProblems(out), [])
+    assert.match(out, /バックアップ: 35 時間前/)
   })
 })
 

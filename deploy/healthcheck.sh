@@ -79,11 +79,18 @@ fi
 # 閾値は「1 日」ではなく時間で書く。timer は毎日 1 回なので、36 時間なら
 # 1 回飛ばしでは鳴らず、2 回続けて飛んだら鳴る。扱うのは時刻差だけで
 # 暦日の境目をまたがないため、時刻帯には依存しない。
+#
+# 置き場が無いときに黙って飛ばす作りにしていたが、backup.sh は置き場を
+# mkdir -p で作るので、**1 度も取っていないサーバーにだけ置き場が無い**。
+# いちばん危ない状態だけが静かになり、順序が逆だった。既定では鳴らし、
+# 別経路で取る構成は BACKUP_CHECK=0 で**人が明示的に**黙らせる。
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/creatoryard}"
 BACKUP_MAX_AGE_HOURS="${BACKUP_MAX_AGE_HOURS:-36}"
-if [ ! -d "$BACKUP_DIR" ]; then
-  # 別の経路で取る構成を壊さない。無いことは異常にしない。
-  note "バックアップ: 確認しません（$BACKUP_DIR がありません）"
+BACKUP_CHECK="${BACKUP_CHECK:-1}"
+if [ "$BACKUP_CHECK" != "1" ]; then
+  note "バックアップ: 確認しません（BACKUP_CHECK=$BACKUP_CHECK）"
+elif [ ! -d "$BACKUP_DIR" ]; then
+  fail "バックアップの置き場がありません（$BACKUP_DIR）。まだ 1 度も取れていないか、置き場の指定が違います"
 else
   newest="$(find "$BACKUP_DIR" -maxdepth 1 -name 'creatoryard-*.tar.gz' \
     -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1)"
