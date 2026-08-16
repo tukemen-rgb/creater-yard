@@ -62,3 +62,23 @@ test('5 秒を超えてループする動画を一時停止・再開できる', 
 test('文字コントラスト用のオーバーレイがある', () => {
   assert.match(css, /\.hero--video::before \{[\s\S]*?linear-gradient/, '暗いオーバーレイが無い')
 })
+
+// ④ 21:10 の指摘 1。<source> は webm → mp4 の順なので、VP9 を解せる browser
+// （Chrome・Firefox＝大多数）は webm を取る。**先に並べたほうが小さい**という
+// 不変条件が崩れると、多くの利用者だけが黙って重いファイルを掴む。
+// 実際に 1080p へ焼き直したとき、VP9 の CRF を H.264 と釣り合うと見なして
+// この条件を破った（webm 7.9MB > mp4 7.0MB）。人の注意ではなく試験で守る。
+test('先に並べた webm は mp4 より小さい（大多数が重いほうを掴まない）', async () => {
+  const { stat } = await import('node:fs/promises')
+  const size = async (name) =>
+    (await stat(new URL(`../public/media/${name}`, import.meta.url))).size
+
+  const order = [...videoComponent.matchAll(/<source src="\/media\/(hero\.\w+)"/g)].map((m) => m[1])
+  assert.deepEqual(order, ['hero.webm', 'hero.mp4'], 'source の並び順が変わった')
+
+  const [webm, mp4] = [await size('hero.webm'), await size('hero.mp4')]
+  assert.ok(
+    webm < mp4,
+    `先に並べた hero.webm（${(webm / 1e6).toFixed(2)}MB）が hero.mp4（${(mp4 / 1e6).toFixed(2)}MB）より大きい`,
+  )
+})
