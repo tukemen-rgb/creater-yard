@@ -64,6 +64,41 @@ if [ -d "$DATA_MOUNT" ]; then
   fi
 fi
 
+# ---- バックアップ ----
+# 「timer が生きているか」ではなく「新しい書庫が実在するか」を見る。
+# systemctl is-active は仕組みを見る検査で、仕組みが動いていても中身が
+# 増えていなければ守られていない。GitLab は 2017-01-31 に、5 系統の
+# バックアップ・複製がすべて死んでいる状態で本番を消した。決め手は
+# 「取れていなかったこと」ではなく「取れていないと誰も知らなかったこと」で、
+# 失敗を知らせるメール自体が弾かれていた（docs/research/case-studies.md 62）。
+#
+# 見るのはファイル名と mtime だけで、書庫は開かない。中身が戻せるかは
+# backup.sh の復元訓練（BACKUP_DRILL=1）が取得のたびに照合している。
+# ここで開くと死活確認が数分おきに数百 MB を展開することになる。
+#
+# 閾値は「1 日」ではなく時間で書く。timer は毎日 1 回なので、36 時間なら
+# 1 回飛ばしでは鳴らず、2 回続けて飛んだら鳴る。扱うのは時刻差だけで
+# 暦日の境目をまたがないため、時刻帯には依存しない。
+BACKUP_DIR="${BACKUP_DIR:-/var/backups/creatoryard}"
+BACKUP_MAX_AGE_HOURS="${BACKUP_MAX_AGE_HOURS:-36}"
+if [ ! -d "$BACKUP_DIR" ]; then
+  # 別の経路で取る構成を壊さない。無いことは異常にしない。
+  note "バックアップ: 確認しません（$BACKUP_DIR がありません）"
+else
+  newest="$(find "$BACKUP_DIR" -maxdepth 1 -name 'creatoryard-*.tar.gz' \
+    -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1)"
+  if [ -z "$newest" ]; then
+    fail "バックアップが 1 本もありません（$BACKUP_DIR）。まだ 1 度も取れていない可能性があります"
+  else
+    age_h=$(( ( $(date +%s) - ${newest%%.*} ) / 3600 ))
+    if [ "$age_h" -ge "$BACKUP_MAX_AGE_HOURS" ]; then
+      fail "最後のバックアップから ${age_h} 時間が経っています（閾値 ${BACKUP_MAX_AGE_HOURS} 時間）。timer か backup.sh が黙って止まっている可能性があります"
+    else
+      note "バックアップ: ${age_h} 時間前（$(basename "${newest#* }")）"
+    fi
+  fi
+fi
+
 # ---- 通知 ----
 if [ "${#problems[@]}" -gt 0 ]; then
   summary="CreatorYard healthcheck NG: ${problems[*]}"
