@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { SITE_FEED } from '../../lib/og'
+import { alternatesFor, SITE_FEED, SITE_OG, storiesFilterUrl, storiesListPath } from '../../lib/og'
 import Link from 'next/link'
 
 import { StoryCard } from '../../components/story-card'
@@ -19,13 +19,31 @@ export const dynamic = 'force-dynamic'
 type Props = { searchParams: Promise<{ tool?: string; topic?: string; page?: string }> }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const { tool, topic } = await searchParams
+  const { tool, topic, page } = await searchParams
   const filter = tool || topic
+  const title = filter ? `「${filter}」の Story` : 'Creator Story'
+  const description = filter
+    ? `「${filter}」に関する制作記録（Creator Story）の一覧。`
+    : 'つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。'
+  // 本文と同じ一覧結果を使い、範囲外の page を実在する最終ページへ丸める。
+  // 生の page を使うと、空一覧の ?page=2 などが 1 ページ目と同じ本文なのに
+  // 別 canonical を名乗ってしまう。
+  const listing = publishedStories({ page: Number(page) || 1, tool: tool ?? '', topic: topic ?? '' })
+  const canonical = storiesFilterUrl(tool, topic, String(listing.page))
   return {
-    title: filter ? `「${filter}」の Story` : 'Creator Story',
-    description: filter
-      ? `「${filter}」に関する制作記録（Creator Story）の一覧。`
-      : 'つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。',
+    title,
+    description,
+    alternates: alternatesFor(canonical),
+    openGraph: {
+      // **展開を忘れると親の og:site_name・og:locale が丸ごと消える。**
+      // Next の metadata は shallow merge で、子が openGraph を書くと
+      // 親の入れ子はまとめて置き換わる（この罠はこの repo で 2 回踏んでいる）。
+      ...SITE_OG,
+      title,
+      description,
+      type: 'website',
+      ...(canonical ? { url: canonical } : {}),
+    },
   }
 }
 
@@ -34,12 +52,9 @@ export default async function StoriesPage({ searchParams }: Props) {
   const listing = publishedStories({ page: Number(page) || 1, tool, topic })
 
   const filterLabel = tool || topic
-  const filterQuery = tool
-    ? `tool=${encodeURIComponent(tool)}`
-    : topic
-      ? `topic=${encodeURIComponent(topic)}`
-      : ''
-  const pageHref = (n: number) => `/stories/?${filterQuery ? `${filterQuery}&` : ''}page=${n}`
+  // ページ送りは絞り込み条件を落とさない（tool と topic の両方を保持。
+  // 以前は片方を捨てていて、AND 絞り込みの 2 条件目が「次へ」で消えていた）
+  const pageHref = (n: number) => storiesListPath(tool, topic, n)
 
   return (
     <div className="page">

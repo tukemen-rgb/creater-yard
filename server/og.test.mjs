@@ -10,6 +10,8 @@ import {
   ogDescription,
   SITE_FEED,
   SITE_OG,
+  storiesFilterUrl,
+  storiesListPath,
   storyUrl,
   tagUrl,
 } from '../lib/og.ts'
@@ -106,4 +108,71 @@ test('SITE_OG は共有項目だけを持つ', () => {
   assert.equal(SITE_OG.siteName, 'CreatorYard')
   assert.equal(SITE_OG.locale, 'ja_JP')
   assert.ok(!('type' in SITE_OG))
+})
+
+test('タグで絞った一覧の canonical は 1 本に正規化する', () => {
+  withOrigin('https://creatoryard.io', () => {
+    // 絞り込みなしは一覧そのもの
+    assert.equal(storiesFilterUrl(), 'https://creatoryard.io/stories/')
+    assert.equal(storiesFilterUrl('', ''), 'https://creatoryard.io/stories/')
+
+    // 軸ごとに 1 本
+    assert.equal(storiesFilterUrl('Godot'), 'https://creatoryard.io/stories/?tool=godot')
+    assert.equal(storiesFilterUrl('', '影'), 'https://creatoryard.io/stories/?topic=%E5%BD%B1')
+
+    // 両方指定は AND 絞り込みなので両方を残し、順序を固定する
+    assert.equal(
+      storiesFilterUrl('Godot', '影'),
+      'https://creatoryard.io/stories/?tool=godot&topic=%E5%BD%B1',
+    )
+
+    // 1 ページ目は省略し、内容が異なる 2 ページ目以降は自己 canonical にする
+    assert.equal(storiesFilterUrl('Godot', '', '1'), 'https://creatoryard.io/stories/?tool=godot')
+    assert.equal(
+      storiesFilterUrl('Godot', '', '2'),
+      'https://creatoryard.io/stories/?tool=godot&page=2',
+    )
+
+    // 一覧の照合と同じく NFKC・小文字・前後空白除去で表記揺れを束ねる
+    assert.equal(storiesFilterUrl('  '), 'https://creatoryard.io/stories/')
+    assert.equal(storiesFilterUrl(' Ｇｏｄｏｔ '), 'https://creatoryard.io/stories/?tool=godot')
+
+    // 保存できない長さのタグには canonical を出さない（<head> を膨らませない）
+    assert.equal(storiesFilterUrl('あ'.repeat(25)), null)
+    assert.ok(storiesFilterUrl('あ'.repeat(24)))
+
+    // 山括弧やクォートは encode されて属性値を割らない
+    const injected = storiesFilterUrl('"><script>')
+    assert.ok(!injected.includes('<'))
+    assert.ok(!injected.includes('"'))
+  })
+
+  // origin 未設定なら canonical を作らない（仮 URL を出さない）
+  withOrigin(null, () => {
+    assert.equal(storiesFilterUrl('Godot'), null)
+    assert.equal(storiesFilterUrl(), null)
+  })
+})
+
+test('ページ送りのリンクは絞り込み条件を落とさない（gdp 2026-08-14 の指摘）', () => {
+  // 1. tool のみ
+  assert.equal(storiesListPath('Godot', '', 2), '/stories/?tool=Godot&page=2')
+  // 2. topic のみ
+  assert.equal(storiesListPath('', '影', 2), '/stories/?topic=%E5%BD%B1&page=2')
+  // 3. 両方 —— これが本題。以前は topic が消えていた
+  assert.equal(storiesListPath('Godot', '影', 2), '/stories/?tool=Godot&topic=%E5%BD%B1&page=2')
+  // 4. 予約文字・日本語が encode され、クエリの区切りを壊さない
+  const tricky = storiesListPath('a&b=c', "' onmouseover='x", 3)
+  assert.ok(!tricky.includes('&b=c&'), '値の & が区切りにならない')
+  assert.ok(!tricky.includes("'"), "シングルクォートも encode される")
+  assert.equal((tricky.match(/=/g) ?? []).length, 3, '= は 3 つ（tool/topic/page）だけ')
+  // 5. 前へ／次へで同じ条件が維持される（page だけが変わる）
+  const prev = storiesListPath('Godot', '影', 1)
+  const next = storiesListPath('Godot', '影', 3)
+  assert.equal(prev, '/stories/?tool=Godot&topic=%E5%BD%B1', '1 ページ目は page を省略')
+  assert.equal(next, '/stories/?tool=Godot&topic=%E5%BD%B1&page=3')
+  // 表記は利用者が打ったまま運ぶ（正規化は canonical の仕事。照合は一覧側がやる）
+  assert.ok(storiesListPath('GODOT', '', 2).includes('tool=GODOT'))
+  // 条件なしは素の一覧
+  assert.equal(storiesListPath('', '', 1), '/stories/')
 })
