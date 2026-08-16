@@ -10,9 +10,10 @@
     "lint": "eslint . && npm run typecheck && echo 'lint OK（ESLint + 型検査）'",
     "typecheck": "tsc --noEmit",
     "api": "node server/api.mjs",
-    "test:server": "node --test server/test.mjs server/og.test.mjs server/interview.test.mjs server/write-ui.test.mjs server/auth-ui.test.mjs server/report-ui.test.mjs",
+    "test:server": "node --test server/test.mjs server/og.test.mjs server/interview.test.mjs server/write-ui.test.mjs server/auth-ui.test.mjs server/report-ui.test.mjs server/tally.test.mjs",
     "verify": "node scripts/verify.mjs",
-    "seed": "node scripts/demo-seed.mjs"
+    "seed": "node scripts/demo-seed.mjs",
+    "tally": "node scripts/tally.mjs"
   },
   "dependencies": {
     "next": "15.5.22",

@@ -31,7 +31,13 @@ RestrictSUIDSGID=yes
 LockPersonality=yes
 # Story レコードを読むだけ。書き込みは API の仕事
 ReadOnlyPaths=/var/lib/creatoryard
-ReadWritePaths=/opt/creatoryard/.next/cache
+# server モードの成果物は .next-server（next.config.mjs の distDir）。
+# .next は static ビルドの置き場で、このプロセスは触らない。
+# ここを .next/cache のままにすると、ProtectSystem=strict の下で
+# 実行時のキャッシュ書き込みが静かに失敗する。
+# 起動前に .next-server/cache が存在し creatoryard の持ち物であること
+# （GO-LIVE.md §3 の chown）。
+ReadWritePaths=/opt/creatoryard/.next-server/cache
 # AF_NETLINK は next start が起動時にネットワーク一覧を取得する
 # （os.networkInterfaces）ために必要。無いと errno 97 で即落ちする
 # （GAMEYARD で実測）。

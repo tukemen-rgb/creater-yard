@@ -13,6 +13,7 @@ import {
   type Story,
   type StoryImage,
 } from '../../lib/api'
+import { SITE_FEED } from '../../lib/og'
 import { VoiceInput } from '../../components/voice-input'
 import { StoryInterview } from '../../components/story-interview'
 import {
@@ -51,6 +52,7 @@ function WriteInner() {
   const [gameUrl, setGameUrl] = useState('')
   const [status, setStatus] = useState<'public' | 'draft'>('public')
   const [image, setImage] = useState<StoryImage | null>(null)
+  const [imageAlt, setImageAlt] = useState('')
   const [imageWarnings, setImageWarnings] = useState<string[]>([])
   const [imageUploading, setImageUploading] = useState(false)
   const [error, setError] = useState('')
@@ -95,6 +97,7 @@ function WriteInner() {
         setGameUrl(story.gameUrl)
         setStatus(story.status)
         setImage(story.image)
+        setImageAlt(story.imageAlt ?? '')
         setOptionalFieldsOpen(Boolean(
           story.tools.length
           || story.toolTags.length
@@ -179,6 +182,7 @@ function WriteInner() {
       gameUrl,
       status: saveStatus,
       imageId: image?.id ?? null,
+      imageAlt: image ? imageAlt : '',
     }
     try {
       const data = editId
@@ -439,6 +443,7 @@ function WriteInner() {
                     className="linklike"
                     onClick={() => {
                       setImage(null)
+                      setImageAlt('')
                       setImageWarnings([])
                       setHasUnsavedChanges(true)
                     }}
@@ -451,6 +456,25 @@ function WriteInner() {
                 <span key={warning} className="notice">{warning}</span>
               ))}
             </div>
+            {/* 説明の欄は画像を選んだときだけ出す。画像が無い人に
+                「画像の説明」を見せても書きようがない（設計 I-5） */}
+            {image && (
+              <label className="form__field">
+                この画像には何が写っていますか（任意・読み上げに使われます）
+                <input
+                  value={imageAlt}
+                  maxLength={120}
+                  onChange={(e) => {
+                    setImageAlt(e.target.value)
+                    setHasUnsavedChanges(true)
+                  }}
+                  placeholder="例: 当たり判定のズレを赤い枠で示した画面"
+                />
+                <span className="form__hint">
+                  空のままでも保存できます（飾りの画像なら、それが正しい答えです）。
+                </span>
+              </label>
+            )}
             <label className="form__field">
               GAMEYARD の作品リンク（任意）
               <input
@@ -465,6 +489,20 @@ function WriteInner() {
             </label>
           </div>
         </details>
+        {/* 公開が何をするかを、押す前に全部言う（designs I-6）。
+          3 つの要素を必ず保つ:
+            (1) RSS に載ること（全体と作者別の 2 本あるが、文言では分けない）
+            (2) 下書きに戻せること —— これを落として (3) だけ書くと脅しになる
+            (3) 戻しても、RSS で配信済みのものには効かないこと
+              （RSS 2.0 には配信の取り消しを伝える口が無い。RFC 6721 参照）
+          RSS の口は CY_SITE_ORIGIN が無いと 503 を返す。本番は設定済み。
+          **将来 RSS を止めるなら、この文も一緒に直すこと**（文言が嘘になる）。 */}
+        <p className="notice">
+          公開すると <Link prefetch={false} href="/stories/">Story 一覧</Link>・あなたの個人ページ・
+          <a href={SITE_FEED}>RSS</a> に載ります。
+          あとで下書きに戻せますが、RSS で受け取った人の手元からは消えません。
+          下書きはあなたにしか見えません。
+        </p>
         <div className="form__actions">
           <button type="button" className="button" disabled={busy || imageUploading} onClick={() => save('public')}>
             公開する
@@ -479,10 +517,6 @@ function WriteInner() {
           )}
         </div>
       </form>
-      <p className="notice">
-        公開すると <Link prefetch={false} href="/stories/">Story 一覧</Link> とあなたの個人ページに載ります。
-        下書きはあなたにしか見えません。
-      </p>
     </div>
   )
 }

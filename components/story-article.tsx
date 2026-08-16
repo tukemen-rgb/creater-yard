@@ -36,7 +36,10 @@ export function StoryArticle({ story, nextStory }: { story: Story; nextStory?: S
           src={imageUrl(story.image)}
           width={story.image.width}
           height={story.image.height}
-          alt=""
+          // 本人が書いた説明があればそれを読み上げへ。無ければ `alt=""` の
+          // まま＝装飾扱い（事例 47 の判断木。説明を強制すると「画像1」の
+          // ような無意味な alt が増えるので、空も正しい答えとして許す）
+          alt={story.imageAlt || ''}
         />
       )}
       {story.hurdle && (

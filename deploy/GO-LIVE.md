@@ -63,7 +63,19 @@ mkdir -p /var/www/creatoryard
 rsync -a --delete out/ /var/www/creatoryard/static/
 
 # server モードのビルド（web プロセスが使う）
-SITE_MODE=server npm run build
+#
+# **`SITE_MODE=server npm run build` では駄目。**`npm run build` は
+# `scripts/build.mjs static` を呼び、build.mjs が**引数の static で
+# SITE_MODE を上書きする**ので、外から env を付けても static ビルドに
+# なる（2026-08-14 の本番設置で実際に踏んだ。.next-server ができず、
+# web プロセスが activating を繰り返した）。専用スクリプトを使う:
+npm run build:server
+
+# web プロセスが実行時に書く場所を、実行ユーザーの持ち物にする
+# （unit の ProtectSystem=strict は ReadWritePaths を開けるだけで、
+#  ファイルの所有者までは変えないため）
+mkdir -p .next-server/cache
+chown -R creatoryard:creatoryard .next-server/cache
 
 # systemd
 cp deploy/creatoryard-{api,web,backup,healthcheck}.service \
@@ -74,6 +86,13 @@ systemctl enable --now creatoryard-api creatoryard-web \
 ```
 
 ## 4. nginx と TLS
+
+**順番に意味がある: 証明書が先、設定の有効化が後。**
+`nginx.conf.example` は `/etc/letsencrypt/live/<ドメイン>/` の証明書を参照する
+ので、**取得前に有効化すると `nginx -t` が「証明書が無い」で落ちる**
+（2026-08-14 の本番設置で実際に踏んだ。設定を sites-enabled から外す →
+certbot → 戻す、で復旧した）。Cloudflare を使う場合は、**取得が終わるまで
+DNS only（灰色雲）**にしておく（HTTP-01 は 80 番へ直接届く必要がある）。
 
 ```sh
 certbot certonly --nginx -d creatoryard.example
@@ -89,9 +108,17 @@ nginx -t && systemctl reload nginx
 
 ```sh
 curl -s https://www.cloudflare.com/ips-v4
+curl -s https://www.cloudflare.com/ips-v6   # ← v6 も必ず取る
 # 出た範囲を deploy/nginx.conf.example の set_real_ip_from と突き合わせ、
 # 増えていたら足す。ファイル上部の「取得日」も更新する
 ```
+
+**v4 と v6 の両方を取り直すこと。**`listen 443` と `listen [::]:443` の
+両方で待ち受けているので、**片方だけ新しくすると、古いほうの脚で同じ穴が開く。**
+
+**origin に AAAA レコードを向けるなら、v6 の範囲が入っていることを先に確かめる。**
+入っていないまま AAAA を公開すると、**IPv6 で来た訪問者は全員 1 枠**になり、
+1 人がログインを失敗させるだけで**その脚の全員が締め出される。**
 
 **取り戻せているかの確認**（訪問者の IP になっているか）:
 
@@ -104,7 +131,9 @@ tail -n 5 /var/log/nginx/access.log
 
 ## 5. 公開後の確認（上から順に）
 
-- [ ] `https://<ドメイン>/` … トップが出る（静的）
+- [ ] `https://<ドメイン>/` … **実ブラウザで**見出しと「Story を読む」
+      「書き始める」が出る（HTML の取得だけでは初期化失敗を検出できない）
+- [ ] ブラウザの Console に CSP 違反や `Connection closed` が出ていない
 - [ ] `https://<ドメイン>/api/health` … `{"ok":true}`
 - [ ] 新規登録 → Story 公開 → `/story/<id>/` が **HTML に本文入り**で出る
 - [ ] 画像を付けて公開 → 表示される
@@ -120,14 +149,18 @@ tail -n 5 /var/log/nginx/access.log
 ポートは衝突しない（GAMEYARD: 8787/3000/8788、CreatorYard: 8798/3000）
 **…が web の 3000 だけ衝突する**。CreatorYard 側を 3001 にする:
 `creatoryard-web.service` の `-p 3000` を `-p 3001` に、nginx の
-upstream も合わせる。メモリは GAMEYARD の clamd ピーク（~1.9GB）に
+upstream も合わせる。**同居機でのビルドは
+`NODE_OPTIONS=--max-old-space-size=1024` を付ける**（Next のビルドは
+1〜2GB 使うことがあり、空きが少ないと OOM killer が同居中の GAMEYARD を
+先に殺しかねない。2026-08-14 の設置では上限付きで両ビルドとも完走した）。
+メモリは GAMEYARD の clamd ピーク（~1.9GB）に
 CreatorYard の 2 プロセス（~600MB）が乗るので、**4GB 機なら同居可、
 余裕を見るなら別 VPS**（社長の判断）。
 
 ## 7. 切り戻し
 
 - コードの問題: `git -C /opt/creatoryard checkout <前のタグ>` →
-  `npm ci` → 両ビルド → `systemctl restart creatoryard-api creatoryard-web`
+  `npm ci` → 両ビルド（`npm run build` と **`npm run build:server`**）→ `systemctl restart creatoryard-api creatoryard-web`
 - データの問題: `systemctl stop creatoryard-api` →
   `/var/backups/creatoryard/` の tar.gz を `/var/lib/creatoryard/` に展開 →
   起動。**manifest の件数と展開後の件数を必ず照合する**

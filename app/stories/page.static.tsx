@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { SITE_FEED } from '../../lib/og'
+import { SITE_FEED, storiesListPath } from '../../lib/og'
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
@@ -42,7 +42,7 @@ function StoriesInner() {
   }, [tool, topic, page, retryCount])
 
   const filterLabel = tool || topic
-  const filterQuery = tool ? `tool=${encodeURIComponent(tool)}` : topic ? `topic=${encodeURIComponent(topic)}` : ''
+  // ページ送りは絞り込み条件を落とさない（server 版と同じ規則。両方を保持）
 
   return (
     <div className="page">
@@ -91,7 +91,7 @@ function StoriesInner() {
       {listing && listing.totalPages > 1 && (
         <nav className="pager" aria-label="ページ送り">
           {listing.page > 1 && (
-            <Link prefetch={false} href={`/stories/?${filterQuery ? `${filterQuery}&` : ''}page=${listing.page - 1}`}>
+            <Link prefetch={false} href={storiesListPath(tool, topic, listing.page - 1)}>
               ← 前のページ
             </Link>
           )}
@@ -99,7 +99,7 @@ function StoriesInner() {
             {listing.page} / {listing.totalPages}
           </span>
           {listing.page < listing.totalPages && (
-            <Link prefetch={false} href={`/stories/?${filterQuery ? `${filterQuery}&` : ''}page=${listing.page + 1}`}>
+            <Link prefetch={false} href={storiesListPath(tool, topic, listing.page + 1)}>
               次のページ →
             </Link>
           )}
