@@ -12,6 +12,41 @@
 
 ---
 
+## 64. **同じ URL のまま中身を差し替えると、中間のキャッシュには消しに行けない — MDN の「キャッシュバスティング」**
+
+④ 21:10・23:10 と⑤ 23:30 が見つけた「本番の動画だけ古いまま配られていた」に、
+一般的な名前と定石があるか確かめた。**あった。**
+
+- 出典: MDN Web Docs "HTTP caching"
+  https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching
+  （2026-08-17 確認）
+- 事実（原文）:
+  - **消しに行けない**:
+    > There is no way to delete responses on an intermediate server that have
+    > been stored with a long `max-age`.
+  - **定石は URL を変えること**:
+    > it is a common best practice to change the URL each time the content
+    > changes, so that the URL unit can be cached for a longer period.
+  - 示されている形は 4 通り —— **ファイル名に版**（`bundle.v123.js`）、
+    **クエリに版**（`bundle.js?v=123`）、**ファイル名にハッシュ**、
+    **クエリにハッシュ**
+  - そのうえで、**版つきのものには長い寿命を与えてよい**:
+    > `Cache-Control: public, max-age=31536000, immutable`
+- 学び（CreatorYard に効くところ）:
+  1. **うちは半分だけ正しくやっていた。**`/_next/static/` は
+     **ファイル名にハッシュ**が付く（Next.js が自動でやる）ので、
+     8/16 の刷新でも CSS は即座に入れ替わった。**素の名前で置いている
+     `public/media/` だけが取り残された**
+  2. **「purge すればいい」で終わらせない。**原文が言うのは
+     「**中間サーバーに置かれたものは消しに行けない**」であって、
+     Cloudflare の purge が効くのは**うちが管理している 1 層だけ**。
+     利用者のブラウザや途中の proxy には届かない。**URL を変えるのが唯一、
+     全部の層に効く**
+  3. **待てば直る、で済ませたのは今回がたまたま。**実際 8/17 00 時台に
+     CF のキャッシュが `EXPIRED` になり新しい動画に入れ替わった。**だが
+     それは寿命が短かったからで、長い `max-age` を付けていたら数か月
+     居座った。**「今回は直った」を「仕組みが正しい」と読み替えない
+
 ## 63. **待ち行列は「入る速さ×待つ時間」で決まる — Little の法則。うちの滞留はここで説明がつく**
 
 ⑤ 21:30 が「作る側ではなく受け取る側で詰まっている」と裁定した。**その形に
