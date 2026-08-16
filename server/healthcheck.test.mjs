@@ -151,6 +151,34 @@ test('境界: 閾値に 1 時間足りなければ鳴らない', () => {
   })
 })
 
+// ④ 21:10 の指摘 2 と⑤ 21:30 の裁定。ここまでの試験は書庫を 1 本しか
+// 置いておらず、**試験が見ている状態が本番に一度も現れない**ものだった。
+// 本番は RETENTION_DAYS=14・KEEP_MIN=3 なので書庫は必ず 2 本以上あり、
+// 1 本の状態は初日の数分間しか存在しない。そのため「いちばん新しいものを
+// 選ぶ」というこの検査の心臓部が、変異で壊しても誰も気づかなかった。
+test('書庫が複数あるとき、いちばん新しいものを見る（本番の定常状態）', () => {
+  withBackupDir((dir) => {
+    putArchive(dir, 'creatoryard-20260814-000000Z.tar.gz', 50)
+    putArchive(dir, 'creatoryard-20260814-100000Z.tar.gz', 40)
+    putArchive(dir, 'creatoryard-20260816-000000Z.tar.gz', 2)
+    const out = run({ BACKUP_DIR: dir })
+    assert.deepEqual(backupProblems(out), [], '新しい書庫が在るのに鳴っている')
+    assert.match(out, /バックアップ: 2 時間前（creatoryard-20260816-000000Z\.tar\.gz）/)
+  })
+})
+
+test('書庫が複数あって全部古ければ、いちばん新しいものの経過時間で鳴る', () => {
+  withBackupDir((dir) => {
+    putArchive(dir, 'creatoryard-20260813-000000Z.tar.gz', 90)
+    putArchive(dir, 'creatoryard-20260814-000000Z.tar.gz', 50)
+    putArchive(dir, 'creatoryard-20260814-120000Z.tar.gz', 38)
+    const problems = backupProblems(run({ BACKUP_DIR: dir }))
+    assert.equal(problems.length, 1)
+    // 90 でも 50 でもなく 38。古いほうを掴んでいたらここで落ちる
+    assert.match(problems[0], /最後のバックアップから 38 時間/)
+  })
+})
+
 test('バックアップの検査は他の節を止めない（-e を足していないことの確認）', () => {
   withBackupDir((dir) => {
     putArchive(dir, 'creatoryard-20260816-000000Z.tar.gz', 0)
