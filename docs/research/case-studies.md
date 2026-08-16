@@ -12,6 +12,45 @@
 
 ---
 
+## 65. **`Content-Length` は「あるかもしれない」もの。比べるための道具は仕様に用意されているが、保証されているのは別のほう — RFC 9110**
+
+④ 03:10 が #21 に見つけた穴（`content-length` が返らない応答がある）に、
+**規範的な裏付けがあるか**を確かめた。**あった。しかも予想より強かった。**
+
+- 出典: RFC 9110 "HTTP Semantics"（IETF・2022 年 6 月。
+  https://www.rfc-editor.org/rfc/rfc9110.txt 2026-08-17 確認）
+- 事実（原文・§8.6 Content-Length）:
+  - **HEAD への応答では任意**:
+    > A server **MAY** send a Content-Length header field in a response to
+    > a HEAD request
+  - **一般の応答でも SHOULD どまり**:
+    > in the absence of Transfer-Encoding, an origin server **SHOULD** send
+    > a Content-Length header field when the content size is known prior to
+    > sending the complete header section
+  - **そもそも「比べる」用途は仕様にも書かれている**:
+    > Content-Length indicates the selected representation's current
+    > length, which can be used by recipients to estimate transfer time or
+    > **to compare with previously stored representations**
+  - **ただし転送時は「囲まれたデータの量」を指す**:
+    > When transferring a representation as content, Content-Length refers
+    > specifically to the amount of data enclosed
+- 事実（原文・§8.8.3 ETag）:
+  > An entity tag is an **opaque validator for differentiating between
+  > multiple representations of the same resource**
+- 学び:
+  1. **「比べる」という考え自体は正しかった。**RFC が用途として名指ししている。
+     **間違っていたのは「必ずある」と思ったこと**（`MAY` / `SHOULD`）
+  2. **圧縮されると値が変わるのも仕様どおり。**転送時の
+     `Content-Length` は**囲まれたデータの量**＝圧縮後の長さで、
+     手元の元サイズとは一致しない。**④の見立ては規範的に裏づけられた**
+  3. **「同じものか」を見る道具は ETag のほうである**（`opaque validator
+     for differentiating between multiple representations`）。ただし
+     **CDN が圧縮時に書き換えることがある**ので、**うちの経路で実際に
+     どうなるかは実測しないと言えない**（未確認）
+  4. **いちばんの学びは 3 状態にすること。**仕様が `MAY` と言っている以上、
+     **「一致」「不一致」の 2 つでは足りない。「比べられない」が要る。**
+     2 状態しか持たない検査は、**分からないことを悪いことにしてしまう**
+
 ## 64. **同じ URL のまま中身を差し替えると、中間のキャッシュには消しに行けない — MDN の「キャッシュバスティング」**
 
 ④ 21:10・23:10 と⑤ 23:30 が見つけた「本番の動画だけ古いまま配られていた」に、
