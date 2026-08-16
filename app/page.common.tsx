@@ -20,51 +20,69 @@ const hasHeroWebm = fs.existsSync(path.join(MEDIA_DIR, 'hero.webm'))
 
 export default function Home() {
   return (
-    <div className={hasHeroVideo ? 'hero hero--video' : 'hero'}>
-      {hasHeroVideo && (
-        <HeroVideo hasWebm={hasHeroWebm} />
-      )}
-      <div className="hero__content">
-        <h1>
-          <span className="hero__line">つくる過程に、</span>
-          <span className="hero__line">居場所を。</span>
-        </h1>
-        <p className="hero__lede">
-          CreatorYard は、ゲームを作る人のための場所です。完成した作品は{' '}
-          <a href="https://play-game-yard.com/">GAMEYARD</a>{' '}
-          へ。ここには、完成までの記録（Creator Story）が残ります。
-        </p>
-        <p className="hero__actions">
-          <Link prefetch={false} href="/stories/" className="button">
-            Story を読む
-          </Link>
-          <Link prefetch={false} href="/write/?mode=interview" className="button button--ghost">
-            書き始める
-          </Link>
-        </p>
-        <section className="plan">
-          <h2>いまできること</h2>
-          <ul>
-            <li>
-              <strong>Creator Story</strong> — 制作の記録を時系列で残す。
-              作りかけ・つまずき・工夫、ぜんぶ主役。下書き保存もできます。
-            </li>
-            <li>
-              <strong>つまずきタグ</strong> — ツール名とつまずきで
-              <Link prefetch={false} href="/tags/">記録が探せる</Link>。
-              あなたの遠回りが、誰かの近道になる。
-            </li>
-            <li>
-              <strong>使ったツールを隠さない</strong> — AI を含めて、
-              何で作ったかを普通に書ける場所です。
-            </li>
-          </ul>
-          <p className="plan__note">
-            順位表・称号・数字の競争は、ここにはありません（GAMEYARD と同じ
-            決まりです）。
+    <>
+      <div className={hasHeroVideo ? 'hero hero--video' : 'hero'}>
+        {hasHeroVideo && (
+          <HeroVideo hasWebm={hasHeroWebm} />
+        )}
+        <div className="hero__content">
+          <h1>
+            <span className="hero__line">つくる過程に、</span>
+            <span className="hero__line">居場所を。</span>
+          </h1>
+          <p className="hero__lede">
+            CreatorYard は、ゲームを作る人のための場所です。完成した作品は{' '}
+            <a href="https://play-game-yard.com/">GAMEYARD</a>{' '}
+            へ。ここには、完成までの記録（Creator Story）が残ります。
           </p>
-        </section>
+          <p className="hero__actions">
+            <Link prefetch={false} href="/stories/" className="button">
+              Story を読む
+            </Link>
+            <Link prefetch={false} href="/write/?mode=interview" className="button button--ghost">
+              書き始める
+            </Link>
+          </p>
+        </div>
       </div>
-    </div>
+
+      {/* 「いまできること」は動画の上ではなくページの地の上に置く。映像に
+          重ねた説明は、読むためではなく飾るために在るように見えてしまう。 */}
+      <section className="plan">
+        <h2 className="plan__title">いまできること</h2>
+        {/* 箇条書き＋強調＋ダッシュの並びは、どのサービスにもある「生成された
+            一覧」の形になっていた（社長指摘）。説明する言葉には見出しと本文の
+            役割があるので、dl で役割を分ける。装飾で差を出さず、字の大きさと
+            行間と 1 本の罫線で差を出す（デジタル庁デザインシステムの考え方）。 */}
+        <dl className="plan__list">
+          <div className="plan__item">
+            <dt>Creator Story</dt>
+            <dd>
+              制作の記録を時系列で残せます。作りかけ・つまずき・工夫、
+              ぜんぶ主役。下書きのまま置いておくこともできます。
+            </dd>
+          </div>
+          <div className="plan__item">
+            <dt>つまずきタグ</dt>
+            <dd>
+              ツール名とつまずきで{' '}
+              <Link prefetch={false} href="/tags/">記録が探せます</Link>。
+              あなたの遠回りが、誰かの近道になります。
+            </dd>
+          </div>
+          <div className="plan__item">
+            <dt>使ったツールを隠さない</dt>
+            <dd>
+              AI を含めて、何で作ったかを普通に書ける場所です。
+              隠さなくていいことが、ここの決まりです。
+            </dd>
+          </div>
+        </dl>
+        <p className="plan__note">
+          順位表・称号・数字の競争は、ここにはありません（GAMEYARD と同じ
+          決まりです）。
+        </p>
+      </section>
+    </>
   )
 }
