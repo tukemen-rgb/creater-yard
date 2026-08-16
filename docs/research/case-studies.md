@@ -12,6 +12,40 @@
 
 ---
 
+## 66. **「ユーザーは待っていても来ない。取りに行く」— Paul Graham "Do Things That Don't Scale"**
+
+**この 24 時間、ループは配備と監視ばかり直していた。**そのあいだ、
+**撤退条件の分母は動いていない。**本番の実データはいま
+**書き手 1 人・公開 Story 1 本**（④が本番で実測）。SPEC §4 の撤退条件は
+**公開から 30 日で書き手 10 人・Story 30 本**である。**足りないのは
+仕組みではなく人**という可能性を、外の言葉で確かめた。
+
+- 出典: Paul Graham "Do Things That Don't Scale"（2013 年 7 月。
+  https://paulgraham.com/ds.html 2026-08-17 確認）
+- 事実（原文）:
+  > **The most common unscalable thing founders have to do at the start is
+  > to recruit users manually.**
+  >
+  > You can't wait for users to come to you. You have to go out and get them.
+  - 具体例として、Stripe の「Collison installation」——
+    > When anyone agreed to try Stripe they'd say "Right then, give me your
+    > laptop" and set them up on the spot.
+  - Airbnb は
+    > going door to door in New York, recruiting new users and helping
+    > existing ones improve their listings.
+- 学び:
+  1. **「作れば来る」を前提にしていない。**うちはトップページも RSS も
+     タグも整えたが、**呼びに行っていない**。PG が言うのは
+     **順序の話**で、仕組みを作る前でも後でも、**手で 1 人ずつ**は要る
+  2. **1 人ずつでよい、というのが救い。**10 人は**手で届く数**である。
+     Stripe は目の前で設定させ、Airbnb は玄関を叩いた。**うちの
+     「招待」も同じ粒度**でよい
+  3. **既にある Story 1 本は、資産である。**「初めての投稿」が本番に在り、
+     RSS にも載っている。**空の場所に呼ぶのと、1 本ある場所に呼ぶのは違う**
+  4. **ただしこれは①が決めることではない。**誰を招くか・何と書いて招くかは
+     **社長の判断**（要判断リストの「招待文」）。①ができるのは
+     **招かれた人が最初に見るものを整えておくこと**まで
+
 ## 65. **`Content-Length` は「あるかもしれない」もの。比べるための道具は仕様に用意されているが、保証されているのは別のほう — RFC 9110**
 
 ④ 03:10 が #21 に見つけた穴（`content-length` が返らない応答がある）に、
