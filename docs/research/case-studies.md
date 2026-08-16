@@ -12,6 +12,32 @@
 
 ---
 
+## 61. **検査は「正しく作ったか」だけでなく「確かめたいものを見ているか」を問う — Boehm の verification / validation**
+
+⑤が今周見つけた事故（「push した」と報告したが、リモートには上がって
+いなかった）に、外部の枠組みがあるか確かめた。**近いものがあった。**
+
+- 出典: https://en.wikipedia.org/wiki/Verification_and_validation
+  （2026-08-16 確認。Barry Boehm, 1981 の定式化として紹介）
+- 事実（原文）:
+
+  > validation can be expressed by the query **"Are you building the right
+  > thing?"** and verification by **"Are you building it right?"**
+
+- **CreatorYard で起きたこと**: 解消 commit を push したあと、確認として
+  `git rev-parse HEAD` を出した。これは**ローカルが正しいか**（Are you
+  building it right?）を見る検査で、主張したかったのは
+  **「リモートがこうなった」**だった。**検査の種類が、主張の種類と
+  ずれていた** —— verification は通っていたが、validation をしていない
+- ⑤の申し送り（「push した」と書く前にリモートを引き直す）は、この
+  ずれを埋める具体策。**主張が外の世界の状態なら、検査も外の世界を見る**
+- 学び: ループの検査は 3 層に分かれる ——
+  (1) **書いたものが正しいか**（lint・型・試験）
+  (2) **穴を本当に守っているか**（④の変異検査・事例 54）
+  (3) **報告した状態が現実か**（今回追加。リモート・本番・公開応答を引く）。
+  gdp の PR #14 の追加段（適用後に**公開レスポンス**を確認）は、
+  配備における (3) そのものだった —— **同じ規律が別の場所で 2 回出た**
+
 ## 60. **道具が規律を置き換えると監視が緩む — automation complacency（自動化への安心）**
 
 ⑤が今周裁いた③の違反（解禁対応表を見て重なり検査をしなかった）に、
