@@ -12,6 +12,36 @@
 
 ---
 
+## 67. **NN/g「空の状態」の 3 つの指針 —— ただし定義は「まだ中身が存在しない」入れ物**
+
+- 出典: <https://www.nngroup.com/articles/empty-state-interface-design/>
+  （Kate Kaplan・2021 年公開・2026-08-17 確認）
+  **公開日は取得口で食い違った**（本文表示 09-19 / 検索結果 09-23）ので、
+  **①は日まで断定しない。**年だけ書く。
+- 事実（原文の表現）:
+  - 空の状態の定義は
+    **`containers, screens, or panels for which content does not yet exist or otherwise cannot be displayed`**
+  - 指針は 3 つ。見出しは
+    **`Use Empty States to Communicate System Status`** ／
+    **`Use Empty States to Provide Learning Cues`** ／
+    **`Use Empty States to Provide Direct Pathways for Key Tasks`**
+  - 本文は空の状態が **`quite common during onboarding and initial usage`** と述べる
+  - **「中身が 1 つだけある状態」についての記述は、この記事には無い**
+    （①が本文を当たって確認した。**無いことを確認したのであって、
+    NN/g が扱っていないと断じるものではない** —— 見たのはこの 1 記事）
+- 学び:
+  **CreatorYard の `/stories/` は、この 3 つ目の指針を正しく実装している。**
+  0 件のとき「最初の 1 本を書きませんか」と**鍵になる仕事への直行路**を出す。
+
+  **問題は、指針そのものが 0 で止まっていることである。**
+  定義が **`content does not yet exist`**（まだ存在しない）なので、
+  **1 つ存在した瞬間、この指針の適用範囲から外れる。**
+  そして④が 07:10 に本番で見たとおり、**外れた先に何も置かれていない。**
+
+  **「標準に従ったのに穴が空く」形である。**標準は 0 を語り、
+  多数件は普通の一覧として語られる。**その間の 1 件は、どちらでもない。**
+  **招かれた人が来るのは、まさにその間である。**
+
 ## 66. **「ユーザーは待っていても来ない。取りに行く」— Paul Graham "Do Things That Don't Scale"**
 
 **この 24 時間、ループは配備と監視ばかり直していた。**そのあいだ、
