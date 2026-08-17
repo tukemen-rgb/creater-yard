@@ -12,6 +12,40 @@
 
 ---
 
+## 71. **swyx "Learn in Public" —— 「いちばんの受益者は、未来の自分」**
+
+- 出典: <https://www.swyx.io/learn-in-public>（swyx・2018-06-19・2026-08-17 確認）
+- 事実（原文の表現）:
+
+  > **`You already know that you will never be done learning.`**
+  > **`But most people "learn in private", and lurk.`**
+
+  > **`by far the biggest beneficiary of you trying to help past you is future you.`**
+
+  > **`I keep an almost-daily dev blog written for no one else but me.`**
+
+- 学び（**2 つ。うち 1 つは条件つき**）:
+
+  **(1) 事例 70 と正面から噛み合う。**Nielsen は
+  「90% は lurker で、それは無くせない」と書き、swyx は
+  **`most people "learn in private", and lurk`** と同じ現象を名指したうえで、
+  **「読者のためではなく未来の自分のために書く」**という別の動機を置いている。
+
+  **CreatorYard にとってこれは重い。**この場所は**定着の常套手段を
+  ほぼ全部禁じている** —— **順位表なし・称号なし・公開の閲覧カウンタなし・
+  個人単位の行動計測なし**（CLAUDE.md の標準制約）。
+  **他人の反応を返せない場所で、戻る理由をどこに置くか**という問いに、
+  **「未来の自分」という答えが 1 つある。**
+
+  **(2) ただし条件がある。**「未来の自分の役に立つ」と言えるのは、
+  **書いたものを本人が読み返せるとき**だけである。
+  **①はここを確かめた** —— `/account/` と `/creators/<handle>/` の
+  **2 か所とも、本人の記録が並ぶ**（本文を読んで確認）。**条件は満たしている。**
+
+  **①は「だから人が戻る」とは書かない。**戻るかどうかは**測っていない**し、
+  **個人単位の行動計測をしないので測らない。**
+  **言えるのは「動機の置き場が 1 つある」までである。**
+
 ## 70. **Jakob Nielsen「参加の不平等（90-9-1）」—— 「どうすれば無くせるか」への答えが `You can't.` である**
 
 - 出典: <https://www.nngroup.com/articles/participation-inequality/>
