@@ -142,14 +142,28 @@ tail -n 5 /var/log/nginx/access.log
 - [ ] `/var/www/creatoryard/static/robots.txt` に Sitemap 行を足す:
       `Sitemap: https://<ドメイン>/sitemap-stories.xml`
 - [ ] Search Console にドメインを登録し sitemap を出す（タグ SEO の起点）
-- [ ] `deploy/backup.sh` を手で 1 回実行し、復元訓練 OK のログを見る
+- [x] `deploy/backup.sh` を手で 1 回実行し、復元訓練 OK のログを見る
+      （2026-08-17 実施。アカウント 1 / Story 1 / 画像 0・復元訓練 OK）
+
+**この手動実行は、timer を有効にする前に済ませること。**
+先に timer を有効にすると、最初の 1 本が取れるまでの間、死活確認が
+「バックアップの置き場がありません」で鳴る（**正しい鳴り方だが、
+手順の順番で避けられる**）。
 
 ## 6. GAMEYARD と同居させる場合
 
 ポートは衝突しない（GAMEYARD: 8787/3000/8788、CreatorYard: 8798/3000）
-**…が web の 3000 だけ衝突する**。CreatorYard 側を 3001 にする:
-`creatoryard-web.service` の `-p 3000` を `-p 3001` に、nginx の
-upstream も合わせる。**同居機でのビルドは
+**…が web の 3000 だけ衝突する**。CreatorYard 側を 3001 にする。
+**直す場所は 3 か所**で、**1 つでも忘れると静かに壊れる**:
+
+1. `creatoryard-web.service` の `-p 3000` を `-p 3001` に
+2. nginx の upstream も合わせる
+3. **`/etc/creatoryard/creatoryard.env` に `HEALTH_WEB=http://127.0.0.1:3001`**
+   —— これを忘れると、**死活確認は 3000（＝ GAMEYARD）を見て**
+   「web の応答に一覧の見出しがありません」と**鳴り続ける**。
+   2026-08-17 の本番で実際に起きた。**鳴りっぱなしの警報は、
+   警報が無いのと同じか、それより悪い**（誰も見なくなる）
+**同居機でのビルドは
 `NODE_OPTIONS=--max-old-space-size=1024` を付ける**（Next のビルドは
 1〜2GB 使うことがあり、空きが少ないと OOM killer が同居中の GAMEYARD を
 先に殺しかねない。2026-08-14 の設置では上限付きで両ビルドとも完走した）。
