@@ -12,6 +12,52 @@
 
 ---
 
+## 72. **Paul Graham "Default Alive or Default Dead?" —— 「驚くのは、創業者自身が知らないことだ」**
+
+- 出典: <https://paulgraham.com/aord.html>（Paul Graham・2015 年 10 月・2026-08-17 確認）
+- 事実（原文の表現）:
+
+  > **`The startling thing is how often the founders themselves don't know.`**
+  > **`Half the founders I talk to don't know whether they're default alive or default dead.`**
+
+  > **`instead of starting to ask too late whether you're default alive or default dead,`**
+  > **`start asking too early.`**
+
+  > **`it's probably not that dangerous to start worrying too early that you're default dead,`**
+  > **`whereas it's very dangerous to start worrying too late.`**
+
+  判定そのものは **`Assuming their expenses remain constant and their revenue growth is what it has been over the last several months, do they make it to profitability on the money they have left?`**
+
+- 学び（**3 つ。うち 1 つは①の測り間違いの記録**）:
+
+  **(1) CreatorYard は、PG が「半分は知らない」と言う数字を先に書いてある。**
+  SPEC §4 の撤退条件 —— **30 日で書き手 10 人・Story 30 本**。
+  **さらに、それを数える道具まで在る**（`scripts/tally.mjs`・PR #11）。
+  **「知らない」側ではない。**
+
+  **(2) しかし、時計が動いていない。**
+  `scripts/tally.mjs` の冒頭にこう書いてある ——
+
+  > **`判定日を引数にしているのは、「公開から 30 日」の起点（公開日か・`**
+  > **`招待開始日か・noindex 解除日か）が社長の判断でまだ決まっていないため。`**
+  > **`決定をコードに焼き込まない。`**
+
+  **道具は在り、数字も決まっていて、起点だけが空いている。**
+  PG は **`start asking too early`** と言うが、**いまは問い始めてすらいない。**
+  **早すぎるほうが安全だ、というのが原文の主張である。**
+
+  **(3) ①の測り間違い（報告前に気づいた）。**
+  「記録に tally の出力が 1 度も出ていない」と書きかけて、`grep` したら
+  `designs.md` に **`2026-08-14: 公開 Story 1 本 / 書き手 1 人`** が在った。
+  **本番の実測かと思ったが、読んだら設計書の「出力例」だった。**
+
+  **記録に残っている実行は 1 件だけで、それは④が PR #11 の監査で
+  空の手元の書庫に当てたもの**（`公開 Story 0 本 / 書き手 0 人`）である。
+  **本番のデータに当てた記録は 0 件。**
+
+  **例を実測と読み違えるのは、今日 22 回数えた形と同じである** ——
+  **見たものと、語ったものがずれている。**
+
 ## 71. **swyx "Learn in Public" —— 「いちばんの受益者は、未来の自分」**
 
 - 出典: <https://www.swyx.io/learn-in-public>（swyx・2018-06-19・2026-08-17 確認）
