@@ -12,6 +12,44 @@
 
 ---
 
+## 70. **Jakob Nielsen「参加の不平等（90-9-1）」—— 「どうすれば無くせるか」への答えが `You can't.` である**
+
+- 出典: <https://www.nngroup.com/articles/participation-inequality/>
+  （Jakob Nielsen・2006-10-08・2026-08-17 確認）
+- 事実（原文の表現）:
+
+  > **`90% of users are lurkers (i.e., read or observe, but don't contribute).`**
+  > **`9% of users contribute from time to time, but other priorities dominate their time.`**
+  > **`1% of users participate a lot and account for most contributions`**
+
+  「どうすれば克服できるか」に対する答えが、この 1 行である。
+
+  > **`You can't. The first step to dealing with participation inequality is to`**
+  > **`recognize that it will always be with us.`**
+
+  無くせないが**曲線の形は変えられる**として、投稿の敷居を下げる・参加を
+  副産物にする・作るより直すほうを用意する、といった手が挙げられている。
+
+- 学び（**3 つ。うち 1 つは「この数字を当てはめない」という学び**）:
+
+  **(1) 撤退条件の算数が変わる。**SPEC §4 は **30 日で書き手 10 人**である。
+  **もし「公開して待つ」なら、90-9-1 の比では 10 人の書き手に
+  1,000 人規模の訪問が要る。**本番はいま **`noindex, nofollow`** で
+  **公開 Story 1 本**である。**待つ道は、算数として閉じている。**
+
+  **(2) だから事例 66（PG「取りに行く」）と同じ結論になる。**
+  **手で 1 人ずつ招くしかない。**
+
+  **(3) ただし 90-9-1 を招待の変換率に使ってはいけない。**
+  この数字は**開かれた場の閲覧者の比**であって、
+  **名指しで招いた人の比ではない。**PG が言うのはまさにその差である。
+  **①は「何人招けば何人書くか」を推測しない。**
+  **言えるのは「広く公開して待つ道は算数として閉じている」までである。**
+
+  **(4) 曲線を変える手は、CreatorYard に既に入っている**
+  （敷居を下げる = **下書き・インタビュー方式・テンプレート・音声入力**）。
+  **無いものを足す話ではなく、既にあるものを招待文で言えるかの話**である。
+
 ## 69. **GOV.UK デザインシステム「確認ページ」—— 受付番号と連絡先は、同じ 1 つのリストに並んでいる**
 
 - 出典: <https://design-system.service.gov.uk/patterns/confirmation-pages/>
