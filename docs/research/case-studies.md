@@ -12,6 +12,49 @@
 
 ---
 
+## 69. **GOV.UK デザインシステム「確認ページ」—— 受付番号と連絡先は、同じ 1 つのリストに並んでいる**
+
+- 出典: <https://design-system.service.gov.uk/patterns/confirmation-pages/>
+  （GOV.UK Design System・2026-08-17 確認）
+- 事実（原文の表現）: `How it works` の節に、確認ページが含むべきものが
+  箇条書きで並ぶ。
+
+  | 原文 |
+  | --- |
+  | **`a reference number, if there is one`** |
+  | **`details of what happens next and when`** |
+  | **`contact details for the service`** |
+  | `links to information or services that users are likely to need next` |
+  | `a link to your feedback page` |
+  | `a way for users to save a record of the transaction, for example, as a PDF` |
+
+- 学び（**3 つ。うち 1 つは「まだ答えられない」という学び**）:
+
+  **(1) 受付番号と連絡先は、同じリストの隣同士である。**
+  CreatorYard の `/report/` の確認画面は
+  **`a reference number` を出しているが、`contact details for the service` が無い。**
+  **片方だけ実装した状態である。**そして④ 11:10 が見つけたとおり、
+  **画面は「お問い合わせの際はこの番号をお伝えください」と、
+  無い側を指している。**
+
+  **(2) 「いつ」も書かれていない。**
+  原文は **`details of what happens next and when`** である。
+  CreatorYard の画面は **what（運営が内容を確認し、必要な対応を判断します）**
+  は書いているが、**when が無い。**
+
+  **これは書けば済むものではない。**「3 日以内に見ます」と書けるかは
+  **運営体制の約束**で、**個人運営でそれを約束できるかは社長の判断**である。
+  **①は案を出さない。要判断として置くだけにする。**
+
+  **(3) 逆に、CreatorYard が既に満たしているものもある。**
+  `links to information or services that users are likely to need next` は、
+  **全ページの脚に「この場所の決まり・データの扱い・問題を通報する」が
+  出ている**ので満たしている（④が本番で確認済み）。
+
+  **なお `a link to your feedback page` と `save a record ... as a PDF` は、
+  行政サービスの前提であって、個人運営の Creator Story に
+  そのまま当てはめない**（事例 68 の 5 番と同じ形 —— **規範は文脈ごと読む**）。
+
 ## 68. **Stanford Web Credibility Guidelines —— 10 個のうち 2 個が、いま止まっている仕事を名指ししている**
 
 - 出典: <https://credibility.stanford.edu/guidelines>（Stanford Persuasive
