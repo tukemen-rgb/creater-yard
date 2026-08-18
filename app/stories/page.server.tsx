@@ -50,6 +50,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function StoriesPage({ searchParams }: Props) {
   const { tool = '', topic = '', page } = await searchParams
   const listing = publishedStories({ page: Number(page) || 1, tool, topic })
+  // I-9: 表示中のページに何人の書き手が並んでいるか。**分岐にだけ使い、
+  // 画面には出さない**（出せば公開カウンタになる）。StoryListing に項目を
+  // 足さないのは、static モードが API から stories 配列を受け取るからで、
+  // この 1 行なら両モードで同じように効く。
+  const authorsOnPage = new Set(listing.stories.map((s) => s.authorHandle)).size
 
   const filterLabel = tool || topic
   // ページ送りは絞り込み条件を落とさない（tool と topic の両方を保持。
@@ -79,10 +84,19 @@ export default async function StoriesPage({ searchParams }: Props) {
       ))}
       {/* 並びの説明は最初の Story カードより後ろに置く（経営判断 2026-08-10 22:00）。
           説明は消さない — 「閲覧数ランキングではありません」は文化の説明として要る。
-          Story が 0 件のときは説明する対象が無いので出さない。 */}
+          Story が 0 件のときは説明する対象が無いので出さない。
+
+          I-9: 前半（並べ方の説明）は、書き手が 2 人以上のページでだけ出す。
+          1 人しか並んでいないページで「同じ作者が続かないように」と言われても、
+          説明する対象が無い。**後半は条件に入れない** — 上の経営判断のとおり
+          文化の説明は常に出す。
+          <p> は 1 つのままにする（2 つに割ると .notice が連続して余白が変わる）。
+          static 版（page.static.tsx）も同じ形にすること。server/sort-notice.test.mjs
+          が 2 ファイルを回して確かめている。 */}
       {listing.stories.length > 0 && (
         <p className="notice">
-          新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
+          {authorsOnPage > 1 && '新しい記録を基準に、同じ作者が続かないように並べています。'}
+          閲覧数ランキングではありません。
         </p>
       )}
       {/* 全体 RSS への**見えるリンク**。head の autodiscovery だけで
