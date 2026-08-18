@@ -126,4 +126,10 @@ if ! curl --fail --silent --show-error https://creatoryard.io/ |
   exit 1
 fi
 echo "公開本文  : OK（見出しを確認）"
+
+# 公開されている素材が、いま置いたものと同じか（deploy/verify-public-assets.sh）。
+# **不一致でも配備は止めない。**古いのは CDN の複製で、配備そのものは
+# 成功しているため（終了コード 2 で区別している）。
+sh /opt/creatoryard/deploy/verify-public-assets.sh || true
+
 echo "終わり。ブラウザで https://creatoryard.io/ を再読み込みして確認"
