@@ -362,6 +362,18 @@ Playwright のメモは GAMEYARD 固有で、ここには当てはまらない�
 - コンテナが新しいと `node_modules` が無く、lint がグローバルの ESLint 10 で
   落ちる（`@eslint/eslintrc` が見つからない）。**先に `npm ci` を実行する**
   （2026-08-08 に③で実際に踏んだ）
+
+- **`npm run dev` を動かしたあと `npm run lint` が落ちる。**
+  `.next/types/validator.ts(156,39): error TS2307: Cannot find module
+  '../../app/layout.js'` と出るが、**変更とは無関係**である。dev サーバーが
+  `.next` に残した古い生成物を `tsc --noEmit` が読むためで、
+  **`npm run build` を 1 回通せば消える**（build が `.next` を作り直す）。
+
+  **2026-08-19 の夜に 2 回踏んだ**（U-1 と I-8 の実装中）。1 回目は
+  変更を `git stash` して lint が通ることを確かめ、無関係だと判定した。
+
+  > **画面を触った周は「build → lint」の順で走らせる。**逆だと、
+  > 自分の変更が壊したのかどうかを毎回 stash して確かめることになる。
 - ブラウザ確認は Playwright のグローバル版を使う（リポジトリに依存を足さない）。
   `/opt/node22/lib/node_modules/playwright` を作業ディレクトリ外の
   node_modules に symlink し、`chromium.launch({ executablePath:
