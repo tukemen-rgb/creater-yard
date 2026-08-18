@@ -10,7 +10,33 @@ export const metadata: Metadata = {
   description: 'CreatorYard が持つデータと、持たないと決めているデータ。',
 }
 
+/**
+ * 窓口のアドレス（I-7）。**ビルド時にサーバー側で読む。**
+ *
+ * 公開向けの接頭辞は要らない —— このページは両モードとも静的で、どんな方法で
+ * 渡しても HTML に焼かれる。接頭辞を付けると JS バンドルにも入るだけ損である
+ * （変えるには再ビルドが要る。アドレスの変更は稀で、再ビルドは配備手順に
+ * 元々含まれるので受け入れる）。
+ *
+ * **検査を通らなければ null を返し、呼び側は節ごと出さない。**
+ * 代わりの文言も置かない —— **置けば約束になり、無ければ約束にならない**
+ *（I-10 で消した「果たせない約束」と同じ考え方）。
+ *
+ * 検査は 2 段である。1 段目の形式検査は**空白を弾くだけ**で、`<` や `"` は
+ * 通ってしまう。だから 2 段目で記号を落とす。**1 段で足りると書いたら嘘になる。**
+ */
+function contactEmail(): string | null {
+  const raw = (process.env.CY_CONTACT_EMAIL ?? '').trim()
+  // 1 段目: メールの形。空白（改行・タブを含む）は通らない
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) return null
+  // 2 段目: HTML と mailto への差し込みに使える記号を落とす。
+  // `?` `&` は mailto のヘッダ差し込み（?cc=… や &subject=…）に使われる
+  if (/[<>"'?&]/.test(raw)) return null
+  return raw
+}
+
 export default function DataPolicyPage() {
+  const contact = contactEmail()
   return (
     <div className="page page--narrow">
       <h1>データの扱い</h1>
@@ -67,6 +93,22 @@ export default function DataPolicyPage() {
           本人に警告を出します。
         </p>
       </section>
+
+      {/* 窓口（I-7）。**未設定なら節ごと出ない。**代わりの文言も置かない。
+          応答期限は書かない —— それは運営体制の約束であって、いま守れると
+          確かめられていない。書けるのは「誰が見るか」だけである。
+          註: この試験は註釈もソースとして読むので、ここに禁じた語を
+          そのまま書くと赤くなる。今夜 3 回目である。 */}
+      {contact && (
+        <section className="tag-section">
+          <h2>困ったとき・自分の記録について聞きたいとき</h2>
+          <p>
+            ログインできない・記録を消したい・扱いを聞きたい ——{' '}
+            <a href={`mailto:${contact}`}>{contact}</a> へどうぞ
+            （GAMEYARD と共通の窓口です。返信は人が最終確認します）。
+          </p>
+        </section>
+      )}
     </div>
   )
 }
