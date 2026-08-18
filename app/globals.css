@@ -552,6 +552,22 @@ a:hover {
   max-width: 100%;
   overflow-wrap: anywhere;
 }
+/* 一覧のカードに出す画像（U-1）。
+   max-height は必須。STORY_LIMITS に画像の縦横の上限が無いので、縦に長い
+   スクリーンショット 1 枚が一覧をカード 1 枚で埋めてしまう。上限を新しく
+   厳しくするのではなく、表示側で抑える（検査・上限は緩めないが、勝手に
+   厳しくするのも設計の範囲外）。
+   **ここはソース検査で縛れていない。**消しても server/story-card.test.mjs
+   は緑のままなので、変えたら必ずブラウザで縦長の画像を見ること。 */
+.story-card__image {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-block: 12px;
+}
+
 .story-card__excerpt {
   margin-block: 0;
   color: var(--text-muted);
