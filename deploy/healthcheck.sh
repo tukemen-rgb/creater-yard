@@ -106,6 +106,88 @@ else
   fi
 fi
 
+# ---- 通報 ----
+# 受け皿（server/lib/reports.mjs）は完成しているが、**届いたことに気づく経路が
+# 無い**。あのファイル自身が「受け付けたまま増えていく一覧は、しばらくすると
+# 誰も見なくなる」と書いている。状態は、見に行った人にしか効かない。
+#
+# **バックアップとは既定が逆。0 件は正常**（誰も困っていない）。置き場が無い
+# のも、まだ 1 件も来ていないだけ。O-1 の結論をそのまま持ち込むと、開店初日
+# から鳴り続ける警報になる（鳴りっぱなしの警報は、無いのと同じ）。
+#
+# **出すのは数字だけ。**本文・対象・通報者・運営メモ・受付番号は出さない。
+# **種別も出さない** ——「著作権が 3 件」と出るだけでも、通報が集中している
+# Story を外から推測する材料になる。状態を知るには JSON を開くしかないので、
+# 「読まない」ではなく**「出さない」を保証する**（server/report-health.test.mjs
+# の集計保証が機械で縛っている）。
+REPORT_DIR="${REPORT_DIR:-${CY_DATA_DIR:-/var/lib/creatoryard/store}/reports}"
+REPORT_MAX_AGE_HOURS="${REPORT_MAX_AGE_HOURS:-24}"
+REPORT_CHECK="${REPORT_CHECK:-1}"
+if [ "$REPORT_CHECK" != "1" ]; then
+  note "通報: 確認しません（REPORT_CHECK=$REPORT_CHECK）"
+elif [ ! -d "$REPORT_DIR" ]; then
+  note "通報: 未対応 0 件（まだ 1 件も届いていません）"
+else
+  # 返すのは「未対応件数 最古の epoch 秒 読めなかった件数」の 3 語だけ。
+  # ここに通報の中身は 1 文字も通さない。
+  report_stat="$(python3 - "$REPORT_DIR" <<'PYREPORT'
+import datetime, json, os, sys
+
+d = sys.argv[1]
+open_n = 0
+oldest = 0
+broken = 0
+try:
+    names = os.listdir(d)
+except OSError:
+    names = []
+for name in names:
+    if not name.endswith('.json'):
+        continue
+    try:
+        with open(os.path.join(d, name), encoding='utf-8') as f:
+            record = json.load(f)
+        status = record['status']
+        created = record['createdAt']
+    except Exception:
+        broken += 1          # 壊れた 1 件も黙って捨てない
+        continue
+    if status != 'open':
+        continue
+    open_n += 1
+    try:
+        stamp = int(
+            datetime.datetime.fromisoformat(created.replace('Z', '+00:00')).timestamp()
+        )
+    except Exception:
+        broken += 1
+        continue
+    if oldest == 0 or stamp < oldest:
+        oldest = stamp
+print(open_n, oldest, broken)
+PYREPORT
+)" || report_stat=""
+  if [ -z "$report_stat" ]; then
+    fail "通報の集計に失敗しました（$REPORT_DIR）"
+  else
+    set -- $report_stat
+    open_n=$1
+    oldest=$2
+    broken=$3
+    [ "$broken" -gt 0 ] && fail "読めない通報が ${broken} 件あります（$REPORT_DIR）。中身を確かめること"
+    if [ "$open_n" -eq 0 ]; then
+      note "通報: 未対応 0 件"
+    else
+      report_age_h=$(( ( $(date +%s) - oldest ) / 3600 ))
+      if [ "$report_age_h" -ge "$REPORT_MAX_AGE_HOURS" ]; then
+        fail "未対応の通報が ${open_n} 件、いちばん古いもので ${report_age_h} 時間が経っています（閾値 ${REPORT_MAX_AGE_HOURS} 時間）"
+      else
+        note "通報: 未対応 ${open_n} 件（いちばん古いもので ${report_age_h} 時間前）"
+      fi
+    fi
+  fi
+fi
+
 # ---- 通知 ----
 if [ "${#problems[@]}" -gt 0 ]; then
   summary="CreatorYard healthcheck NG: ${problems[*]}"
