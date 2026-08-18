@@ -44,7 +44,10 @@ function StoriesInner() {
     }
   }, [tool, topic, page, retryCount])
 
-  const filterLabel = tool || topic
+  // I-8: 効いている条件を**全部**集める（server 版と同じ形）。以前は
+  // `tool || topic` で、?tool=godot&topic=影 のとき「godot」だけを
+  // 名乗っていた。空白だけの値は数えない。
+  const filterLabels = [tool, topic].filter((v) => v?.trim())
   // ページ送りは絞り込み条件を落とさない（server 版と同じ規則。両方を保持）
 
   return (
@@ -55,9 +58,10 @@ function StoriesInner() {
         {' '}
         <Link prefetch={false} href="/tags/">タグから探す</Link>
       </p>
-      {filterLabel && (
+      {filterLabels.length > 0 && (
         <p className="notice">
-          「{filterLabel}」で絞り込み中 — <Link prefetch={false} href="/stories/">解除する</Link>
+          {filterLabels.map((v) => `「${v}」`).join('')}で絞り込み中 —{' '}
+          <Link prefetch={false} href="/stories/">解除する</Link>
         </p>
       )}
       {error && (
