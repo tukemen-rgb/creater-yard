@@ -305,6 +305,36 @@ gdp は呼ばれたときだけ動く（社長が起動する）。動いたほ�
     見つけたのは③（実装中に赤くなって初めて気づいた）、
     追認したのは④。**この分担をそのまま規則にする。**
 
+22. **製品コードを読む・測るときは、必ず `origin/main` を見る。**
+    **この作業ブランチの製品コードは `main` と別実装である。**
+
+    ```
+    作業ブランチ: app/register/ ・ app/s/[id]/ ・ components/StoryList.tsx
+    origin/main : app/signup/  ・ app/story/[id]/ ・ components/story-card.tsx
+    ```
+
+    `components/story-card.tsx`・`lib/api.ts`・`app/report/page.common.tsx`・
+    `deploy/` は**この枝に存在しない**。逆に `docs/research/` の 4 ファイルと
+    `docs/autonomous-loop.md`・`docs/cycle-report.md` は**この枝にしか無い**。
+    **ループの記録は、9 日前の別実装と同居している。**
+
+    ```sh
+    git show origin/main:components/story-card.tsx   # 正しい読み方
+    grep -n ... components/story-card.tsx            # **間違い**（この枝を読む）
+    ```
+
+    **2026-08-17 07:10 に実際に起きた。**④が本番に無い `/register/` を
+    報告して 404 になり、そのとき「①④の思い込み」として片付けた。
+    **原因の取り違えだった** —— ④は作り話をしたのではなく、
+    **間違った側を読んでいた**（①が 2026-08-18 に発見、④が追認）。
+
+    **記録（`docs/research/*`）はこの枝へ push する。**製品の実装は
+    **`origin/main` から切った枝**で行い、PR にする。この 2 つを混ぜない。
+
+    **要判断（社長へ）**: **記録を `main` へ移すかどうか**は⑤が決めない。
+    分岐の取り込み方針そのものであり、社長の待ち項目である。
+    **移すまでの当面の守り方が、この規則 22 である。**
+
 ## 人が決めるまで変えない一覧（CreatorYard 固有・育てる）
 
 社長の言葉が無い限り、提案止まりにする。作業中に増えたらここへ追記する。
