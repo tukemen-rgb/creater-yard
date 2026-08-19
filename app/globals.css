@@ -202,7 +202,12 @@ a:hover {
   min-height: min(76vh, 660px);
   display: flex;
   align-items: flex-end;
-  /* JS 無効時と reduced-motion 時は静止画だけを見せる */
+  /* JS 無効時と reduced-motion 時は静止画だけを見せる。
+     ここだけは素材の版を付けない —— CSS はビルド時の値を差し込めないため。
+     付け忘れではなく、そもそも付けられない。差し替え直後に古い絵が
+     しばらく出るが、これは動きを止めている人と JS 無効の人に見える地の
+     絵なので壊れない。動く側（video の poster と source）には版が付く
+     （設計 O-4・app/hero-video.tsx）。 */
   background: url('/media/hero-poster.jpg') center / cover no-repeat;
 }
 .hero__video {
