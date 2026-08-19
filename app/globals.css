@@ -914,6 +914,13 @@ a:hover {
 .voice-input__button {
   min-height: 44px;
 }
+/* 音声の行き先の一言（U-11）。押す前に読めるよう、ボタンの下に置く。 */
+.voice-input__note {
+  display: block;
+  margin-block-start: 4px;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
 .voice-input__status {
   color: var(--text-muted);
   font-size: 0.85rem;

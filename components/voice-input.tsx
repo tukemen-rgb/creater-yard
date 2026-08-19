@@ -37,6 +37,25 @@ function recognitionConstructor() {
   return voiceWindow.SpeechRecognition ?? voiceWindow.webkitSpeechRecognition
 }
 
+/**
+ * 音声の行き先。**この 1 文が、音声入力を置いた場所すべてに付いて回る**
+ * （設計 U-11）。
+ *
+ * ①が 2026-08-20 に数えたら、**ヒアリングの面だけが説明していて、
+ * 書く面の同じボタン 2 つには何も書いていなかった。**同じ機能なのに
+ * 片方の面でしか言っていない、という形（U-5・U-6 と同じ）。
+ *
+ * 事実の出典: MDN `SpeechRecognition`（事例 77）——
+ * `On some browsers, like Chrome, using Speech Recognition on a web page`
+ * `involves a server-based recognition engine. Your audio is sent to a web`
+ * `service for recognition processing, so it won't work offline.`
+ *
+ * **CreatorYard は音声を受け取らない。**それでも、**書き手から見れば
+ * 声が外へ出るかどうかが問題**なので、押す前に言う。
+ */
+export const VOICE_NOTE =
+  '音声はブラウザの音声認識に渡します。ブラウザによっては、提供者のサーバーへ送られます。'
+
 function errorMessage(error: string) {
   if (error === 'not-allowed' || error === 'service-not-allowed') {
     return 'マイクの使用が許可されていません。ブラウザの設定を確認してください。'
@@ -132,6 +151,7 @@ export function VoiceInput({
         {listening ? '音声入力を止める' : '音声で入力'}
       </button>
       {message && <span className="voice-input__status" role="status">{message}</span>}
+      <span className="voice-input__note">{VOICE_NOTE}</span>
     </span>
   )
 }
