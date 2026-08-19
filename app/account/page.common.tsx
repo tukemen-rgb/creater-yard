@@ -136,7 +136,24 @@ export default function AccountPage() {
       {drafts.length > 0 && (
         <section>
           <h2>下書き（あなたにだけ見えています）</h2>
-          {drafts.map((story) => <StoryCard key={story.id} story={story} showAuthor={false} />)}
+          {/* 下書きは読み物ではなく、書きかけである（設計 A-4）。
+              カードの題名はプレビューへ行くので、そのままでは続きを書くのに
+              「題名 → プレビュー → 編集する」の 2 手かかっていた。
+              書く側へ 1 手で戻る道を、ここに置く。
+
+              **StoryCard には足さない。**あの部品は公開の一覧でも使われて
+              いるので、足すと他人の記録の下にも出る（I-11 で StoryArticle に
+              足しかけたのと同じ形）。 */}
+          {drafts.map((story) => (
+            <div key={story.id} className="account__draft">
+              <StoryCard story={story} showAuthor={false} />
+              <p className="account__draft-actions">
+                <Link prefetch={false} href={`/write/?id=${story.id}`}>
+                  続きを書く
+                </Link>
+              </p>
+            </div>
+          ))}
         </section>
       )}
 
