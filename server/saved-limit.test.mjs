@@ -65,7 +65,11 @@ test('上限を超えて保存すると、いちばん古い 1 本が落ちる�
   const oldest = savedStoryIds().at(-1)
   const fresh = idAt(MAX_SAVED_STORIES)
 
-  assert.equal(toggleSavedStory(fresh), true, '新しい 1 本が保存されていない')
+  // U-15 で返り値が `{ saved, kept }` になった（**残せたか**を呼んだ側が
+  // 受け取るため）。ここが見たいのは「押したあとの状態」なので `saved` を見る。
+  const pressed = toggleSavedStory(fresh)
+  assert.equal(pressed.saved, true, '新しい 1 本が保存されていない')
+  assert.equal(pressed.kept, true, '端末に残せていない')
   const after = savedStoryIds()
   assert.equal(after.length, MAX_SAVED_STORIES, '上限を超えて持ってしまっている')
   assert.equal(after[0], fresh, '新しい 1 本が先頭に来ていない')
