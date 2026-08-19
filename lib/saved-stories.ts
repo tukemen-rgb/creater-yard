@@ -1,33 +1,32 @@
+import { MAX_SAVED_STORIES, readValue, writeValue } from './device-storage.ts'
+
+export { MAX_SAVED_STORIES }
+
 const SAVED_STORIES_KEY = 'cy-saved-story-ids'
 const STORY_ID_RE = /^[A-Za-z0-9_-]{8}$/
 
-/**
- * 端末に持つ上限。**緩めるのは人の判断**（CLAUDE.md の「人が決めるまで
- * 変えない一覧」）。ここを **export しているのは、画面に出す文言と
- * 試験がこの値を写さずに済ませるため**（PR #50・#51 と同じ形）。
- */
-export const MAX_SAVED_STORIES = 50
 
 /**
  * 保存情報はこのブラウザだけに置き、APIへ送らない。
  * Story ID以外を持たないため、本文・作者・閲覧履歴の複製にもならない。
  */
 export function savedStoryIds(): string[] {
-  if (typeof window === 'undefined') return []
   try {
-    const value: unknown = JSON.parse(window.localStorage.getItem(SAVED_STORIES_KEY) ?? '[]')
+    const value: unknown = JSON.parse(readValue(SAVED_STORIES_KEY) ?? '[]')
     if (!Array.isArray(value)) return []
     return [...new Set(value.filter((id): id is string => typeof id === 'string' && STORY_ID_RE.test(id)))]
       .slice(0, MAX_SAVED_STORIES)
   } catch {
+    // ここの try は **JSON.parse 用**。端末の保存領域そのものは
+    // readValue が囲っている（lib/device-storage.ts）
     return []
   }
 }
 
-export function saveStoryIds(ids: string[]) {
-  if (typeof window === 'undefined') return
+/** 保存できたら true（端末が保存を拒否していれば偽）。 */
+export function saveStoryIds(ids: string[]): boolean {
   const clean = [...new Set(ids.filter((id) => STORY_ID_RE.test(id)))].slice(0, MAX_SAVED_STORIES)
-  window.localStorage.setItem(SAVED_STORIES_KEY, JSON.stringify(clean))
+  return writeValue(SAVED_STORIES_KEY, JSON.stringify(clean))
 }
 
 /**
