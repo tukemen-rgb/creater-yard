@@ -649,6 +649,27 @@ a:hover {
   overflow-wrap: anywhere;
 }
 
+/* 根拠リンクの一覧。本文の続きではなく「添えたもの」なので、
+   小さく・字を落として置く（設計 A-5・2026-08-19 に CSS が無いのを見つけた）。 */
+.story__sources {
+  margin-block: 24px;
+  padding-inline-start: 1.2em;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+.story__sources li {
+  margin-block: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* 公開したあと、本人にだけ出る「その後を書く」（I-11）。
+   すぐ上の保存・共有の枠と並ぶので、同じだけの間を空けて浮かせる。
+   **枠にはしない** —— 枠が 3 つ続くと、どれも同じ重さに見えて主役が沈む。 */
+.story__next {
+  margin-block: 24px;
+  font-size: 0.95rem;
+}
+
 .pager {
   display: flex;
   align-items: center;
