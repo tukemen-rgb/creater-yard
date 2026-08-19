@@ -14,6 +14,75 @@
 
 ---
 
+## 2026-08-20 18:10 **U-15: 「保存できたか」を返すようにしたのに、受け取っていない場所が 3 つある**
+
+- 状態: **未設計**（②へ流す。**標準制約に触れない**＝要判断ではない）
+- 観点: **書き手の体験**（招かれた人の 4 つの答えが、黙って消えうる）
+- **これは自分が今日入れた U-13 の穴である。**入れた側が数え直して見つけた
+
+### まず、通り道を測った（U-14 を入れた直後なので）
+
+**匿名の人が Story の面から「あなたの記録も、ここに残せます」を押すと何が起きるか。**
+`origin/main` を読んだ結果、**設計はできていた**:
+
+1. `/write/?mode=interview` は**ログインを求めない**
+   （`if (!getHandle() && !startsWithInterview) router.replace('/login/')` の
+   `startsWithInterview` がそこを外している）
+2. 4 つの問いに答える
+3. `finishInterview()` が **`saveInterviewDraft(draft)` してから `/signup/` へ送る**
+4. 登録が済むと `hasInterviewDraft()` を見て `/write/?restore=interview` へ戻す
+
+**「書いてから名乗る」順になっている。**ここは良い。
+
+### 見つけた穴
+
+**U-13 で `saveInterviewDraft` は「保存できたか」を返すようにした。
+ところが `finishInterview` はそれを見ていない。**
+
+```
+app/write/page.common.tsx:222      saveInterviewDraft(draft)
+```
+
+**端末が保存を拒否している人は、4 つ答えたあと、答えを失ったまま登録画面へ送られる。**
+**画面は何も言わない。**
+
+> **`When users know the current system status, they learn the outcome of their
+> prior interactions and determine next steps.`** —— NN/g #1（事例 86）
+
+**しかも登録画面では U-13 の一言が出る**（「この端末には保存できない設定です」）。
+**答えが消えたことは言わないのに、保存できないことだけ言う。**順序が逆である。
+
+### 受け取っていない場所は、全部で 3 つ（**重い順**）
+
+| | 呼び出し | 失うもの | 重さ |
+| --- | --- | --- | --- |
+| 1 | `app/write/page.common.tsx:222` `saveInterviewDraft` | **書いた 4 つの答え** | **重い** |
+| 2 | `lib/saved-stories.ts:55` `toggleSavedStory` → `saveStoryIds` | 「あとで読む」に入れたつもりの 1 本 | 中 |
+| 3 | `app/saved/page.common.tsx:45` `saveStoryIds`（読めない分の掃除） | 掃除が次回に持ち越されるだけ | **軽い** |
+
+**`components/story-interview.tsx:45` の `saveInterviewProgress` は数に入れない** ——
+あれは**意図して見ていない**（保存できなくてもヒアリングは進み、
+続きから再開できないだけ。U-13 の設計にそう書いた）。
+
+### 何を（②への入力。**決めるのは②**）
+
+- **1 は必ず直す。**保存できなかったら**登録へ送らない**か、
+  **送る前に「この端末には残せないので、いま登録するとやり直しになります」と言う**
+- 2 は押した見た目を戻す（`components/save-story.tsx` の既存の文言に合わせる）
+- 3 は**直さない**でもよい（**直さないと決めたなら、そう書く**）
+
+### 期待効果
+
+**招かれた人が最初に書いた 4 行を失わない。**U-14 で道を作った直後なので、
+**その道の先で落とし穴に落ちる形**をここで塞ぐ。
+
+### 根拠の事例
+
+case-studies.md の **86**（NN/g #1・Visibility of System Status）。
+**85**（information scent）とひと続きで、**道を見せた先で失わせない**という話である。
+
+---
+
 ## 2026-08-20 16:50 **開いて見える差が 4 枚になった —— `/tags/` は本番で完全な行き止まり**
 
 - 状態: **測っただけ**（`main` で直っている。**作るものは無い**）

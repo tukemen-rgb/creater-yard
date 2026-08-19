@@ -12,6 +12,28 @@
 
 ---
 
+## 86. **NN/g —— 「いま何が起きたか」を伝えないと、信用が積み上がらない**
+
+- 出典: <https://www.nngroup.com/articles/ten-usability-heuristics/>
+  （Nielsen Norman Group「10 Usability Heuristics」#1 Visibility of System Status／
+  **2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`The design should always keep users informed about what is going on, through appropriate feedback within a reasonable amount of time.`**
+  >
+  > **`When users know the current system status, they learn the outcome of their prior interactions and determine next steps. Predictable interactions create trust in the product as well as the brand.`**
+
+- 学び: 2026-08-20 に U-13 で「**保存できたかを返す**」形に変えた。
+  返すようにしただけでは足りない —— **受け取らなければ、黙って捨てるのと同じ**である。
+  実際に数えたら、**受け取っていない呼び出しが 3 か所**残っていた（下の提案 U-15）。
+  いちばん効くのは**ヒアリングを終えた匿名の人の 4 つの答え**で、
+  **保存できなくても画面は何も言わずに登録へ送る。**
+
+  この事例が言う「`the outcome of their prior interactions`」は、
+  **この製品では「書いたものが残ったかどうか」**にあたる。
+
+---
+
 ## 85. **NN/g —— 手がかりが弱い面から、人は「次」へ行かずに去る**
 
 - 出典: <https://www.nngroup.com/articles/information-scent/>
