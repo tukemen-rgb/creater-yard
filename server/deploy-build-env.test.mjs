@@ -131,6 +131,10 @@ test('ビルドのあとで、設定が届いたかを出来上がったもの�
 
 test('届いていなければ、配置する前に止まる', () => {
   const check = apply.indexOf(`grep -q 'rel="canonical"'`)
+  // **確認そのものが無いときに緑にしない。**`indexOf(x, -1)` は先頭から
+  // 探すので、この一行が無いと**手順書のいちばん上の `exit 1`** を拾って
+  // 通ってしまう（直す前の手順書に当てて、実際にそうなった）。
+  assert.notEqual(check, -1, '届いたかの確認そのものが無い')
   const stop = apply.indexOf('exit 1', check)
   assert.notEqual(stop, -1, '届いていなくても続けている（黙って設定の抜けた版を配る）')
   assert.ok(stop < apply.indexOf('rsync'), '止まるのが配置より後になっている')
