@@ -39,19 +39,19 @@ export default function SavedStoriesPage() {
 
   return (
     <div className="page">
-      <h1>保存したStory</h1>
+      <h1>保存した Story</h1>
       <p className="page__lede">
-        この端末のブラウザに保存したStoryです。保存情報はCreatorYardへ送信しません。
+        この端末のブラウザに保存した Story です。保存情報は CreatorYard へ送信しません。
       </p>
       {!ready && <p className="notice">読み込み中…</p>}
       {ready && !failed && stories.length === 0 && (
         <p className="notice">
-          保存したStoryはありません。<Link prefetch={false} href="/stories/">Storyを読む</Link>
+          保存した Story はありません。<Link prefetch={false} href="/stories/">Story を読む</Link>
         </p>
       )}
       {failed && (
         <div className="notice notice--error" role="alert">
-          一部のStoryを読み込めませんでした。保存は消さずに残しています。{' '}
+          一部の Story を読み込めませんでした。保存は消さずに残しています。{' '}
           <button type="button" className="button button--ghost" onClick={() => window.location.reload()}>
             もう一度読み込む
           </button>

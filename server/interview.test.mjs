@@ -41,10 +41,13 @@ test('同じ質問の進行処理を重複実行しない', () => {
   assert.match(source, /advanceLockRef\.current = false\s+}, \[step\]\)/)
 })
 
-test('固定質問のヒアリングをAI処理と誤表示しない', () => {
+// 文言そのものが守っているもの（AI が書いたと誤解させない）なので、
+// 型は文言に添わせる。2026-08-19 に日本語と Latin 語の間へ空白を入れて
+// 揃えたときに赤くなった —— **意味のある赤だったので、型のほうを直した。**
+test('固定質問のヒアリングを AI 処理と誤表示しない', () => {
   const source = readFileSync(new URL('../components/story-interview.tsx', import.meta.url), 'utf8')
-  assert.match(source, />Storyヒアリング</)
-  assert.match(source, /CreatorYard独自のAI\/APIへ回答を送信しません/)
+  assert.match(source, />Story ヒアリング</)
+  assert.match(source, /CreatorYard 独自の AI\/API へ回答を送信しません/)
   assert.match(source, /ブラウザ提供者側で処理される場合があります/)
-  assert.doesNotMatch(source, />AIヒアリング</)
+  assert.doesNotMatch(source, />AI ?ヒアリング</)
 })
