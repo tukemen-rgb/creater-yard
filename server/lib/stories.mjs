@@ -201,14 +201,14 @@ function normalizeSources(value) {
   if (value == null) return undefined
   if (!Array.isArray(value)) throw new StoryError('根拠リンクの形式が不正です。')
   if (value.length > STORY_LIMITS.sources) {
-    throw new StoryError(`根拠リンクは${STORY_LIMITS.sources}件までにしてください。`)
+    throw new StoryError(`根拠リンクは ${STORY_LIMITS.sources} 件までにしてください。`)
   }
   const out = []
   for (const item of value) {
     const raw = String(item?.url ?? '').trim()
     if (!raw) continue
     if (raw.length > STORY_LIMITS.sourceUrlMax) {
-      throw new StoryError(`根拠リンクの URL は${STORY_LIMITS.sourceUrlMax}文字以内にしてください。`)
+      throw new StoryError(`根拠リンクの URL は ${STORY_LIMITS.sourceUrlMax} 文字以内にしてください。`)
     }
     let url
     try {
@@ -239,7 +239,7 @@ function normalizeGameUrl(value) {
   const raw = String(value ?? '').trim()
   if (!raw) return ''
   if (raw.length > STORY_LIMITS.gameUrlMax) {
-    throw new StoryError(`作品リンクは${STORY_LIMITS.gameUrlMax}文字以内にしてください。`)
+    throw new StoryError(`作品リンクは ${STORY_LIMITS.gameUrlMax} 文字以内にしてください。`)
   }
   let url
   try {
@@ -319,7 +319,7 @@ export class StoryStore {
     const body = cleanText(input.body, STORY_LIMITS.bodyMax)
     if (status === 'public' && body.length < STORY_LIMITS.bodyMinPublic) {
       throw new StoryError(
-        `公開する本文は${STORY_LIMITS.bodyMinPublic}文字以上にしてください（下書き保存なら短くても構いません）。`,
+        `公開する本文は ${STORY_LIMITS.bodyMinPublic} 文字以上にしてください（下書き保存なら短くても構いません）。`,
       )
     }
     return {
