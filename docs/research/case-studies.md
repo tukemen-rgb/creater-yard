@@ -12,6 +12,73 @@
 
 ---
 
+## 76. **NN/g の 10 ヒューリスティクス #3・#5 —— 「取り消せること」と「起こる前に止めること」**
+
+- 出典: <https://www.nngroup.com/articles/ten-usability-heuristics/>
+  （Nielsen Norman Group／**2026-08-19 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  #3 User Control and Freedom
+
+  > **`Users often perform actions by mistake. They need a clearly marked`**
+  > **`"emergency exit" to leave the unwanted action without having to go`**
+  > **`through an extended process.`**
+
+  同項の助言に `Support Undo and Redo` が挙がっている。
+
+  #5 Error Prevention
+
+  > **`Good error messages are important, but the best designs carefully prevent`**
+  > **`problems from occurring in the first place. Either eliminate error-prone`**
+  > **`conditions, or check for them and present users with a confirmation option`**
+  > **`before they commit to the action.`**
+
+  助言に `Prioritize your effort: Prevent high-cost errors first` と
+  `Prevent mistakes by removing memory burdens, supporting undo, and warning your users`。
+
+- 学び: CreatorYard の「あとで読む」は、**51 本目を押した瞬間に 1 本目が消える**
+  （2026-08-19 に①が実物で確認）。押した人には**取り消す手段も、起きたという
+  知らせも無い**。#5 の言う `warning your users` が 1 行も無い状態で、
+  #3 の言う `emergency exit` も無い。**上限そのものを動かす必要は無い** ——
+  起きることを先に言えば、#5 の `present users with a confirmation option`
+  に届く。
+
+---
+
+## 75. **WCAG 2.2 SC 3.3.4 —— 「消える操作」は、戻せるか・確かめられるか・確認できるかのどれかであること**
+
+- 出典: <https://www.w3.org/WAI/WCAG22/Understanding/error-prevention-legal-financial-data.html>
+  （W3C Web Accessibility Initiative／**2026-08-19 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`For web pages that cause legal commitments or financial transactions for`**
+  > **`the user to occur, that modify or delete user-controllable data in data`**
+  > **`storage systems, or that submit user test responses, at least one of the`**
+  > **`following is true:`**
+  >
+  > **`Reversible - Submissions are reversible.`**
+  > **`Checked - Data entered by the user is checked for input errors and the`**
+  > **`user is provided an opportunity to correct them.`**
+  > **`Confirmed - A mechanism is available for reviewing, confirming, and`**
+  > **`correcting information before finalizing the submission.`**
+
+  「user-controllable data」について:
+
+  > **`When referring to modification or deletion of "user controllable" data,`**
+  > **`the intent is to prevent mass loss of data such as deleting a file or record.`**
+
+- **正直に書く**: この基準が名指ししているのは**サーバー側のデータ保管**での
+  削除であり、CreatorYard の「保存した Story」は**端末のブラウザの中だけ**に
+  ある（`lib/saved-stories.ts`。ID しか持たず、サーバーへ送らない）。
+  **そのまま当てはまるとは言わない。**
+- 学び: それでも「本人が作った並びが、本人の知らないうちに削られる」形は
+  同じで、この基準が示す**3 つの逃げ道（戻せる／確かめる／確認する）**は
+  そのまま道具として使える。うちの「あとで読む」は**3 つのどれも無い。**
+  いちばん軽い `Confirmed`（押す前に「いっぱいです」と言う）だけでも、
+  この形から外れる。
+
+---
+
 ## 74. **NN/g「Visibility of System Status」—— 情報が無いことは、制御が無いことと同じ**
 
 - 出典: <https://www.nngroup.com/articles/visibility-system-status/>
