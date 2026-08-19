@@ -108,6 +108,20 @@ export const DEVICE_STORAGE_SHARED_DEVICE =
  * **直に触るのはこのファイルだけ**にして、`server/device-storage.test.mjs` が
  * それを縛る。
  */
+/**
+ * **端末へ残せたか。**
+ *
+ * この型を返す関数は、**呼び出し元が必ず受け取る**
+ * （`server/device-storage.test.mjs` が縛る）。
+ * `boolean` の別名にしているのは**印を付けるため**であって、
+ * 型として強くするためではない —— 強くすると既存の呼び出しが壊れ、
+ * **直すために型を外す**という逆向きの力が働く。
+ *
+ * **名前の一覧を試験に書かない**ための仕掛けでもある。一覧は足し忘れると
+ * その関数が最初から網の外になる（`cy-` の鍵 3 つで実際に踏んだ）。
+ */
+export type Kept = boolean
+
 export function readValue(key: string): string | null {
   if (typeof window === 'undefined') return null
   try {
@@ -123,7 +137,7 @@ export function readValue(key: string): string | null {
  * `catch` で黙って捨てると「**保存したつもりで保存されていない**」が生まれる。
  * 呼び出し側が知れるようにしておき、**言うかどうかはその画面が決める**。
  */
-export function writeValue(key: string, value: string): boolean {
+export function writeValue(key: string, value: string): Kept {
   if (typeof window === 'undefined') return false
   try {
     window.localStorage.setItem(key, value)

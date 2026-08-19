@@ -1,4 +1,4 @@
-import { readValue, removeValue, writeValue } from './device-storage.ts'
+import { readValue, removeValue, writeValue, type Kept } from './device-storage.ts'
 
 export const INTERVIEW_DRAFT_KEY = 'creatoryard:story-interview-draft'
 export const INTERVIEW_PROGRESS_KEY = 'creatoryard:story-interview-progress'
@@ -59,12 +59,13 @@ export function appendInterviewTranscript(current: string, transcript: string) {
 }
 
 /** 保存できたら true（端末が保存を拒否していれば偽）。 */
-export function saveInterviewDraft(draft: InterviewDraft): boolean {
+export function saveInterviewDraft(draft: InterviewDraft): Kept {
   return writeValue(INTERVIEW_DRAFT_KEY, JSON.stringify(draft))
 }
 
 export function saveInterviewProgress(progress: InterviewProgress) {
-  // 端末が保存を拒否していても、ヒアリングそのものは進む（続きから再開できないだけ）。
+  // 受け取らない理由: 端末が保存を拒否していても、ヒアリングそのものは進む
+  // （続きから再開できないだけで、書いている手は止めない）。U-13 の設計どおり。
   writeValue(INTERVIEW_PROGRESS_KEY, JSON.stringify({
     answers: progress.answers.map((answer) => answer.slice(0, 1200)),
     step: Math.min(Math.max(progress.step, 0), INTERVIEW_QUESTIONS.length - 1),

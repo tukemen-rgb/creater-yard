@@ -6,7 +6,7 @@
  * （:3000）と API（:8798）が別ポートになるので、そのときは API 側へ向ける
  * （API 側も CY_ALLOW_ORIGIN で明示的に開ける必要がある）。
  */
-import { readValue, removeValue, writeValue } from './device-storage.ts'
+import { readValue, removeValue, writeValue, type Kept } from './device-storage.ts'
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ??
@@ -117,7 +117,7 @@ export function getHandle(): string | null {
  * ここで偽が返るのは**この端末に残せない**という意味だけなので、
  * **呼び出した画面が、その場で人に言う**（黙って捨てない）。
  */
-export function saveSession(token: string, account: Account): boolean {
+export function saveSession(token: string, account: Account): Kept {
   const kept = writeValue(TOKEN_KEY, token)
   return writeValue(HANDLE_KEY, account.handle) && kept
 }

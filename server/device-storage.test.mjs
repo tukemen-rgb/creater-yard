@@ -127,28 +127,98 @@ test('その 1 本の中で、触る場所はすべて囲われている', () =>
 })
 
 /**
- * **書けなかったことを、黙って捨てない。**
- * `catch` で握り潰すと「保存したつもりで保存されていない」が生まれる。
+ * **「残せたか」を返す関数を、名前ではなく型で数える**（T-1・⑤ 19:30 の指示）。
+ *
+ * 前はここに **`saveSession` の呼び出し元しか数えない**試験があった。
+ * 同じ変更で「残せたか」を返すようにした関数は 4 つあり、
+ * **そのうち 1 つが穴のまま入った**（PR #76 → 1 時間後に #78 で塞いだ）。
+ * **落とし穴 B（分母の切り方が浅い）。**
+ *
+ * **名前の一覧は持たない。**一覧は足し忘れると、その関数が最初から網の外になる。
+ * 代わりに **`Kept` という印**（`lib/device-storage.ts`）で数える。
+ *
+ * **例外は「受け取らない理由:」を書いた場所だけ。**理由の無い例外を許すと、
+ * この検査はやがて「例外の一覧」になって読まれなくなる
+ * （`server/css-classes.test.mjs` の註と同じ考え方）。
  */
-test('保存できたかを返し、呼ぶ面がそれを見ている', () => {
-  assert.match(table, /export function writeValue[^\n]*: boolean/, '書けたかを返していない')
-  const callers = globSync('app/**/*.tsx', { cwd: ROOT }).filter((f) =>
-    withoutComments(read(f)).includes('saveSession('),
-  )
-  assert.ok(callers.length > 0, 'saveSession を呼ぶ面が見つからない（前提が崩れている）')
-  for (const rel of callers) {
-    const source = withoutComments(read(rel))
+const EXEMPT = '受け取らない理由:'
+
+/** `lib/` の中で、端末へ書き出している export された関数。 */
+function writerFunctions() {
+  const out = []
+  for (const rel of globSync('lib/**/*.ts', { cwd: ROOT })) {
+    const source = read(rel)
+    const parts = source.split(/(?=^export function )/m)
+    for (const part of parts) {
+      const m = /^export function (\w+)\s*\([\s\S]*?\)\s*:?\s*([^{]*)\{/.exec(part)
+      if (!m) continue
+      const body = withoutComments(part)
+      if (!/\bwriteValue\(/.test(body)) continue
+      out.push({ file: rel, name: m[1], returns: m[2].trim(), source: part })
+    }
+  }
+  return out
+}
+
+test('端末へ書き出す関数は、残せたかを返す（返さないなら理由が要る）', () => {
+  const writers = writerFunctions()
+  assert.ok(writers.length >= 3, `書き出す関数が少なすぎる（${writers.length} 件。前提が崩れている）`)
+  for (const w of writers) {
+    if (w.source.includes(EXEMPT)) continue
     assert.match(
-      source,
-      /(!saveSession\(|=\s*saveSession\()/,
-      `${rel}: saveSession を呼びっぱなしにしている（保存できなくても気づけない）`,
-    )
-    assert.match(
-      source,
-      /DEVICE_STORAGE_WRITE_FAILED/,
-      `${rel}: 保存できなかったときに言う文が無い`,
+      w.returns,
+      /\bKept\b/,
+      `${w.file} の ${w.name} が「残せたか」を返していない（返さないなら「${EXEMPT}」を書く）`,
     )
   }
+})
+
+test('残せたかを返す関数は、呼び出し元が受け取っている', () => {
+  const names = writerFunctions()
+    .filter((w) => /\bKept\b/.test(w.returns))
+    .map((w) => w.name)
+  // 印を付けた関数を他から呼んでいる場所（`toggleSavedStory` のように
+  // `Kept` を包んで返すものも、包んだ側が数えられる）
+  const wrappers = ['toggleSavedStory']
+  const targets = [...new Set([...names, ...wrappers])]
+  assert.ok(targets.length >= 3, '数える相手が少なすぎる（前提が崩れている）')
+
+  const files = ['app/**/*.tsx', 'app/**/*.ts', 'components/**/*.tsx', 'lib/**/*.ts']
+    .flatMap((g) => globSync(g, { cwd: ROOT }))
+  for (const rel of files) {
+    const lines = read(rel).split('\n')
+    lines.forEach((line, i) => {
+      for (const name of targets) {
+        // **`return` を使わない。**forEach の中の return はその行の残りの
+        // 名前まで飛ばすので、**1 つ目の名前しか数えない試験**になる。
+        // （この試験そのものが「分母の切り方が浅い」を踏みかけた。実際に
+        // 穴を作って確かめたら、片方の試験でしか赤くならず気づいた。）
+        if (!new RegExp(`(^|[^.\\w])${name}\\(`).test(line)) continue
+        if (/^\s*(export )?function /.test(line)) continue // 宣言そのもの
+        if (/^\s*(\/\/|\*)/.test(line)) continue // 註釈
+        const received =
+          /(if \(!|=\s*|return |\}\s*=\s*|\(\s*!)/.test(line) ||
+          /\breturn\b/.test(line)
+        const excused = [lines[i - 1], lines[i - 2]].some((l) => l?.includes(EXEMPT))
+        assert.ok(
+          received || excused,
+          `${rel}:${i + 1} が ${name} の結果を捨てている（捨てるなら「${EXEMPT}」を書く）`,
+        )
+      }
+    })
+  }
+})
+
+test('理由を書いた例外が、実在する数だけある', () => {
+  // **例外そのものを数える。**増えていたら、この数を直すときに人が気づく。
+  const files = ['app/**/*.tsx', 'app/**/*.ts', 'components/**/*.tsx', 'lib/**/*.ts']
+    .flatMap((g) => globSync(g, { cwd: ROOT }))
+  const excused = files.filter((f) => read(f).includes(EXEMPT))
+  assert.deepEqual(
+    excused.sort(),
+    ['app/saved/page.common.tsx', 'lib/story-interview.ts'],
+    '理由つきの例外が増減している（増やすなら、なぜ受け取らないかをここでも確かめる）',
+  )
 })
 
 /**

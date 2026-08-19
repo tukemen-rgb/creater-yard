@@ -1,4 +1,4 @@
-import { MAX_SAVED_STORIES, readValue, writeValue } from './device-storage.ts'
+import { MAX_SAVED_STORIES, readValue, writeValue, type Kept } from './device-storage.ts'
 
 export { MAX_SAVED_STORIES }
 
@@ -24,7 +24,7 @@ export function savedStoryIds(): string[] {
 }
 
 /** 保存できたら true（端末が保存を拒否していれば偽）。 */
-export function saveStoryIds(ids: string[]): boolean {
+export function saveStoryIds(ids: string[]): Kept {
   const clean = [...new Set(ids.filter((id) => STORY_ID_RE.test(id)))].slice(0, MAX_SAVED_STORIES)
   return writeValue(SAVED_STORIES_KEY, JSON.stringify(clean))
 }
@@ -57,7 +57,7 @@ export function savedLimitNotice(savedCount: number, alreadySaved: boolean): str
  * 読み直して表示を戻すので、**押しても何も起きないように見える**。
  * 何が起きたかは、受け取った側が言う（事例 86・NN/g #1）。
  */
-export function toggleSavedStory(id: string): { saved: boolean; kept: boolean } {
+export function toggleSavedStory(id: string): { saved: boolean; kept: Kept } {
   const current = savedStoryIds()
   const saved = !current.includes(id)
   const kept = saveStoryIds(saved ? [id, ...current] : current.filter((item) => item !== id))
