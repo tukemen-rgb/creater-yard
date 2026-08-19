@@ -42,6 +42,8 @@ export default function SavedStoriesPage() {
       }),
     ).then((results) => {
       const missing = new Set(results.filter((result) => result.missing).map((result) => result.id))
+      // 受け取らない理由: 読めなくなった ID を外す掃除。残せなくても
+      // 次に開いたときまた掃除するだけで、書き手は何も失わない。
       if (missing.size > 0) saveStoryIds(ids.filter((id) => !missing.has(id)))
       setDropped(missing.size)
       setStories(results.flatMap((result) => (result.story ? [result.story] : [])))
