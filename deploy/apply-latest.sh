@@ -36,6 +36,34 @@ echo "== 1/3 事前ビルド =="
 git rev-parse HEAD > public/build.txt
 echo "  版: $(cat public/build.txt)"
 
+# **ビルドの前に、本番の設定を読む。**
+#
+# systemd の `EnvironmentFile=` は**動いているサービス**にしか効かない。
+# ところが**静的に書き出す面はビルド時に env を読む** —— `CY_SITE_ORIGIN`
+# （canonical と og:url）と `CY_CONTACT_EMAIL`（`/data-policy/` の連絡先）である。
+# ここで読まないと、**その 2 つが静的な面からだけ抜ける。**
+#
+# **2026-08-20 に本番で確かめた形**:
+#
+#   /          canonical 無し   ← 静的に書き出した面（ビルド時に env が無かった）
+#   /stories/  canonical 有り   ← server が描く面（unit の EnvironmentFile が効く）
+#
+# 両方とも同じ `absoluteUrl()` を呼んでいるので、**差はビルド時の env にしかない。**
+# `CY_CONTACT_EMAIL` も同じ理由で、設定ファイルに書いても連絡先の節が出ない。
+#
+# 読めなくても**止めない** —— 反映そのものを妨げるほうが害が大きい。
+# ただし**何が抜けるかを名指しで言う**（黙って続けたのが、この不具合の元）。
+CY_ENV_FILE="${CY_ENV_FILE:-/etc/creatoryard/creatoryard.env}"
+if [ -r "$CY_ENV_FILE" ]; then
+  set -a
+  . "$CY_ENV_FILE"
+  set +a
+  echo "  設定を読みました: $CY_ENV_FILE"
+else
+  echo "  設定を読めません: $CY_ENV_FILE" >&2
+  echo "  静的な面に canonical・og:url・連絡先が入りません（CY_ENV_FILE で場所を変えられます）" >&2
+fi
+
 # 同居機（GAMEYARD と同じ VPS）なのでメモリ上限つき
 export NODE_OPTIONS=--max-old-space-size=1024
 npm ci
