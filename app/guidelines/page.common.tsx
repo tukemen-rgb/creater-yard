@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+
+import { absoluteUrl, alternatesFor, ogWithUrl } from '../../lib/og'
 import Link from 'next/link'
 
 /**
@@ -6,9 +8,25 @@ import Link from 'next/link'
  * 実装がまだのものをあるように書かない。決まりを増やすときは SPEC と
  * 一緒に直す（片方だけ直すとずれる）。
  */
+/**
+ * 貼られたときのカード（設計 A-2）。**この面は公開されていて貼られうる。**
+ *
+ * `og:url` を出すのは、`?utm_source=…` の付いたリンクが別の対象として
+ * 扱われないようにするため（OGP の必須 4 項目の 1 つ・事例 36）。
+ *
+ * `openGraph` に題名と説明を明示するのは、layout の `title.template`
+ * （`%s | CreatorYard`）が `og:title` にも当たり、**`og:site_name` と
+ * ブランドが二重になる**ため。ブランドは `og:site_name` が運ぶ。
+ */
+const canonical = absoluteUrl('/guidelines/')
+const title = 'この場所の決まり'
+const description = 'CreatorYard の文化と、書いてよいもの・受け付けないもの。'
+
 export const metadata: Metadata = {
-  title: 'この場所の決まり',
-  description: 'CreatorYard の文化と、書いてよいもの・受け付けないもの。',
+  title,
+  description,
+  alternates: alternatesFor(canonical),
+  openGraph: { ...ogWithUrl(canonical, 'website'), title, description },
 }
 
 export default function GuidelinesPage() {

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+
+import { absoluteUrl, alternatesFor, ogWithUrl } from '../../lib/og'
 import Link from 'next/link'
 
 import { tagIndex } from '../../lib/stories-read'
@@ -10,9 +12,25 @@ import { tagIndex } from '../../lib/stories-read'
  */
 export const dynamic = 'force-dynamic'
 
+/**
+ * 貼られたときのカード（設計 A-2）。**この面は公開されていて貼られうる。**
+ *
+ * `og:url` を出すのは、`?utm_source=…` の付いたリンクが別の対象として
+ * 扱われないようにするため（OGP の必須 4 項目の 1 つ・事例 36）。
+ *
+ * `openGraph` に題名と説明を明示するのは、layout の `title.template`
+ * （`%s | CreatorYard`）が `og:title` にも当たり、**`og:site_name` と
+ * ブランドが二重になる**ため。ブランドは `og:site_name` が運ぶ。
+ */
+const canonical = absoluteUrl('/tags/')
+const title = 'タグから探す'
+const description = 'ツール名と「どこでつまずいたか」で制作記録を探す。'
+
 export const metadata: Metadata = {
-  title: 'タグから探す',
-  description: 'ツール名と「どこでつまずいたか」で制作記録を探す。',
+  title,
+  description,
+  alternates: alternatesFor(canonical),
+  openGraph: { ...ogWithUrl(canonical, 'website'), title, description },
 }
 
 export default function TagsPage() {
