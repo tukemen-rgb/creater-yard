@@ -12,6 +12,28 @@
 
 ---
 
+## 87. **NN/g —— 既定値は、たいていそのまま使われる**
+
+- 出典: <https://www.nngroup.com/articles/the-power-of-defaults/>
+  （Nielsen Norman Group「The Power of Defaults」／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`Users rely on defaults in many other areas of user interface design. For example, they rarely utilize fancy customization features, making it important to optimize the default user experience, since that's what most users stick to.`**
+  >
+  > **`It's therefore important to select helpful defaults, rather than those based on the first letter of the alphabet or whatever the first option on your original list happened to be.`**
+
+- 学び: CreatorYard のヒアリング（4 問）は、**1 問目の答えをそのまま題にする**
+  （`title: making.slice(0, 80)`）。1 問目は「**いま、何をつくっていますか？**」なので、
+  **題は「作っているもの」になる。**
+
+  **1 本目は正しい。2 本目からは、同じ人が同じ題を付けることになる。**
+  しかも**本文の 1 行目（`【つくっているもの】`）と同じ文字列**である。
+  編集はできるが、**この事例が言うとおり、既定はたいてい残る。**
+  U-14 で読者を書く側へ誘い始めた以上、**この既定が最初の記録の顔になる。**
+  下の提案 U-16。
+
+---
+
 ## 86. **NN/g —— 「いま何が起きたか」を伝えないと、信用が積み上がらない**
 
 - 出典: <https://www.nngroup.com/articles/ten-usability-heuristics/>
