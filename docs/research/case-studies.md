@@ -12,6 +12,26 @@
 
 ---
 
+## 85. **NN/g —— 手がかりが弱い面から、人は「次」へ行かずに去る**
+
+- 出典: <https://www.nngroup.com/articles/information-scent/>
+  （Nielsen Norman Group「Information Scent」／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`The information scent of a source of information (such as a webpage) relative to an information need represents the user's imperfect estimate of the value that the source will deliver to the user.`**
+  >
+  > 手がかりが足りない面について:
+  > **`users don't bother scrolling anymore in search of the right information, nor do they click on any visible link: they quickly decide that the page is not worth exploring any longer and simply leave.`**
+
+- 学び: **「リンクが在る」ことと「次が見える」ことは別**である。
+  CreatorYard の Story の面を `origin/main` で数えたら、**読み終えた人に
+  差し出している最後のリンクは「この Story の問題を通報する」1 本だけ**だった
+  （書いた本人にだけ「その後を書く」が出る）。**招かれた人が最初に開くのは
+  たいてい Story の直リンク**なので、**この面が「次」を持っていないことは
+  そのまま撤退条件に効く。**下の提案 U-14。
+
+---
+
 ## 84. **MDN —— `localStorage` は「読むだけ」でも例外を投げることがある**
 
 - 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage>
