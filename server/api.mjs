@@ -25,6 +25,8 @@
  *   GET    /api/tags.json           タグ索引（サイト全体の合計値）
  *   POST   /api/story-image         画像の検査と保存（要ログイン。本文とは別送）
  *   GET    /api/images/<id>.<ext>   検査済み画像の配信
+ *   GET    /api/feeds/stories.xml   新着の RSS（全ページの alternate から指される）
+ *   GET    /api/feeds/creators/<handle>.xml  その人だけの RSS（書き手の面から指される）
  *   GET    /sitemap-stories.xml     公開 Story の sitemap（CY_SITE_ORIGIN 必須）
  *   POST   /api/reports             通報の受付（認証不要）
  *   GET    /api/reports             通報の一覧（運営のみ）
