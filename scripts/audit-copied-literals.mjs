@@ -63,9 +63,6 @@ function prefixOf(path) {
   return at <= 0 ? path : path.slice(0, at + 1)
 }
 
-/** この試験の中でだけ使う道具は、製品の約束ではない。 */
-const NOT_A_PROMISE = new Set(['ssr'])
-
 /**
  * **註釈は約束ではない。**試験の註釈には「昔ここを間違えた」と書くことが
  * あり、そこに出てくる名前まで拾うと**誤って鳴る**（実際に鳴らせた）。
@@ -73,6 +70,20 @@ const NOT_A_PROMISE = new Set(['ssr'])
  */
 function withoutComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ')
+}
+
+/**
+ * `import('../lib/x.ts?foo=…')` の `?foo=` は**画面のクエリではない**。
+ * 置き場を変えて読み直させるための、その試験の中だけの目印
+ * （tag-display-names・pager-drift が使っている手）。
+ *
+ * ここは名前の一覧では持たない（`ssr` 1 つの一覧を置いていたのをやめた）。
+ * **「読み込みの行先に書いてある」という形で見分ける。**一覧にすると、
+ * 次に同じ手を使う人が理由の分からない誤報を踏み、一覧に名前を足して
+ * 黙らせることになる —— 網が名前ひとつぶん粗くなり、それが増えていく。
+ */
+function withoutImportSpecifiers(source) {
+  return source.replace(/\bimport\(\s*(['"`])[^'"`]*\1\s*\)/g, 'import(SPEC)')
 }
 
 const quiet = process.argv.includes('--quiet')
@@ -87,11 +98,12 @@ let checked = 0
 const seen = new Set()
 
 for (const tf of tests) {
-  const src = withoutComments(readFileSync(new URL(`../${tf}`, import.meta.url), 'utf8'))
+  const src = withoutImportSpecifiers(
+    withoutComments(readFileSync(new URL(`../${tf}`, import.meta.url), 'utf8')),
+  )
   for (const kind of KINDS) {
     for (const m of src.matchAll(kind.re)) {
       const value = m[1]
-      if (NOT_A_PROMISE.has(value)) continue
       const key = `${tf}|${kind.label}|${value}`
       if (seen.has(key)) continue
       seen.add(key)
@@ -120,4 +132,5 @@ if (missing.length === 0) {
 //   - 両方まとめて間違っている場合（一致していても正しいとは限らない）
 //   - 製品側が動的に組み立てる名前（`get(key)` のように変数で読む形）
 //   - **試験の註釈**（約束ではないので、はじめから外している）
+//   - **読み込みの行先に付けた目印**（`import('…?dir=…')`。同上）
 process.exit(missing.length === 0 ? 0 : 2)
