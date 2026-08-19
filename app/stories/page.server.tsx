@@ -56,7 +56,13 @@ export default async function StoriesPage({ searchParams }: Props) {
   // この 1 行なら両モードで同じように効く。
   const authorsOnPage = new Set(listing.stories.map((s) => s.authorHandle)).size
 
-  const filterLabel = tool || topic
+  // I-8: 効いている条件を**全部**集める。以前は `tool || topic` で、
+  // ?tool=godot&topic=影 のとき「godot」だけを名乗っていた。結果は
+  // 2 条件の AND なのに、画面は 1 条件しか言わない小さな嘘だった
+  // （ページ送りで同じ穴を #8 が塞いだのと同じ族）。
+  // 空白だけの値は数えない —— 効いていない条件が効いて見えるため。
+  // static 版（page.static.tsx）も同じ形にすること。
+  const filterLabels = [tool, topic].filter((v) => v?.trim())
   // ページ送りは絞り込み条件を落とさない（tool と topic の両方を保持。
   // 以前は片方を捨てていて、AND 絞り込みの 2 条件目が「次へ」で消えていた）
   const pageHref = (n: number) => storiesListPath(tool, topic, n)
@@ -68,9 +74,10 @@ export default async function StoriesPage({ searchParams }: Props) {
         つくる過程の記録。作りかけ・つまずき・工夫、ぜんぶ主役。{' '}
         <Link prefetch={false} href="/tags/">タグから探す</Link>
       </p>
-      {filterLabel && (
+      {filterLabels.length > 0 && (
         <p className="notice">
-          「{filterLabel}」で絞り込み中 — <Link prefetch={false} href="/stories/">解除する</Link>
+          {filterLabels.map((v) => `「${v}」`).join('')}で絞り込み中 —{' '}
+          <Link prefetch={false} href="/stories/">解除する</Link>
         </p>
       )}
       {listing.stories.length === 0 && (
