@@ -40,6 +40,21 @@ test('製品側に無い鍵を書き写したら鳴る（終了コードも変�
   }
 })
 
+// **黙るべきところで黙る**方向も見る。読み込みの行先に付ける目印
+// （`import('../lib/x.ts?dir=…')`）は画面のクエリではない。ここで鳴ると、
+// 次に同じ手を使う人が理由の分からない誤報を踏む。
+test('読み込みの行先に付けた目印では鳴らない', () => {
+  const planted = path.join(ROOT, 'server', 'zz-planted-import.test.mjs')
+  try {
+    const key = ['nosuch', 'mark'].join('')
+    writeFileSync(planted, `await import(\`../lib/og.ts?${key}=1\`)\n`)
+    const r = run()
+    assert.equal(r.status, 0, `読み込みの目印で鳴っている:\n${r.stdout}`)
+  } finally {
+    rmSync(planted, { force: true })
+  }
+})
+
 // 数だけ出して終わらせない。何を見ていないかを、道具自身が書いてあること。
 test('この網が見ていないものが、道具のそばに書いてある', async () => {
   const { readFile } = await import('node:fs/promises')
