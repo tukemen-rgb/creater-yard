@@ -15,7 +15,17 @@ import test from 'node:test'
 
 const read = (p) => readFile(new URL(`../${p}`, import.meta.url), 'utf8')
 
-const SHARED = ['app/guidelines/page.common.tsx', 'app/data-policy/page.common.tsx', 'app/tags/page.server.tsx']
+/**
+ * カードを持つ面。**`'use client'` の面は `metadata` を export できない**ので、
+ * 層（`layout.common.tsx`）に置く。層は server 部品なので持てるし、
+ * **2 つのモードのどちらでも同じものが配られる**（設計 A-3・2026-08-19 13:00）。
+ */
+const SHARED = [
+  'app/guidelines/page.common.tsx',
+  'app/data-policy/page.common.tsx',
+  'app/tags/layout.common.tsx',
+  'app/report/layout.common.tsx',
+]
 const sources = Object.fromEntries(await Promise.all(SHARED.map(async (p) => [p, await read(p)])))
 
 test('貼られうる面は、正規 URL を名乗る', () => {
@@ -39,5 +49,34 @@ test('og:title にサイト名を二重で入れない', () => {
 test('og:image を足していない（社長の判断待ち）', () => {
   for (const [name, src] of Object.entries(sources)) {
     assert.doesNotMatch(src, /images:/, `${name}: og:image を足している`)
+  }
+})
+
+// **同じ URL が、どちらのモードで配られるかで違うカードになっていた。**
+// いま本番は nginx が /tags/ を必ず server へ回すので実害は出ていないが、
+// **それは設定に依存していて、コードでは守られていない。**
+// 層に置いてある限り、両モードで同じものが出る。
+test('2 モードある面のカードは、層が持つ（片方だけにならない）', async () => {
+  for (const dir of ['app/tags']) {
+    const layout = await read(`${dir}/layout.common.tsx`)
+    assert.match(layout, /export const metadata/, `${dir}: 層がカードを持っていない`)
+    for (const variant of ['page.server.tsx', 'page.static.tsx']) {
+      const src = await read(`${dir}/${variant}`)
+      assert.doesNotMatch(
+        src,
+        /export const metadata/,
+        `${dir}/${variant}: 面の側にもカードがある（層と二重になり、片方だけ古くなる）`,
+      )
+    }
+  }
+})
+
+// 'use client' の面は metadata を持てない。持てないものを持たせようとして
+// いないこと（持たせても静かに無視されるだけで、気づけない）。
+test('client の面に metadata を書かない', async () => {
+  for (const page of ['app/report/page.common.tsx', 'app/tags/page.static.tsx']) {
+    const src = await read(page)
+    assert.match(src, /^'use client'/m, `${page}: client でなくなった（この試験の前提が崩れた）`)
+    assert.doesNotMatch(src, /export const metadata/, `${page}: client の面に metadata を書いている`)
   }
 })
