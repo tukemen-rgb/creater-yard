@@ -12,6 +12,27 @@
 
 ---
 
+## 82. **MDN —— `localStorage` は期限が無い。閉じても消えない**
+
+- 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage>
+  （MDN Web Docs／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`localStorage is similar to sessionStorage, except that while localStorage data has no expiration time, sessionStorage data gets cleared when the page session ends — that is, when the page is closed.`**
+  >
+  > **`(localStorage data for a document loaded in a "private browsing" or "incognito" session is cleared when the last "private" tab is closed.)`**
+
+- 学び: CreatorYard は**書きかけの本文**を `localStorage` に置いている
+  （`creatoryard:story-interview-draft`。ヒアリングから書く道）。
+  **期限が無いということは、共有の端末では次に座った人のブラウザにも残る**
+  という意味である（私用の窓で開いた場合を除く）。
+  **これは「消し忘れ」ではなく仕様どおりの挙動**なので、
+  **消す仕掛けか、残ると書くか、どちらかが要る。**
+  いま `/data-policy/` は**端末に残るものを 1 つも書いていない**
+  （2026-08-20 に①が数えた。下の提案）。
+
+---
+
 ## 81. **Google —— canonical は「お願い」であって命令ではない**
 
 - 出典: <https://developers.google.com/search/docs/crawling-indexing/canonicalization>
