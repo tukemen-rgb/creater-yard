@@ -95,10 +95,21 @@ systemctl restart creatoryard-api creatoryard-web
 
 echo "== 3/3 確認 =="
 sleep 2
-printf 'web(3001): '
-curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3001/
-printf 'api      : '
-curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8798/api/health
+# **港を書き写さない。**この repo には web の港が 4 か所ある（この行・
+# creatoryard-web.service の -p・nginx の upstream・healthcheck.sh の既定）。
+# 2026-08-20 に数えたら、**ここだけ 3001 で、ほかの 3 か所は 3000 だった。**
+# どちらが本番かは、この repo からは決められない（GO-LIVE には GAMEYARD と
+# 同居していれば 3001 へ移す、と書いてある）。
+#
+# **勝手に決めない。**死活確認と同じ変数を見て、無ければ従来どおり 3001 を
+# 使う（いままでの振る舞いを変えない）。**使った先を必ず出す**ので、
+# 違っていればその場で分かる。
+WEB_CHECK="${HEALTH_WEB:-http://127.0.0.1:3001}"
+printf 'web(%s): ' "$WEB_CHECK"
+curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' "$WEB_CHECK/"
+API_CHECK="${HEALTH_API:-http://127.0.0.1:8798}"
+printf 'api(%s): ' "$API_CHECK"
+curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' "$API_CHECK/api/health"
 printf '設定CSP  : '
 grep -o "script-src [^;]*" "$NGINX_SITE" | head -1
 
