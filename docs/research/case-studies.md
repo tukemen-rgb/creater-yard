@@ -12,6 +12,35 @@
 
 ---
 
+## 78. **WCAG 2.2 SC 2.5.8 Target Size (Minimum) —— 24×24。ただし文中のリンクは対象外**
+
+- 出典: <https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html>
+  （W3C Web Accessibility Initiative／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`The size of the target for pointer inputs is at least 24 by 24 CSS pixels, except when:`**
+
+  例外のうち、この場所に効くのは 2 つ:
+
+  > **`Spacing: Undersized targets … are positioned so that if a 24 CSS pixel diameter`**
+  > **`circle is centered on the bounding box of each, the circles do not intersect`**
+  > **`another target …`**
+
+  > **`Inline: The target is in a sentence or its size is otherwise constrained by the`**
+  > **`line-height of non-target text`**
+
+- 学び: 2026-08-20 に①がスマホの画面（390×664）で通しで歩いたところ、
+  **主要操作は完了し、横のはみ出しは 0** だった。ただし**高さ 44px 未満の
+  押しどころ**が各面に 1〜4 個あった（16〜20px）。
+  **その大半は「文中のリンク」**（`RSS で受け取れます`・`タグから探す`・
+  `その後を書く`）で、**上の `Inline` 例外に当たる。**
+  この場所は既に、**並んだ導線には 44px を当てている**
+  （`auth-panel__links a` ・ `pager a` ・ `voice-input__note`）。
+  **規格違反ではない。**ただし `その後を書く` のように**次の行動を促す導線**は、
+  文中であっても指で押しやすいほうがよい —— **これは好みなので提案止まり。**
+
+---
+
 ## 77. **MDN `SpeechRecognition` —— ブラウザによっては、音声はサーバーへ送られる**
 
 - 出典: <https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition>
