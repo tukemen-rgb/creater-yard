@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
@@ -19,6 +19,20 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const submitLockRef = useRef(false)
+  /**
+   * ヒアリングの答えを持ったまま、ここへ送られてきた人か（設計 U-7）。
+   *
+   * 答えは端末に残っていて、登録が終われば全部戻る。**それを画面が
+   * 言っていなかった。**書き手の側には確かめる手段が無く、「登録しないと
+   * 消えるのでは」と思う理由だけがあった（事例 74・NN/g
+   * 「情報が無いことは、制御が無いことと同じ」）。
+   *
+   * **見るのは画面が出たあと。**静的書き出しの事前描画には端末の保存領域が
+   * 無いので、描画中に見ると出来上がった HTML と食い違う
+   * （components/edit-link.tsx と同じ形）。
+   */
+  const [fromInterview, setFromInterview] = useState(false)
+  useEffect(() => setFromInterview(hasInterviewDraft()), [])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,6 +61,11 @@ export default function SignupPage() {
         必要なのはハンドルとパスワードだけ。あなたの記録はあなたのもので、
         いつでも全部消せます。
       </p>
+      {fromInterview && (
+        <p className="notice">
+          さっき答えた内容はこの端末に残っています。登録が終わると、そのまま続きから書けます。
+        </p>
+      )}
       <div className="auth-panel">
         <form className="form" onSubmit={submit}>
           <label className="form__field">
@@ -92,7 +111,9 @@ export default function SignupPage() {
 
           {error && <p className="notice notice--error" role="alert">{error}</p>}
           <button type="submit" className="button auth-panel__submit" disabled={busy}>
-            {busy ? '登録中…' : '登録して書き始める'}
+            {/* ヒアリングから来た人は、もう書いている。その人に「書き始める」と
+                言うのは、起きたことと違う（設計 U-7） */}
+            {busy ? '登録中…' : fromInterview ? '登録して続きへ' : '登録して書き始める'}
           </button>
         </form>
 
