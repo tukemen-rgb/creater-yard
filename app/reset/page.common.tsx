@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
@@ -23,6 +23,23 @@ function ResetInner() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const submitLockRef = useRef(false)
+  /**
+   * 再設定の受け付けが動いているか（設計 U-10）。
+   *
+   * ①が実物を歩いたら、**押して初めて「準備が完了していない」と断られた。**
+   * 断り自体は誠実（受け付けたふりをしない）だが、**入れなくなった人に
+   * ハンドルを打たせてから言っている。**
+   *
+   * `/api/health` は註釈に「**UI が事前に確認する**」と書いてある経路で、
+   * まさにこの用途。**取れなかったときは黙る** —— 死活が読めないことを
+   * 理由にフォームを止めると、受け付けは動いているのに使えない人が出る。
+   */
+  const [mailReady, setMailReady] = useState<boolean | null>(null)
+  useEffect(() => {
+    api<{ mail?: boolean }>('/api/health')
+      .then((data) => setMailReady(data.mail !== false))
+      .catch(() => setMailReady(null))
+  }, [])
 
   const request = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,6 +114,11 @@ function ResetInner() {
       <p className="page__lede">
         登録時にメールアドレスを設定している場合、再設定用のリンクを送ります。
       </p>
+      {mailReady === false && (
+        <p className="notice">
+          いまはまだ、再設定の受け付けを開けていません。押しても受け付けられないので、先にお伝えします。
+        </p>
+      )}
       <div className="auth-panel">
         {message ? (
           <p className="notice" role="status">{message}</p>
