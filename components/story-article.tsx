@@ -4,6 +4,7 @@ import { formatDate, imageUrl, type Story } from '../lib/api'
 import { CopyOwnStoryLink } from './copy-own-story-link'
 import { EditLink } from './edit-link'
 import { SaveStory } from './save-story'
+import { StoryInvite } from './story-invite'
 import { WriteNextLink } from './write-next-link'
 
 /**
@@ -129,6 +130,9 @@ export function StoryArticle({ story, nextStory }: { story: Story; nextStory?: S
           </ul>
         </section>
       )}
+      {/* 読む道（次の Story）→ **書く道** → 通報 の順（設計 U-14）。
+          通報は最後に残す —— 困っている人が最後に迷わないため。 */}
+      {story.status === 'public' && <StoryInvite authorHandle={story.authorHandle} />}
       <p className="story__report">
         <Link prefetch={false} href={`/report/?story=${story.id}`}>
           この Story の問題を通報する
