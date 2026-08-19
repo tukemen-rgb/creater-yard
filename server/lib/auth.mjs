@@ -179,7 +179,7 @@ export class Accounts {
   static validateHandle(handle) {
     if (typeof handle !== 'string' || !HANDLE_RE.test(handle)) {
       throw new AuthError(
-        'ハンドルは英小文字・数字・ハイフン・アンダースコアの3〜32文字にしてください。',
+        'ハンドルは英小文字・数字・ハイフン・アンダースコアの 3〜32 文字にしてください。',
         400,
       )
     }
@@ -187,10 +187,10 @@ export class Accounts {
 
   static validatePassword(password) {
     if (typeof password !== 'string' || password.length < MIN_PASSWORD) {
-      throw new AuthError(`パスワードは${MIN_PASSWORD}文字以上にしてください。`, 400)
+      throw new AuthError(`パスワードは ${MIN_PASSWORD} 文字以上にしてください。`, 400)
     }
     if (password.length > MAX_PASSWORD) {
-      throw new AuthError(`パスワードは${MAX_PASSWORD}文字以内にしてください。`, 400)
+      throw new AuthError(`パスワードは ${MAX_PASSWORD} 文字以内にしてください。`, 400)
     }
   }
 
@@ -206,7 +206,7 @@ export class Accounts {
     const value = String(contact ?? '').trim()
     if (!value) return ''
     if (value.length > 200) {
-      throw new AuthError('連絡先は200文字以内にしてください。', 400)
+      throw new AuthError('連絡先は 200 文字以内にしてください。', 400)
     }
     if (value.includes('@') && !isMailAddress(value)) {
       throw new AuthError(

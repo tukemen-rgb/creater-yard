@@ -39,6 +39,48 @@ function offenders() {
   return found
 }
 
+/**
+ * 数字も同じ（2026-08-19 に①が測った）。**画面は 42 対 10 で空けていて、
+ * 詰まっていたのはほとんど断り文句だった。**書き手は同じ流れで両方を見る ——
+ * フォームの「パスワード（10 文字以上）」を読んで打ち、断られると
+ * 「パスワードは10文字以上に…」が返ってきていた。**同じ画面に 2 通りの
+ * 書き方が並ぶ。**
+ *
+ * `${label}` のように**語**が入る埋め込みは数えない（「ツールタグはリストで」
+ * は詰めて正しい）。数字か、大文字で始まる上限の名前だけを見る。
+ */
+function numberOffenders() {
+  const NUM = String.raw`(?:\d|\$\{[A-Z_][\w.]*\})`
+  const found = []
+  const scan = (name, text, lineNo) => {
+    for (const m of text.matchAll(new RegExp(`${KANA}${NUM}|${NUM}${KANA}`, 'g'))) {
+      found.push(`${name}${lineNo ? `:${lineNo}` : ''} 「${m[0]}」`)
+    }
+  }
+  const files = [
+    ...globSync('app/**/*.tsx', { cwd: ROOT }),
+    ...globSync('components/*.tsx', { cwd: ROOT }),
+  ].filter((f) => !f.includes('.test.'))
+  for (const f of files) {
+    readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').split('\n').forEach((line, i) => {
+      if (!isComment(line)) scan(f, line, i + 1)
+    })
+  }
+  // 断り文句は**書き手に返る文字列**なので、画面と同じ扱いにする。
+  for (const f of globSync('server/lib/*.mjs', { cwd: ROOT })) {
+    const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
+    for (const m of src.matchAll(/new (?:StoryError|AuthError|ReportError)\(\s*(?:'([^']*)'|`([^`]*)`)/g)) {
+      scan(f, m[1] ?? m[2], 0)
+    }
+  }
+  return found
+}
+
+test('数字と日本語のあいだにも空白を入れる（画面と断り文句の両方）', () => {
+  const bad = numberOffenders()
+  assert.deepEqual(bad, [], `空白が入っていない箇所:\n  ${bad.join('\n  ')}`)
+})
+
 test('日本語と Latin 語のあいだに空白を入れる（画面に出る文字列）', () => {
   const bad = offenders()
   assert.deepEqual(bad, [], `空白が入っていない箇所:\n  ${bad.join('\n  ')}`)

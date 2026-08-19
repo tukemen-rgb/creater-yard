@@ -98,7 +98,7 @@ export function StoryInterview({
       <p className="interview__eyebrow">Story ヒアリング</p>
       <h1 id="interview-title">話すだけで、Story の下書きに。</h1>
       <p className="page__lede">
-        4つの質問に答えると、端末内で投稿フォームへ自動で整理します。
+        4 つの質問に答えると、端末内で投稿フォームへ自動で整理します。
         CreatorYard 独自の AI/API へ回答を送信しません。音声入力はブラウザの音声認識機能を使い、
         ブラウザ提供者側で処理される場合があります。
       </p>
