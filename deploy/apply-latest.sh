@@ -101,10 +101,27 @@ sleep 2
 # どちらが本番かは、この repo からは決められない（GO-LIVE には GAMEYARD と
 # 同居していれば 3001 へ移す、と書いてある）。
 #
-# **勝手に決めない。**死活確認と同じ変数を見て、無ければ従来どおり 3001 を
-# 使う（いままでの振る舞いを変えない）。**使った先を必ず出す**ので、
-# 違っていればその場で分かる。
-WEB_CHECK="${HEALTH_WEB:-http://127.0.0.1:3001}"
+# **勝手に決めない。使った先を必ず出す**ので、違っていればその場で分かる。
+# HEALTH_WEB があればそれだけを見る（運用者が決めた先）。無いときは、
+# **この repo に在る港を順に当てて、答えたほうを使う。**
+# **どちらが本番かを、この repo から決めないため。**どれも答えなければ
+# 従来どおり失敗する —— web が落ちているのは、隠さず失敗するべきこと。
+if [ -n "${HEALTH_WEB:-}" ]; then
+  WEB_CANDIDATES="$HEALTH_WEB"
+else
+  WEB_CANDIDATES="http://127.0.0.1:3001 http://127.0.0.1:3000"
+fi
+WEB_CHECK=
+for candidate in $WEB_CANDIDATES; do
+  if curl --fail --silent -o /dev/null --max-time 5 "$candidate/"; then
+    WEB_CHECK="$candidate"
+    break
+  fi
+done
+if [ -z "$WEB_CHECK" ]; then
+  echo "web がどの港でも答えません（試した先: $WEB_CANDIDATES）" >&2
+  exit 1
+fi
 printf 'web(%s): ' "$WEB_CHECK"
 curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' "$WEB_CHECK/"
 API_CHECK="${HEALTH_API:-http://127.0.0.1:8798}"
