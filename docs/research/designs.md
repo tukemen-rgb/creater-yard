@@ -76,7 +76,7 @@ PR #55 で実際に外し、`main` は 234 件に戻した。
 
 1. ~~`app/story/[id]/story-page.tsx`~~ —— **取った（PR #56 `ef889a5`）。**記事の面。読み手がいちばん長く
    居る場所で、いま誰も見ていない
-2. **`components/edit-link.tsx`** —— 書き手が自分の記録へ戻る道
+2. ~~`components/edit-link.tsx`~~ —— **取った（PR #57 `d7651a5`）。**書き手が自分の記録へ戻る道
    （A-4 で 1 度壊した場所でもある）
 3. **`app/creators/[handle]/creator-page.tsx`** —— 書き手の面
 4. 残り（`nav-auth` `copy-own-story-link` `voice-input` ほか）
