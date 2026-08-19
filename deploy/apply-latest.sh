@@ -207,9 +207,19 @@ case "$PUBLIC_CSP" in
     ;;
 esac
 
+# **トップの文言をここに書き写している。**`app/page.common.tsx` に在る語で、
+# 2 か所が離れている。**変えたら両方直すこと**
+# （`server/deploy-home-text.test.mjs` が、この語が本当にトップに在るかを縛る）。
+#
+# この確認は**配置と再起動のあと**に走る。だから食い違ったときは
+# 「サイトが壊れた」ではなく「**探す語が古い**」の可能性が高い。
+# 失敗の文言でそれが分かるようにしておく —— 夜中に読む人が、次に何を
+# すればよいか迷わないため。
+HOME_MARK='つくる過程に、'
 if ! curl --fail --silent --show-error https://creatoryard.io/ |
-  grep -q 'つくる過程に、'; then
-  echo "公開ホームの本文を確認できません" >&2
+  grep -q "$HOME_MARK"; then
+  echo "公開ホームの本文に「$HOME_MARK」がありません" >&2
+  echo "配置と再起動は終わっています。トップの文言を変えたなら、この手順書の HOME_MARK も直してください" >&2
   exit 1
 fi
 echo "公開本文  : OK（見出しを確認）"
