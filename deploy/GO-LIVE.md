@@ -22,9 +22,10 @@ GAMEYARD の GO-LIVE.md と同じ考え方で書いた、**サーバーに載せ
 ## 1. 先に用意するもの（人）
 
 - [ ] **サーバー** 1 台（Ubuntu 24.04 想定。GAMEYARD と同居も可 — 下の§6）
-- [ ] **ドメイン 1 つ**（決定待ち: creatoryard.io / .jp / .net）。
+- [x] **ドメイン 1 つ** —— **`creatoryard.io` に決まっている**
+      （2026-08-14 社長確認。**すでにこのドメインで動いている**）。
       画像を GAMEYARD と同じ別オリジン配信に揃えるなら **+1 ドメイン**
-      （Issue #1 の判断材料。揃えない判断なら不要）
+      （**こちらはまだ判断待ち**。揃えない判断なら不要）
 - [ ] DNS A/AAAA をサーバーへ向ける
 - [ ] `node`（v22 系）・`nginx`・`certbot` を導入
 
@@ -32,7 +33,11 @@ GAMEYARD の GO-LIVE.md と同じ考え方で書いた、**サーバーに載せ
 
 `deploy/creatoryard.env.example` をコピーして埋める。
 
-- [ ] `CY_SITE_ORIGIN` … 決まった本番ドメイン（https:// から書く）
+- [ ] `CY_SITE_ORIGIN` … 決まった本番ドメイン（https:// から書く）。
+      **入口を変えるとき（例: `www.` を付ける）は、ここ 1 か所を直せばよい。**
+      反映のあとに公開を確かめる先も、`deploy/apply-latest.sh` が
+      この値から決める（PR #73）。**ビルドが `canonical` に使う値と同じ**なので、
+      配るものと確かめる先がずれない
 - [ ] `AUTH_SECRET` … `openssl rand -base64 48` の出力
 - [ ] `MAIL_*` … パスワード再設定を有効にする場合（GAMEYARD と同じ
       Gmail SMTP のアプリパスワードが流用できる）。未設定でも公開は
