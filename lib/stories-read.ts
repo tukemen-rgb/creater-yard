@@ -147,7 +147,6 @@ export function creatorStories(handle: string, page = 1): StoryListing {
   )
 }
 
-/** タグ索引。サイト全体の合計値だけを数える（個人単位の計測はしない）。 */
 /**
  * タグの並び。server/lib/stories.mjs の byTagName と**同じ規則**にそろえる。
  * 片方だけ直すと SSR と静的書き出しで並びが食い違う。
@@ -158,12 +157,40 @@ function byTagName(a: string, b: string): number {
   return tagCollator.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0)
 }
 
+/**
+ * タグ索引（公開 Story の語彙。名前だけで、数は持たない）。
+ *
+ * `toolNames` は「小文字のタグ → 書き手が打った書き方」の対応表（設計 U-6）。
+ * **タグの値は小文字のまま**（`Godot` と `GODOT` を束ねるために要る）で、
+ * 画面に出すときだけこれを引く。**server/lib/stories.mjs の tagIndex と
+ * 同じ規則にそろえること**（byTagName と同じ理由。片方だけ直すと SSR と
+ * 静的書き出しで表示が食い違う）。
+ *
+ * 規則は 3 つ:
+ *   1. 書き方は「使ったツール」欄から採る（タグ側には残っていない）
+ *   2. 同じ語に 2 通りの書き方があったら、どちらも採らない（小文字のまま）
+ *   3. 見つからなければ小文字のまま（**推測で名前を作らない**）
+ */
 export function tagIndex(): TagIndex {
   const tools = new Set<string>()
   const topics = new Set<string>()
+  const names = new Map<string, string>()
+  const ambiguous = new Set<string>()
   for (const record of publishedRecords()) {
     for (const tag of record.toolTags) tools.add(tag)
     for (const tag of record.topicTags) topics.add(tag)
+    for (const tool of record.tools ?? []) {
+      const key = tool.normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim()
+      if (!key || key === tool) continue
+      const known = names.get(key)
+      if (known !== undefined && known !== tool) ambiguous.add(key)
+      names.set(key, tool)
+    }
   }
-  return { tools: [...tools].sort(byTagName), topics: [...topics].sort(byTagName) }
+  for (const key of ambiguous) names.delete(key)
+  return {
+    tools: [...tools].sort(byTagName),
+    topics: [...topics].sort(byTagName),
+    toolNames: Object.fromEntries([...names].filter(([key]) => tools.has(key))),
+  }
 }
