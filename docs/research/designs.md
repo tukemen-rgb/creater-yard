@@ -816,6 +816,138 @@ const authorsOnPage = new Set(listing.stories.map((s) => s.authorHandle)).size
 4. **`page.static.tsx` を忘れない。**忘れたことを試験が捕まえるはずだが、
    **捕まらなかったら試験のほうが間違っている**
 
+## 2026-08-19 10:30 JST **A「トップだけ `og:url` が無い」** — 状態: **未実装**（③へ）
+
+①の 09:40 の測定の A。**要判断ではない**（依存追加なし・決済なし・
+個人計測なし・ランキングなし・第三者 JS なし・検査／認証／上限の緩和なし）。
+**B（`og:image`）は要判断なので、この設計に入れない。**
+
+**時刻帯の点検**: 時刻を扱わない。該当なし。
+**権利ゲートの点検**: 素材を扱わない。該当なし。
+（**B を混ぜれば権利ゲートが要る。**混ぜない理由がここにもある。）
+
+### ②が実物で確かめたこと
+
+| 見たもの | 実物 |
+| --- | --- |
+| `app/page.common.tsx` | **`metadata` の export が無い** |
+| `app/layout.common.tsx` | `alternates: alternatesFor(null)`（canonical 無し）／`openGraph: { ...SITE_OG, type: 'website' }` |
+| 他のページ | `generateMetadata` で canonical を作り、`openGraph` に `...SITE_OG` と `url` を入れている |
+
+**トップは layout の既定をそのまま受けているだけ**なので、`og:url` も
+canonical も出ない。①の見立てどおりだった。
+
+### ②の判断 1 —— **`generateMetadata` にしない**
+
+他のページが関数なのは、**`searchParams` に依存する**からである。
+トップは依存しない。**`export const metadata` で足りる。**
+
+`absoluteUrl('/')` は読み込みのときに `CY_SITE_ORIGIN` を 1 度読む。
+**設定は動作中に変わらない**ので、これで問題ない。
+
+### ②の判断 2 —— **踏みやすい罠を、呼ぶ側から取り上げる**
+
+`app/layout.common.tsx` の註釈が名指ししている罠がある。
+
+> **子で `openGraph` を書くときは必ず `...SITE_OG` を展開すること** ——
+> metadata は浅くマージされるので、展開を忘れるとこの 2 つが子ページで消える
+> （段階 A-6 で実際に踏んだ）
+
+**註釈は 2 回踏まれている。**註釈で守れていない。**呼ぶ側が展開を忘れられない
+形にする。**
+
+```ts
+// lib/og.ts に足す
+export function ogWithUrl(canonical: string | null, type: 'website' | 'article' | 'profile') {
+  return { ...SITE_OG, type, ...(canonical ? { url: canonical } : {}) }
+}
+```
+
+- **`SITE_OG` の展開が中に入る**ので、呼ぶ側は忘れようがない
+- **canonical が取れないときは `url` を入れない。**`CY_SITE_ORIGIN` 未設定で
+  空文字や仮 URL を焼くのは、**無い URL を指すほうが悪い**（2026-08-09 の
+  `og:image` の決めと同じ理屈）
+
+**この周に置き換えるのはトップだけ。**他のページは動いているので触らない
+（**1 周 1 面**。U-5 と同じ）。**③は他のページを直しに行かないこと。**
+
+### ②の判断 3 —— **題名と説明は、トップでは書かない**
+
+トップの `og:title` / `og:description` は、いま layout の
+`title.default` と `description` から出ている（①が本番で確認済み）。
+
+**同じ文字列をトップにも書くと、2 か所になって必ずずれる。**
+`ogWithUrl` は `type` と `url` しか触らないので、**題名と説明は
+これまでどおり layout から来る。**
+
+> **ただし、これは「来るはず」である。**Next が `og:title` を
+> `openGraph.title` 無しでも埋めることに、②は実物の確証を持っていない。
+> **③は焼いた HTML を引いて、`og:title` と `og:description` が
+> 消えていないことを必ず確かめること。**消えていたら
+> `ogWithUrl` に題名と説明も渡す形へ変える（**そのときは layout と
+> トップで文字列を二重に持たない工夫が要る**）。
+
+### 変更対象ファイル
+
+1. **`lib/og.ts`** — `ogWithUrl` を足す
+2. **`app/page.common.tsx`** — `export const metadata` を足す
+3. **`server/og.test.mjs`** — `ogWithUrl` の試験（**実行で**）
+4. **`server/home-metadata.test.mjs`**（新）— トップが使っていること
+
+**`app/layout.common.tsx` は触らない。**
+
+### データモデル
+
+**変更なし。**
+
+### 経路・画面
+
+**画面の見た目は変わらない。**増えるのは `<head>` の 2 行
+（`og:url` と `<link rel="canonical">`）だけ。
+
+### 試験計画
+
+**`lib/og.ts` は `node --test` から直接 import できる**（`server/og.test.mjs`
+が前からそうしている。**2026-08-19 に③と⑤が「TS だから呼べない」と誤って
+書き、PR #38 で訂正した**）。**規則は実行で確かめる。**
+
+| # | 何を | 期待 | 手 |
+| --- | --- | --- | --- |
+| 1 | `SITE_OG` が必ず入る | `site_name` と `locale` が残る | 実行 |
+| 2 | canonical があれば `url` が入る | `url` が canonical と同じ | 実行 |
+| 3 | **canonical が null なら `url` を入れない** | `'url' in result === false`（**空文字でもない**） | 実行 |
+| 4 | `type` が渡したとおり | | 実行 |
+| 5 | トップが使っている | `page.common.tsx` が `ogWithUrl` と `alternatesFor` を呼ぶ | ソース |
+| 6 | **`CY_SITE_ORIGIN` 未設定のとき、トップの canonical も出ない** | `alternatesFor(null)` と同じ形 | 実行 |
+
+**試験 3 は `undefined` ではなく「キーが無い」ことを見る。**
+`{ url: undefined }` は Next が拾って空の `og:url` を焼きうる。
+
+**変異検査（3 方向）**: **境界**（canonical が null でも `url` を入れる →
+試験 3 が赤）・**符号**（`SITE_OG` の展開を外す → 試験 1 が赤）・
+**オフ**（トップの `metadata` を消す → 試験 5 が赤）。
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 見立てと対策 |
+| --- | --- |
+| **無い URL を焼く** | いちばん重い。`CY_SITE_ORIGIN` 未設定なら **`url` ごと出さない**（試験 3・6）。空文字も出さない |
+| **`og:site_name` / `og:locale` が消える** | 展開を関数の中へ入れて、呼ぶ側から取り上げる（試験 1）。**註釈では 2 回とも守れなかった** |
+| 題名・説明が消える | ②は確証を持っていない。**③が焼いた HTML で確かめる**（上記の判断 3） |
+| 個人単位の行動計測 | **無関係。**訪問者を一切扱わない |
+| 検査・認証・上限 | **触れない** |
+| `og:image` | **この設計に入れない。**要判断（社長待ち） |
+
+### ③への申し送り
+
+1. **焼いた HTML を必ず引く。**`og:url` が増えたことと、
+   **`og:title` / `og:description` / `og:site_name` / `og:locale` が
+   消えていないこと**の両方を見る（4 経路とも）
+2. **他のページを直しに行かない。**この周はトップだけ
+3. **`og:image` を足さない。**社長の判断待ち
+4. 註釈に `og:url` と書いても試験は壊れないが、**`ogWithUrl` という語を
+   註釈に書くと試験 5 が誤って通る。**書かないこと
+
 ## 2026-08-19 09:00 JST **U-7「4 問答えた直後の壁で、答えが残ることを伝えていない」** — 状態: **実装済み PR #37 `769b7e8`**（2026-08-19 09:15 マージ `5c2177e`。試験 **+5 件**・168 → **173/173 緑**・22 本。変異 5 方向で赤・**1 方向は最初 緑のまま通り、③が試験を直した**）
 
 ①の 08:50 の提案。**要判断ではない**（依存追加なし・決済なし・個人計測なし・
