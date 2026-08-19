@@ -59,7 +59,7 @@ gdp は呼ばれたときだけ動く（社長が起動する）。動いたほ�
 
 | 数字 | 測り方 | 2026-08-20 02:40 |
 | --- | --- | --- |
-| **本番が `main` の何本うしろか** | 公開 CSS の `last-modified` 以降の `main` のマージ数 | **44 本** |
+| **本番が `main` の何本うしろか** | 公開 CSS の `last-modified` 以降の **`git log --first-parent --merges`**（**`rev-list` で数えると枝の中の取り込みまで数え、3 本多くなる。2026-08-20 に訂正**） | **45 本** |
 | **本番で公開されている Story** | `/api/feeds/stories.xml` の `<item>` 数 | **1 本** |
 | **本番の書き手** | `/sitemap-stories.xml` の `/creators/` 数 | **1 人** |
 | **検索に出せる面** | トップの `robots` メタ | **0**（`noindex, nofollow`） |
