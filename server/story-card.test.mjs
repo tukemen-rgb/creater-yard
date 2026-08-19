@@ -95,11 +95,24 @@ test('カードは自ホスト外の URL を持たない', () => {
  *
  * とりわけ **つまずき**は、この場所の主役である。
  */
+//
+// **語が在るかではなく、描いているかを見る。**
+// 2026-08-19 に③が変異を当てて、この試験の 2 行が素通りすることを見つけた:
+//
+//   - 抜粋を描くのをやめても `const excerpt = …` の宣言が残るので、
+//     `/excerpt/` は当たり続けた
+//   - 道具タグを出さない条件にしても、`story.toolTags` の参照は残った
+//
+// **U-5・U-7 と同じ穴で、これが 3 回目である。**ソース検査は「在るか」まで
+// しか見ない。描いていることは、**描画にしか無いもの**で縛る —— ここでは
+// CSS が依存している class 名にした（同じ意味の書き直しでも class は残る）。
 test('カードは つまずき・タグ・抜粋 を出すことをやめない', () => {
   assert.match(source, /story\.hurdle/, 'つまずきが消えている。この場所の主役である')
   assert.match(source, /乗り越えた/, 'つまずきの解決済みの表示が消えている')
   assert.match(source, /悩み中/, '未解決のまま置ける表示が消えている')
-  assert.match(source, /story\.toolTags/, '道具タグが消えている')
-  assert.match(source, /story\.topicTags/, '話題タグが消えている')
-  assert.match(source, /excerpt/, '本文の抜粋が消えている')
+  assert.match(source, /className="story-card__tags"/, 'タグの並びを描いていない')
+  assert.match(source, /story\.toolTags\.map\(/, '道具タグを 1 つずつ描いていない')
+  assert.match(source, /story\.topicTags\.map\(/, '話題タグを 1 つずつ描いていない')
+  assert.match(source, /className="story-card__excerpt"/, '本文の抜粋を描いていない')
+  assert.match(source, /\{excerpt\}/, '抜粋の中身を流し込んでいない')
 })
