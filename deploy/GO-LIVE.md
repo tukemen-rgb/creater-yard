@@ -149,9 +149,22 @@ tail -n 5 /var/log/nginx/access.log
 - [ ] 画像を付けて公開 → 表示される
 - [ ] `https://<ドメイン>/sitemap-stories.xml` … URL が並ぶ
       （`CY_SITE_ORIGIN` 未設定だと 404 のまま — 設定を確認）
-- [ ] `/var/www/creatoryard/static/robots.txt` に Sitemap 行を足す:
-      `Sitemap: https://<ドメイン>/sitemap-stories.xml`
-- [ ] Search Console にドメインを登録し sitemap を出す（タグ SEO の起点）
+- ~~`/var/www/creatoryard/static/robots.txt` に Sitemap 行を足す~~
+      **→ §8 へ移した。ここではやらない**
+- ~~Search Console にドメインを登録し sitemap を出す~~
+      **→ §8 へ移した。ここではやらない**
+
+  > **この 2 つは索引を頼む手続きで、いま実行してはいけない。**
+  > 全ページが `noindex, nofollow` である（`app/layout.common.tsx`。初回
+  > パイロット中の措置で、**解除は社長の別判断**）。この状態で sitemap を
+  > 申請すると、**「索引しないでください」と「索引してください」を同時に
+  > 言う**ことになる。
+  >
+  > 以前ここには条件が「**本番ドメイン決定後**」と書いてあったが、
+  > **ドメインは 2026-08-14 に決まっている**＝**条件は既に満たされていた。**
+  > 上から順に読んだ人が、そのまま実行できる状態だった
+  > （2026-08-19 に④が本番を掃いて見つけた）。
+
 - [x] `deploy/backup.sh` を手で 1 回実行し、復元訓練 OK のログを見る
       （2026-08-17 実施。アカウント 1 / Story 1 / 画像 0・復元訓練 OK）
 
@@ -188,3 +201,36 @@ CreatorYard の 2 プロセス（~600MB）が乗るので、**4GB 機なら同�
 - データの問題: `systemctl stop creatoryard-api` →
   `/var/backups/creatoryard/` の tar.gz を `/var/lib/creatoryard/` に展開 →
   起動。**manifest の件数と展開後の件数を必ず照合する**
+
+## 8. 索引を許すとき（**社長が決めてから。上から順に**）
+
+**この節は、社長が「検索に出してよい」と決めたあとにだけ開く。**
+いまは全ページが `noindex, nofollow` で、それは**初回パイロット中の
+意図した状態**である（`app/layout.common.tsx` の註釈に「実利用確認後に
+別判断で解除する」と書いてある）。
+
+**順番を守る理由。**索引を頼む手続き（sitemap の申請・Search Console）を
+先にやると、**「索引しないでください」と「索引してください」を同時に言う**
+ことになる。検索側は noindex を優先するので害は小さいが、**手順書が
+矛盾した状態を指示しているのは、いずれ誰かが逆順で実行する。**
+
+1. [ ] **社長の決定を確かめる。**Issue #1 に「検索に出してよい」と
+       書かれていること。**ここは代行しない**
+2. [ ] `app/layout.common.tsx` の `robots: { index: false, follow: false }`
+       を外す（**製品コードの変更なので PR にする**）
+3. [ ] 反映する（`deploy/apply-latest.sh`）
+4. [ ] **配られているものを確かめる** ——
+       `curl -s https://creatoryard.io/ | grep -o '<meta name="robots"[^>]*>'`
+       が**何も返さない**こと。返るならまだ古いものが配られている
+       （`/build.txt` と `git rev-parse HEAD` も突き合わせる。§5）
+5. [ ] `/var/www/creatoryard/static/robots.txt` に Sitemap 行を足す:
+       `Sitemap: https://creatoryard.io/sitemap-stories.xml`
+       **リポジトリの `public/robots.txt` も同じ commit で直す**
+       （直さないと次の反映で消える）
+6. [ ] `https://creatoryard.io/sitemap-stories.xml` に URL が並ぶことを見る
+       （`CY_SITE_ORIGIN` 未設定だと 404 のまま）
+7. [ ] Search Console にドメインを登録し、sitemap を出す（タグ SEO の起点）
+
+**4 を飛ばさないこと。**2〜3 をやったつもりで配られていない、は
+2026-08-16 に実際に起きている（配備が全部緑のまま古いものを配り続けた。
+`docs/research/case-studies.md` 64）。

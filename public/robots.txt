@@ -1,5 +1,15 @@
 # CreatorYard。すべて公開ページ（下書きはそもそも URL を持たない）。
-# Sitemap の行は本番ドメイン決定後に deploy/GO-LIVE.md の手順で足す:
-#   Sitemap: https://<本番ドメイン>/sitemap-stories.xml
+#
+# **Sitemap の行は、まだ足さない。**
+# いま全ページが noindex, nofollow である（app/layout.common.tsx。初回
+# パイロット中の措置で、解除は社長の別判断）。この状態で Sitemap を出すと、
+# 「索引しないでください」と「索引してください」を同時に言うことになる。
+#
+# 足すのは **noindex を外すのと同じ手順の中**。deploy/GO-LIVE.md の
+# 「§8 索引を許すとき」を上から順に行うこと:
+#   Sitemap: https://creatoryard.io/sitemap-stories.xml
+#
+# なお Allow: / のままでよい。robots.txt で止めると crawler が noindex を
+# 読みに来られず、かえって索引が残る（MDN・Google の説明どおり）。
 User-agent: *
 Allow: /
