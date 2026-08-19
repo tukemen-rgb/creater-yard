@@ -177,13 +177,25 @@ curl --fail --silent --show-error -o /dev/null -w '%{http_code}\n' "$API_CHECK/a
 printf '設定CSP  : '
 grep -o "script-src [^;]*" "$NGINX_SITE" | head -1
 
+# 反映のあとに見に行く**公開の入口**。**書き写さない** —— ビルドが
+# canonical に使うのと同じ値（`CY_SITE_ORIGIN`。この手順書の前半で
+# 設定ファイルから読んでいる）を使う。設定が無いときだけ、この repo が
+# 知っている本番を既定にする（`deploy/verify-public-assets.sh` の
+# `ORIGIN` と同じ書き方）。
+#
+# **直書きだと、入口を変えた日に「配ったのとは別のサイト」を確かめてしまう。**
+PUBLIC_ORIGIN="${CY_SITE_ORIGIN:-https://creatoryard.io}"
+# 末尾の `/` を落とす。設定ファイルに `https://…/` と書かれていても
+# `//` を叩きに行かないため（`lib/og.ts` も同じことをしている）。
+PUBLIC_ORIGIN="${PUBLIC_ORIGIN%/}"
+
 # 設定ファイルではなく、Cloudflare経由の公開レスポンスまで反映されたことを確認する。
 # reload直後の一時差を許容し、最大30秒だけ再試行する。
 PUBLIC_CSP=
 attempt=1
 while [ "$attempt" -le 6 ]; do
   PUBLIC_CSP=$(
-    curl --fail --silent --show-error --head https://creatoryard.io/ 2>/dev/null |
+    curl --fail --silent --show-error --head "$PUBLIC_ORIGIN/" 2>/dev/null |
       tr -d '\r' |
       sed -n 's/^content-security-policy: //p' |
       head -1
@@ -216,7 +228,7 @@ esac
 # 失敗の文言でそれが分かるようにしておく —— 夜中に読む人が、次に何を
 # すればよいか迷わないため。
 HOME_MARK='つくる過程に、'
-if ! curl --fail --silent --show-error https://creatoryard.io/ |
+if ! curl --fail --silent --show-error "$PUBLIC_ORIGIN/" |
   grep -q "$HOME_MARK"; then
   echo "公開ホームの本文に「$HOME_MARK」がありません" >&2
   echo "配置と再起動は終わっています。トップの文言を変えたなら、この手順書の HOME_MARK も直してください" >&2
@@ -227,6 +239,6 @@ echo "公開本文  : OK（見出しを確認）"
 # 公開されている素材が、いま置いたものと同じか（deploy/verify-public-assets.sh）。
 # **不一致でも配備は止めない。**古いのは CDN の複製で、配備そのものは
 # 成功しているため（終了コード 2 で区別している）。
-sh /opt/creatoryard/deploy/verify-public-assets.sh || true
+ORIGIN="$PUBLIC_ORIGIN" sh /opt/creatoryard/deploy/verify-public-assets.sh || true
 
-echo "終わり。ブラウザで https://creatoryard.io/ を再読み込みして確認"
+echo "終わり。ブラウザで $PUBLIC_ORIGIN/ を再読み込みして確認"
