@@ -32,6 +32,21 @@ function escapeXml(value) {
     .replaceAll("'", '&apos;')
 }
 
+/**
+ * つまずきの見出し（設計 I-12）。**状態の言い方はカードと同じにする** ——
+ * 面ごとに違う言葉を使わない（`components/story-card.tsx` と同じ語）。
+ *
+ * 出すのは**公開項目のつまずきだけ**。2026-08-10 に決めた feed の境界
+ * （公開分のみ・閲覧の計測なし）は動かさない。**広げたのは「何を載せるか」
+ * であって、「誰の何を載せるか」ではない。**
+ */
+function hurdleLine(hurdle) {
+  const text = String(hurdle?.text ?? '').trim()
+  if (!text) return ''
+  const state = hurdle.status === 'resolved' ? '乗り越えた' : '悩み中'
+  return `つまずき（${state}）: ${text}\n\n`
+}
+
 /** 本文の冒頭だけを description に使う。全文は載せない（ページへ来てもらう）。 */
 function excerpt(body, max = 200) {
   const text = String(body ?? '')
@@ -54,7 +69,7 @@ export function buildStoriesFeed({ title, link, description, stories }) {
       <link>${escapeXml(url)}</link>
       <guid isPermaLink="true">${escapeXml(url)}</guid>
       <pubDate>${new Date(story.publishedAt).toUTCString()}</pubDate>
-      <description>${escapeXml(excerpt(story.body))}</description>
+      <description>${escapeXml(`${hurdleLine(story.hurdle)}${excerpt(story.body)}`)}</description>
     </item>`
     })
     .join('\n')
