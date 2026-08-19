@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const source = await readFile(new URL('../app/report/page.common.tsx', import.meta.url), 'utf8')
 const adminSource = await readFile(new URL('../app/admin/reports/page.common.tsx', import.meta.url), 'utf8')
+const apiSource = await readFile(new URL('./api.mjs', import.meta.url), 'utf8')
 
 test('通報を同期ロックして同じ申立ての二重送信を防ぐ', () => {
   assert.match(source, /const submitLockRef = useRef\(false\)/)
@@ -54,6 +55,42 @@ test('確認画面は、果たせない問い合わせの約束を書かない',
     source,
     /お問い合わせ/,
     '連絡先が無いのに「お問い合わせの際は」と書くと、利用者にできないことを指示することになる',
+  )
+})
+
+/**
+ * I-10 の**言い残し**（2026-08-18 の動作確認で実物を歩いて見つけた）。
+ *
+ * I-10 は確認画面から約束を消したが、**API の応答には同じ約束が残っていた**:
+ *
+ *     POST /api/reports → 201
+ *     {"ticket":"R-…","message":"受け付けました。… お問い合わせの際にお伝えください。"}
+ *
+ * 上の試験が `app/report/page.common.tsx` **だけ**を読んでいたので素通りした。
+ * 画面はこの `message` を捨てて `ticket` しか使わないため、**利用者の目には
+ * 触れないまま、API は約束を続けていた**。通報は認証不要＝誰でも叩けるので、
+ * この文字列は事実上公開されている。
+ *
+ * **「見えないから無い」ではない。**約束は、返した時点で約束である。
+ *
+ * 範囲は上の試験と同じ考え方で狭く取る（`お問い合わせ` の 1 語だけ）。
+ * `CY_CONTACT_EMAIL` が決まって本当の連絡先を返すようになったら、
+ * そのときは**この試験が赤くなるのが正しい** —— 約束を果たせる状態に
+ * なったかどうかを、人が 1 度立ち止まって確かめるための赤である。
+ */
+test('通報の受付 API は、果たせない問い合わせの約束を返さない', () => {
+  assert.doesNotMatch(
+    apiSource,
+    /お問い合わせ/,
+    '画面から消しても API が返し続けていれば、約束は消えていない',
+  )
+})
+
+test('通報の受付 API は、受付番号を返すことをやめない', () => {
+  assert.match(
+    apiSource,
+    /受付番号は \$\{ticket\}/,
+    '受付番号そのものは、申し立てた人が唯一手にする控えなので消さない',
   )
 })
 
