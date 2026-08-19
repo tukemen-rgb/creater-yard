@@ -48,7 +48,15 @@ const IMPL_GLOBS = [
  */
 const KINDS = [
   { label: 'クエリの鍵', re: /\?([a-zA-Z_][\w-]*)=/g, find: (v, impl) => impl.includes(`get('${v}')`) || impl.includes(`?${v}=`) },
-  { label: '端末の保存キー', re: /'(creatoryard:[\w-]+)'/g, find: (v, impl) => impl.includes(v) },
+  // 端末の保存キーは**2 通りの書き方**がある（`cy-` と `creatoryard:`）。
+  // 2026-08-20 まで後者しか見ておらず、**5 つのうち 3 つが最初から網の外**だった。
+  // `cy-` 側は末尾のハイフンを許さない —— 試験が使う一時置き場の名前
+  // （`cy-api-` など、`mkdtemp` に渡す接頭辞）は鍵ではない。
+  {
+    label: '端末の保存キー',
+    re: /'(creatoryard:[\w-]+|cy-[a-z][a-z0-9-]*[a-z0-9])'/g,
+    find: (v, impl) => impl.includes(v),
+  },
   { label: 'API の経路', re: /'(\/api\/[\w./-]+)'/g, find: (v, impl) => impl.includes(v) || impl.includes(prefixOf(v)) },
   { label: '環境変数', re: /\b(CY_[A-Z_]+|HEALTH_[A-Z_]+|BACKUP_[A-Z_]+|REPORT_[A-Z_]+|VERSION_[A-Z_]+|DEPLOY_DIR)\b/g, find: (v, impl) => impl.includes(v) },
 ]

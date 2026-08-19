@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
 
+import {
+  DEVICE_STORAGE,
+  DEVICE_STORAGE_EVICTION,
+  DEVICE_STORAGE_SHARED_DEVICE,
+} from '../../lib/device-storage'
 import { absoluteUrl, alternatesFor, ogWithUrl } from '../../lib/og'
 
 /**
@@ -79,6 +84,27 @@ export default function DataPolicyPage() {
             送信元をメモリ上で短時間数えます（ディスクに残しません）
           </li>
         </ul>
+      </section>
+
+      {/* 上はサーバー側に持つもの。**端末に残るものは別に書く**（U-12）。
+          一覧は lib/device-storage.ts から取る —— ここに直書きすると、
+          新しい鍵を足した人がこの面を直さずに済んでしまう。 */}
+      <section className="tag-section">
+        <h2>あなたの端末に残るもの</h2>
+        <p>
+          下はサーバーではなく、<strong>あなたのブラウザの中</strong>に残ります。
+          こちらから読み取ることはできません。
+        </p>
+        <ul>
+          {DEVICE_STORAGE.map((item) => (
+            <li key={item.key}>
+              <strong>{item.what}</strong> — <code>{item.key}</code>。
+              {item.clearedBy}に消えます
+            </li>
+          ))}
+        </ul>
+        <p className="notice">{DEVICE_STORAGE_EVICTION}</p>
+        <p>{DEVICE_STORAGE_SHARED_DEVICE}</p>
       </section>
 
       <section className="tag-section">
