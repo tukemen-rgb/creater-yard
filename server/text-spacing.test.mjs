@@ -19,6 +19,30 @@ const ROOT = new URL('..', import.meta.url).pathname
 const KANA = '[ぁ-んァ-ヶ一-龠]'
 const LATIN = '(?:Story|CreatorYard|GAMEYARD|RSS)'
 
+/**
+ * 断り文句のクラスを**コードから拾う。**
+ *
+ * **最初はここに `StoryError|AuthError|ReportError` と書き写していた。**
+ * 実際には `ImageError` `MailError` `RateLimitError` もあり、
+ * **分母が 53 件のところを 89 件のうち 53 件しか見ていなかった**
+ * （2026-08-19 に①が気づいた。**幸い、見ていなかった側に違反は無かった**）。
+ *
+ * A-4 で学んだことを、自分の試験に当てる ——
+ * **2 つのファイルの間の約束は、片方に書き写すのではなく、
+ * もう片方から取り出して比べる。**
+ */
+function errorClasses() {
+  const names = new Set()
+  for (const f of globSync('server/lib/*.mjs', { cwd: ROOT })) {
+    const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
+    for (const m of src.matchAll(/export class (\w*Error)\b/g)) names.add(m[1])
+  }
+  return [...names].sort()
+}
+
+const errorMessagePattern = () =>
+  new RegExp(String.raw`new (?:${errorClasses().join('|')})\(\s*(?:'([^']*)'|\`([^\`]*)\`)`, 'g')
+
 /** 註釈は画面に出ない。ここで数えると、説明のために書いた語まで拾う。 */
 const isComment = (line) => /^\s*(\*|\/\/|\/\*)/.test(line)
 
@@ -67,11 +91,10 @@ function numberOffenders() {
     })
   }
   // 断り文句は**書き手に返る文字列**なので、画面と同じ扱いにする。
-  for (const f of globSync('server/lib/*.mjs', { cwd: ROOT })) {
+  for (const f of [...globSync('server/lib/*.mjs', { cwd: ROOT }), ...globSync('server/*.mjs', { cwd: ROOT })]) {
+    if (f.includes('.test.')) continue
     const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
-    for (const m of src.matchAll(/new (?:StoryError|AuthError|ReportError)\(\s*(?:'([^']*)'|`([^`]*)`)/g)) {
-      scan(f, m[1] ?? m[2], 0)
-    }
+    for (const m of src.matchAll(errorMessagePattern())) scan(f, m[1] ?? m[2], 0)
   }
   return found
 }
@@ -99,4 +122,28 @@ test('この検査は、揃っていない箇所を実際に数えられる', ()
   assert.equal([...'、Story。'.matchAll(re())].length, 0, '句読点の隣まで数えている')
   // 正しく空白が入っているものは数えない。
   assert.equal([...'保存した Story を読む'.matchAll(re())].length, 0, '揃っているものまで数えている')
+})
+
+// **分母が黙って狭まらないようにする。**クラスを書き写していたときは、
+// 3 つしか見ていないことに誰も気づけなかった。
+test('断り文句のクラスを、コードから漏れなく拾えている', () => {
+  const found = errorClasses()
+  assert.ok(found.length >= 6, `拾えたクラスが ${found.length} 個しかない: ${found.join(', ')}`)
+  for (const name of ['StoryError', 'AuthError', 'ImageError']) {
+    assert.ok(found.includes(name), `${name} を拾えていない`)
+  }
+  // **魔法の数字を置かない。**「80 件以上」と書いたら、それが何の 80 なのか
+  // 誰も説明できない（最初そう書いて、実際の 78 件で外した）。
+  // 比べるのは**書き写していたときの見え方**そのものにする。
+  const count = (pattern) => {
+    let n = 0
+    for (const f of globSync('server/lib/*.mjs', { cwd: ROOT })) {
+      const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
+      n += [...src.matchAll(pattern)].length
+    }
+    return n
+  }
+  const all = count(errorMessagePattern())
+  const copiedByHand = count(/new (?:StoryError|AuthError|ReportError)\(\s*(?:'([^']*)'|`([^`]*)`)/g)
+  assert.ok(all > copiedByHand, `書き写していたときと同じ ${all} 件しか見えていない`)
 })
