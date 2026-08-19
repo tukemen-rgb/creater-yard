@@ -39,13 +39,19 @@ const wait = (ms) => new Promise((done) => setTimeout(done, ms))
  * `CY_SITE_ORIGIN` を渡すのは、sitemap が**未設定だと GET でも 404** に
  * なるからである。設定しないまま「HEAD も GET も 404 で一致」と書くと、
  * **壊れたまま緑になる**。
+ *
+ * **港の範囲は他の試験と重ねない。**最初 8910〜8930 で書いたら
+ * `api-ownership.test.mjs` と同じ範囲で、通しで走らせたとき**あちらが
+ * 2 件落ちた**。同時に走ると、後から来たほうの `spawn` が港を取れず、
+ * それでも**先客の健康確認に成功して、他人のサーバーを測ってしまう**。
+ * 範囲を分けたうえで、**自分の子が生きていることも確かめる**。
  */
 async function withApi(body) {
   const dir = mkdtempSync(path.join(tmpdir(), 'cy-head-'))
   let child = null
   let base = ''
   try {
-    for (let port = 8910; port < 8930 && !base; port += 1) {
+    for (let port = 8950; port < 8970 && !base; port += 1) {
       const candidate = spawn(process.execPath, ['server/api.mjs'], {
         cwd: ROOT,
         env: {
@@ -60,7 +66,8 @@ async function withApi(body) {
         if (candidate.exitCode !== null) break
         try {
           const res = await fetch(`http://127.0.0.1:${port}/api/health`)
-          if (res.ok) {
+          // 答えたのが**自分の子**であることまで見る（先客だと落ちている）
+          if (res.ok && candidate.exitCode === null) {
             child = candidate
             base = `http://127.0.0.1:${port}`
             break
