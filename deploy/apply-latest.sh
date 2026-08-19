@@ -24,6 +24,18 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 echo "== 1/3 事前ビルド =="
+# 配るものの中へ「どの commit から作ったか」を 1 枚置く（設計 O-6）。
+# 2026-08-19、本番が main から 3 日ぶん遅れているのに死活確認は 3 日間ずっと
+# 緑だった。見ているのが「応答するか」だけで、**版を見ていなかった**ため。
+#
+# **ビルドより前**に書く。public/ の中身は out/ にも next start にも
+# そのまま乗るので、書いてからビルドしないと配るものに入らない。
+# 中身は commit の SHA 1 行だけ。日時も枝名も入れない（増やすほど、
+# それが正しいことを別に保証する羽目になる）。
+# .gitignore に入っているので、上の git status --porcelain は空のまま。
+git rev-parse HEAD > public/build.txt
+echo "  版: $(cat public/build.txt)"
+
 # 同居機（GAMEYARD と同じ VPS）なのでメモリ上限つき
 export NODE_OPTIONS=--max-old-space-size=1024
 npm ci

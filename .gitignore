@@ -3,6 +3,10 @@ node_modules/
 .next-static/
 .next-server/
 out/
+# 配備のときに apply-latest.sh が書く「どの commit から作ったか」（設計 O-6）。
+# **追跡してはいけない。**apply-latest.sh は冒頭で git status --porcelain が
+# 空であることを要求しているので、追跡したまま書くと配備が自分自身を止める。
+public/build.txt
 next-env.d.ts
 *.log
 .DS_Store

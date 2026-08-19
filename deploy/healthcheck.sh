@@ -54,6 +54,53 @@ else
   note "web: OK（SSR が HTML を返しています）"
 fi
 
+# ---- 版（配っているものは、どの commit から作られたか） ----
+# 2026-08-19、本番が main から 3 日ぶん遅れているのに、この死活確認は 3 日間
+# ずっと緑だった。見ていたのが「API が ok を返すか」「一覧の見出しが出るか」
+# だけで、**版を見ていなかった**ため。事例 64（配備が全部緑のまま「動画だけ
+# 古い」を通した）と同じ形が、こんどはサイト全体で起きていた。
+#
+# **2 つを分けて扱う。**
+#
+#   配ったもの ≠ 手元 … NG。「反映したつもりで反映されていない」＝事例 64
+#   手元 < main      … NG にしない。注記だけ
+#
+# **遅れていること自体は異常ではない。**反映を回すかどうかは社長が決めること
+# で、遅れは判断の結果でもありうる。**異常でないものを赤くする警報は、やがて
+# 誰も見なくなり、本当の赤が埋もれる。**（だから注記に留める。代わりに、
+# 役割④が毎周これを読んでレポートに書く ——⑤ 06:45 の裁定 2。読む人が
+# 居ない注記は、無いのと同じ。）
+DEPLOY_DIR="${DEPLOY_DIR:-/opt/creatoryard}"
+VERSION_URL="${VERSION_URL:-$WEB/build.txt}"
+VERSION_CHECK="${VERSION_CHECK:-1}"
+if [ "$VERSION_CHECK" != "1" ]; then
+  note "版: 確認しません（VERSION_CHECK=$VERSION_CHECK）"
+else
+  served="$(curl -sS --max-time 10 --fail "$VERSION_URL" 2>/dev/null | tr -d '\r\n[:space:]')"
+  local_rev="$(git -C "$DEPLOY_DIR" rev-parse HEAD 2>/dev/null)"
+  if [ -z "$served" ]; then
+    # まだ build.txt を置いていない本番がある（この仕組みより前に配備した版）。
+    # **無いことを壊れ扱いしない。**次の反映で置かれる
+    note "版: まだ置かれていません（$VERSION_URL）。次の反映から出ます"
+  elif [ -z "$local_rev" ]; then
+    note "版: 手元の checkout を読めません（$DEPLOY_DIR）。比べられません"
+  elif [ "$served" != "$local_rev" ]; then
+    fail "配っているものが手元と違います（公開 ${served%"${served#???????}"}… / 手元 ${local_rev%"${local_rev#???????}"}…）。反映が途中で止まっているか、ビルドが古いままです"
+  else
+    # ここまで来たら「置いたものは配れている」。あとは手元が main から
+    # 何本うしろか。**取れなければ黙って飛ばす**（網が無いことを異常にしない）
+    behind=''
+    if git -C "$DEPLOY_DIR" fetch --quiet origin main 2>/dev/null; then
+      behind="$(git -C "$DEPLOY_DIR" rev-list --count HEAD..FETCH_HEAD 2>/dev/null)"
+    fi
+    if [ -n "$behind" ] && [ "$behind" -gt 0 ] 2>/dev/null; then
+      note "版: 配っているものと手元は同じですが、main より ${behind} 本うしろです（反映するかは人が決めること）"
+    else
+      note "版: 配っているものと手元は同じです（${local_rev%"${local_rev#???????}"}…）"
+    fi
+  fi
+fi
+
 # ---- ディスク ----
 if [ -d "$DATA_MOUNT" ]; then
   used_pct=$(df --output=pcent "$DATA_MOUNT" | tail -1 | tr -dc '0-9')

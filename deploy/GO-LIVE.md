@@ -135,6 +135,16 @@ tail -n 5 /var/log/nginx/access.log
       「書き始める」が出る（HTML の取得だけでは初期化失敗を検出できない）
 - [ ] ブラウザの Console に CSP 違反や `Connection closed` が出ていない
 - [ ] `https://<ドメイン>/api/health` … `{"ok":true}`
+- [ ] `https://<ドメイン>/build.txt` … **いま配られているものが、どの commit
+      から作られたか**（設計 O-6）。`git rev-parse HEAD` と突き合わせる:
+
+      ```
+      curl -s https://<ドメイン>/build.txt; git -C /opt/creatoryard rev-parse HEAD
+      ```
+
+      **同じでなければ、反映が途中で止まっている。**死活確認も同じことを
+      見ていて、ずれていれば NG を出す。なお「手元が main より古い」は
+      **注記だけで NG にしない**（反映するかは人が決めること）
 - [ ] 新規登録 → Story 公開 → `/story/<id>/` が **HTML に本文入り**で出る
 - [ ] 画像を付けて公開 → 表示される
 - [ ] `https://<ドメイン>/sitemap-stories.xml` … URL が並ぶ
