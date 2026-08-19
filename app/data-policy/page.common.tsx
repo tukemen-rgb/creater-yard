@@ -1,13 +1,31 @@
 import type { Metadata } from 'next'
 
+import { absoluteUrl, alternatesFor, ogWithUrl } from '../../lib/og'
+
 /**
  * データの扱い。「集めない」と決めているものを明記する。
  * ここに書いたことは実装の事実と一致させる（書くだけの約束にしない）。
  * 集めるものを増やす変更は、先に社長の決定とこのページの更新が要る。
  */
+/**
+ * 貼られたときのカード（設計 A-2）。**この面は公開されていて貼られうる。**
+ *
+ * `og:url` を出すのは、`?utm_source=…` の付いたリンクが別の対象として
+ * 扱われないようにするため（OGP の必須 4 項目の 1 つ・事例 36）。
+ *
+ * `openGraph` に題名と説明を明示するのは、layout の `title.template`
+ * （`%s | CreatorYard`）が `og:title` にも当たり、**`og:site_name` と
+ * ブランドが二重になる**ため。ブランドは `og:site_name` が運ぶ。
+ */
+const canonical = absoluteUrl('/data-policy/')
+const title = 'データの扱い'
+const description = 'CreatorYard が持つデータと、持たないと決めているデータ。'
+
 export const metadata: Metadata = {
-  title: 'データの扱い',
-  description: 'CreatorYard が持つデータと、持たないと決めているデータ。',
+  title,
+  description,
+  alternates: alternatesFor(canonical),
+  openGraph: { ...ogWithUrl(canonical, 'website'), title, description },
 }
 
 /**
