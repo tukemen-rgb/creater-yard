@@ -12,6 +12,42 @@
 
 ---
 
+## 80. **Open Graph protocol —— `og:image` は「必須の 4 つ」の 1 つ**
+
+- 出典: <https://ogp.me/>（Open Graph protocol／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`The four required properties for every page are:`**
+  > **`og:title` — `The title of your object as it should appear within the graph`**
+  > **`og:type` — `The type of your object`**
+  > **`og:image` — `An image URL which should represent your object within the graph`**
+  > **`og:url` — `The canonical URL of your object …`**
+
+  **仕様は「無いとどうなるか」を書いていない。**（だから**推測しない**。
+  下は実物を数えた結果だけ）
+
+- 実物を数えた（2026-08-20・本番と `main` の両方）:
+
+  | 面 | 出ている og | `og:image` |
+  | --- | --- | --- |
+  | トップ・一覧・タグなど | `title` `type` `site_name` `locale` `description`（＋`url`） | **無し** |
+  | 記事（画像を貼っていない Story） | 同上 ＋ `url` | **無し** |
+  | 記事（画像を貼った Story） | 同上 | **在る**（`CY_SITE_ORIGIN` が要る） |
+
+  つまり**必須 4 つのうち 3 つは全面にあり、`og:image` だけが
+  「画像を貼った記事」にしか無い。**
+
+- 学び: **これは「壊れている」ではなく「決まっていない」。**
+  `lib/og.ts` の註釈にこう書いてある ——「**無い URL を指すより、出さない
+  ほうがまし**（2026-08-09 に `og:image` で決めたのと同じ理屈）」。
+  **既定の画像を作るかどうかが、社長待ちの 1 件**（「`og:image` を作るか」）。
+
+  招待は**リンクを貼って送る**形になるので、**貼られたときの見え方**は
+  招待の直前に効く。ただし**作る／作らないは社長の決定**であり、
+  ①としては「**必須 4 つのうち 1 つが欠けている**」という事実だけを置く。
+
+---
+
 ## 79. **Google 検索セントラル「noindex」—— 見てもらうには、まず来てもらう必要がある**
 
 - 出典: <https://developers.google.com/search/docs/crawling-indexing/block-indexing>
