@@ -11,6 +11,18 @@ export default function SavedStoriesPage() {
   const [stories, setStories] = useState<Story[]>([])
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
+  /**
+   * 読めなくなって一覧から外した数（設計 U-8 の (b)）。
+   *
+   * 外すこと自体は正しい —— 消えた記録を永久に引き続くほうが悪い。
+   * **黙って外していたのが問題だった。**全部が消えた端末で `/saved/` を
+   * 開くと「保存した Story はありません」＝**一度も保存していない人と
+   * 同じ画面**になっていた（2026-08-19 に①がブラウザで確かめた）。
+   *
+   * すぐ下の `failed` 側は前から「保存は消さずに残しています」と言っている。
+   * **言い分けの片側だけが書かれていなかった。**
+   */
+  const [dropped, setDropped] = useState(0)
 
   useEffect(() => {
     const ids = savedStoryIds()
@@ -31,6 +43,7 @@ export default function SavedStoriesPage() {
     ).then((results) => {
       const missing = new Set(results.filter((result) => result.missing).map((result) => result.id))
       if (missing.size > 0) saveStoryIds(ids.filter((id) => !missing.has(id)))
+      setDropped(missing.size)
       setStories(results.flatMap((result) => (result.story ? [result.story] : [])))
       setFailed(results.some((result) => result.failed))
       setReady(true)
@@ -44,6 +57,12 @@ export default function SavedStoriesPage() {
         この端末のブラウザに保存した Story です。保存情報は CreatorYard へ送信しません。
       </p>
       {!ready && <p className="notice">読み込み中…</p>}
+      {ready && dropped > 0 && (
+        <p className="notice">
+          読めなくなった Story を {dropped} 本、一覧から外しました。
+          書き手が消したか、公開をやめたものです。
+        </p>
+      )}
       {ready && !failed && stories.length === 0 && (
         <p className="notice">
           保存した Story はありません。<Link prefetch={false} href="/stories/">Story を読む</Link>
