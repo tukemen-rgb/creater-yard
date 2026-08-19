@@ -23,6 +23,104 @@ UTC 実装＋UTC 前提の試験が緑のまま通った教訓。事例 54 = Azu
 
 ---
 
+## 2026-08-20 15:00 **U-13 端末の保存領域を、1 か所で囲う** — **未実装（反映が済むまで着手しない）**
+
+①の提案（14:30・U-13）を設計に落とす。**⑤ 13:00 の線の外**なので③は着手しない。
+**U-12 と同じファイル群を触るので、実装は U-12 → U-13 の順**（U-12 が
+`lib/device-storage.ts` を作り、U-13 がそこへ囲いを足す）。
+
+### 実物の測り直し（**①の 14:30 の表は誤りだった**）
+
+`localStorage` を触るのは **3 ファイル・11 か所**。**囲いは関数ごとにまちまち**で、
+**穴は 6 か所**:
+
+| 穴 | 何をする関数か |
+| --- | --- |
+| `lib/api.ts` `getToken` `getHandle` | **読む**（ヘッダーが全ページで呼ぶ） |
+| `lib/api.ts` `saveSession` `clearSession` | **書く・消す** |
+| `lib/saved-stories.ts` `saveStoryIds` | **書く** |
+| `lib/story-interview.ts` `saveInterviewDraft` | **書く**（書きかけの本文） |
+
+**同じファイルの中でも分かれている**（`saveInterviewProgress` は囲っているのに
+`saveInterviewDraft` は囲っていない）。**だから関数ごとに `try` を足すやり方は
+採らない** —— また次に足す人が忘れる。
+
+### 変更対象ファイル
+
+| ファイル | 何をするか |
+| --- | --- |
+| `lib/device-storage.ts`（U-12 で新規作成） | **`readValue` `writeValue` `removeValue` の 3 つを足す。**囲いはここだけ |
+| `lib/api.ts` | 4 か所を上の 3 つ経由にする |
+| `lib/saved-stories.ts` | `saveStoryIds` を `writeValue` 経由に（読む側は既存の `try` を外して統一） |
+| `lib/story-interview.ts` | 5 か所（読む・書く・消す）を統一 |
+| `app/login/page.common.tsx` ほか `saveSession` を呼ぶ 4 面 | **保存できなかったときに 1 行出す**（下） |
+| `server/device-storage.test.mjs`（U-12 で新規） | 試験を 3 件足す |
+
+### データモデル
+
+**持ち方は変えない。**鍵も値も同じ。**変えるのは「触り方」だけ**である。
+
+```ts
+export function readValue(key: string): string | null {
+  try { return window.localStorage.getItem(key) } catch { return null }
+}
+/** 書けたら true。**書けなかったことを呼び出し側が知れる**ようにする。 */
+export function writeValue(key: string, value: string): boolean {
+  try { window.localStorage.setItem(key, value); return true } catch { return false }
+}
+export function removeValue(key: string): void {
+  try { window.localStorage.removeItem(key) } catch { /* 消せないなら、もう無い */ }
+}
+```
+
+**`writeValue` が真偽値を返すのが要点。**`catch` で黙って捨てると、
+**「保存したつもりで保存されていない」**が生まれる —— それは 2026-08-20 に
+反映の手順で潰したのと**同じ族の間違い**（黙って続ける）である。
+
+### 経路・画面
+
+- **新しい URL は無い。**
+- `saveSession()` が偽を返したとき、**ログインは成立している**（トークンは
+  サーバーが出した）。**しかしこの端末には残せない。**画面に 1 行:
+
+  > **この端末には、ログイン状態を保存できない設定になっています。**
+  > このページを離れると、もう一度ログインが必要です。
+
+  出す場所は **`/login/` `/signup/` `/reset/` `/account/`**（`saveSession` を
+  呼ぶ 4 面）。**遷移は止めない** —— 書ける人は書けるので、邪魔をしない
+- `saveStoryIds` / `saveInterviewDraft` が偽のときは、**その場の既存の文言に
+  従う**（「あとで読む」は押した見た目を戻す。書きかけは
+  「この端末には保存できません」を出す）。**別画面は作らない**
+
+### 試験計画（`server/device-storage.test.mjs` に追加）
+
+1. **`localStorage` を直に触るのは `lib/device-storage.ts` だけ** ——
+   `app/` `components/` `lib/` を走査し、`window.localStorage` を含む
+   ファイルがその 1 本だけであることを見る。**次に足す人が忘れられない形**
+2. **囲いがある** —— その 1 本の中の各関数が `try` の内側であること
+3. **書けなかったことを捨てていない** —— `saveSession` を呼ぶ面が、
+   その返り値を見て分岐していること（**呼びっぱなしを落とす**）
+
+**1 が本体。**関数ごとに `try` を数える試験にはしない（また抜ける）。
+
+### セキュリティ（脅威と対策）
+
+| 脅威 | 対策 |
+| --- | --- |
+| **保存できない端末で、全ページが落ちる**（いま起きうる。事例 84） | 読む側を囲う。**落ちない**ようにする |
+| **「保存したつもり」で保存されていない** | `writeValue` が真偽を返し、**呼び出し側が見る**（試験 3） |
+| 囲いを足したことで、**失敗を握り潰す文化**が入る | **消す（`removeValue`）だけは黙ってよい**と明記（消せない＝そもそも無い）。**書く側は必ず返り値を見る** |
+| ログイン状態を保存できない人に、**トークンを別の場所へ逃がしたくなる**（cookie・URL） | **やらない。**cookie は「持たないと決めているもの」に近づき、URL に載せると共有時に漏れる。**保存できないなら、その回だけのログインでよい** |
+| 検査・認証・上限 | **触らない。**この設計は**触り方**しか変えない |
+
+### 実装の順（③へ・**反映が済んでから**）
+
+(1) `lib/device-storage.ts` に 3 つを足す → (2) 試験 1・2 を書いて緑にする
+→ (3) 3 ファイルを差し替える → (4) 4 面に 1 行を足す（**画面を触るので
+build → lint の順**）→ (5) 試験 3。
+
+---
+
 ## 2026-08-20 13:30 **U-12 `/data-policy/` に「あなたの端末に残るもの」を書く** — **未実装（反映が済むまで着手しない）**
 
 ⑤ 13:00 の裁定により、③はいま**次の 1 回の反映で起きること**しか作れない。

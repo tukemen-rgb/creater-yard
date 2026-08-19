@@ -32,13 +32,23 @@
 > **`The request violates a policy decision. For example, the user has configured
 > the browsers to prevent the page from persisting data.`**
 
-**同じ製品の中で、扱いが分かれている**（`origin/main` を数えた）:
+**【2026-08-20 15:00 訂正】この表は間違っていた。**ファイル単位で数えたが、
+**囲いは関数ごとにまちまち**だった。**11 か所を 1 つずつ見た結果が下**である。
 
-| ファイル | `localStorage` を囲っているか |
+| ファイル・関数 | 囲っているか |
 | --- | --- |
-| `lib/story-interview.ts` | **囲っている**（`try`/`catch`。註に「使えなくても続けられる」と書いてある） |
-| `lib/saved-stories.ts` | **囲っている** |
-| **`lib/api.ts`** | **囲っていない** |
+| `lib/api.ts` `getToken` `getHandle` `saveSession` `clearSession` | **4 つとも囲っていない** |
+| `lib/saved-stories.ts` `savedStoryIds`（読む） | 囲っている |
+| `lib/saved-stories.ts` **`saveStoryIds`（書く）** | **囲っていない** |
+| `lib/story-interview.ts` `saveInterviewProgress` `loadInterviewProgress` `clearInterviewProgress` `readInterviewDraft` | 囲っている |
+| `lib/story-interview.ts` **`saveInterviewDraft`（書く）** | **囲っていない** |
+
+**穴は 6 か所**（`api.ts` の 4 つ＋書き込み 2 つ）。**同じファイルの中でも
+分かれている** —— `saveInterviewProgress` は囲っているのに
+`saveInterviewDraft` は囲っていない。
+
+**14:30 に「`api.ts` だけが例外」と書いたのは誤り。**
+ファイル単位で見て、中身を 1 つずつ見なかった。**落とし穴 C の 11 回目。**
 
 **そして囲っていないほうを呼ぶのが `components/nav-auth.tsx` である。**
 あれは `app/layout.common.tsx` に置かれている ——**全ページのヘッダー**。
