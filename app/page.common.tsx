@@ -18,12 +18,42 @@ const rightsApproved = fs.existsSync(path.join(MEDIA_DIR, 'RIGHTS_APPROVED'))
 const hasHeroVideo = rightsApproved && fs.existsSync(path.join(MEDIA_DIR, 'hero.mp4'))
 const hasHeroWebm = fs.existsSync(path.join(MEDIA_DIR, 'hero.webm'))
 
+/**
+ * 素材の版。ビルド時に読んだ**バイト数**をそのまま使う（設計 O-4）。
+ *
+ * 素材のファイル名は変えない方針なので、差し替えても URL が同じままになり、
+ * CDN と利用者のブラウザは古い複製を配り続ける（事例 64・MDN
+ * 「中間サーバーに置かれたものは消しに行けない」）。URL に版を付けて
+ * 別物にする。
+ *
+ * 版を人が書く形にすると、差し替えたのに上げ忘れる、が必ず起きる。
+ * サイズなら差し替えれば勝手に変わる。**同じサイズの別物**という
+ * 取りこぼしは理屈上あるが、そのときは deploy/verify-public-assets.sh の
+ * 照合が「不一致」で拾う。
+ *
+ * 読めなければ 0。素材ゲート（hasHeroVideo）を通った時点で mp4 は在るので、
+ * ここが 0 になるのは元から 404 になる参照だけ。
+ */
+function mediaVersion(name: string): number {
+  try {
+    return fs.statSync(path.join(MEDIA_DIR, name)).size
+  } catch {
+    return 0
+  }
+}
+
+const heroVersion = {
+  mp4: mediaVersion('hero.mp4'),
+  webm: mediaVersion('hero.webm'),
+  poster: mediaVersion('hero-poster.jpg'),
+}
+
 export default function Home() {
   return (
     <>
       <div className={hasHeroVideo ? 'hero hero--video' : 'hero'}>
         {hasHeroVideo && (
-          <HeroVideo hasWebm={hasHeroWebm} />
+          <HeroVideo hasWebm={hasHeroWebm} version={heroVersion} />
         )}
         <div className="hero__content">
           <h1>
