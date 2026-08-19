@@ -21,6 +21,9 @@ function StoriesInner() {
   const [listing, setListing] = useState<StoryListing | null>(null)
   const [error, setError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  // I-9: server 版と同じ 1 行。**分岐にだけ使い、画面には出さない**。
+  // API から受け取った stories 配列から数えるので、新しい項目は要らない。
+  const authorsOnPage = new Set((listing?.stories ?? []).map((s) => s.authorHandle)).size
 
   useEffect(() => {
     let active = true
@@ -41,7 +44,10 @@ function StoriesInner() {
     }
   }, [tool, topic, page, retryCount])
 
-  const filterLabel = tool || topic
+  // I-8: 効いている条件を**全部**集める（server 版と同じ形）。以前は
+  // `tool || topic` で、?tool=godot&topic=影 のとき「godot」だけを
+  // 名乗っていた。空白だけの値は数えない。
+  const filterLabels = [tool, topic].filter((v) => v?.trim())
   // ページ送りは絞り込み条件を落とさない（server 版と同じ規則。両方を保持）
 
   return (
@@ -52,9 +58,10 @@ function StoriesInner() {
         {' '}
         <Link prefetch={false} href="/tags/">タグから探す</Link>
       </p>
-      {filterLabel && (
+      {filterLabels.length > 0 && (
         <p className="notice">
-          「{filterLabel}」で絞り込み中 — <Link prefetch={false} href="/stories/">解除する</Link>
+          {filterLabels.map((v) => `「${v}」`).join('')}で絞り込み中 —{' '}
+          <Link prefetch={false} href="/stories/">解除する</Link>
         </p>
       )}
       {error && (
@@ -73,10 +80,15 @@ function StoriesInner() {
         </p>
       )}
       {listing?.stories.map((story) => <StoryCard key={story.id} story={story} />)}
-      {/* server 版と同じ位置・同じ文言にそろえる（表示順の差異を作らない）。 */}
+      {/* server 版と同じ位置・同じ文言にそろえる（表示順の差異を作らない）。
+          I-9: 前半（並べ方の説明）は書き手が 2 人以上のページでだけ出す。
+          後半（文化の説明）は条件に入れない — 経営判断 2026-08-10 22:00。
+          server 版（page.server.tsx）と同じ形を保つこと。
+          server/sort-notice.test.mjs が 2 ファイルを回して確かめている。 */}
       {listing && listing.stories.length > 0 && (
         <p className="notice">
-          新しい記録を基準に、同じ作者が続かないように並べています。閲覧数ランキングではありません。
+          {authorsOnPage > 1 && '新しい記録を基準に、同じ作者が続かないように並べています。'}
+          閲覧数ランキングではありません。
         </p>
       )}
       {/* 全体 RSS への**見えるリンク**。head の autodiscovery だけで
