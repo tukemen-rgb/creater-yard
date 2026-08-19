@@ -8,6 +8,7 @@ import {
   handleFeedPath,
   handleUrl,
   ogDescription,
+  ogWithUrl,
   SITE_FEED,
   SITE_OG,
   storiesFilterUrl,
@@ -175,4 +176,42 @@ test('ページ送りのリンクは絞り込み条件を落とさない（gdp 2
   assert.ok(storiesListPath('GODOT', '', 2).includes('tool=GODOT'))
   // 条件なしは素の一覧
   assert.equal(storiesListPath('', '', 1), '/stories/')
+})
+
+/**
+ * 子で `openGraph` を書くときの取りこぼしを、呼ぶ側から取り上げる関数
+ * （設計 A・2026-08-19 10:30）。
+ *
+ * `app/layout.common.tsx` の註釈は「必ず `...SITE_OG` を展開すること」と
+ * 名指ししているが、**この罠はこの repo で 2 回踏まれている。**
+ * 註釈で守れていないので、展開を関数の中に入れる。
+ */
+test('共有カードの土台は、サイト共通の項目を必ず連れてくる', () => {
+  withOrigin('https://creatoryard.io', () => {
+    const og = ogWithUrl(absoluteUrl('/'), 'website')
+    for (const [key, value] of Object.entries(SITE_OG)) {
+      assert.equal(og[key], value, `${key} が落ちている`)
+    }
+    assert.equal(og.type, 'website')
+    assert.equal(og.url, 'https://creatoryard.io/')
+  })
+})
+
+// **`undefined` を入れない。**`{ url: undefined }` は焼く側が拾って
+// 空の og:url になりうる。「無い URL を指すより、出さないほうがまし」
+// （2026-08-09 に og:image で決めたのと同じ理屈）。
+test('公開オリジンが無いときは、url をキーごと出さない', () => {
+  withOrigin(null, () => {
+    const og = ogWithUrl(absoluteUrl('/'), 'website')
+    assert.ok(!('url' in og), 'url のキーが残っている')
+    assert.equal(og.type, 'website')
+    assert.equal(og.siteName, SITE_OG.siteName, 'サイト名まで落ちている')
+  })
+})
+
+test('type は渡したものがそのまま入る', () => {
+  withOrigin('https://creatoryard.io', () => {
+    assert.equal(ogWithUrl(absoluteUrl('/x/'), 'article').type, 'article')
+    assert.equal(ogWithUrl(null, 'profile').type, 'profile')
+  })
 })

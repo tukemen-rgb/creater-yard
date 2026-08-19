@@ -1,6 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+import { alternatesFor, absoluteUrl, ogWithUrl } from '../lib/og'
 import HeroVideo from './hero-video'
 
 /**
@@ -13,6 +16,20 @@ import HeroVideo from './hero-video'
  * 壊れた video 要素や第三者 URL を本番へ出さない、を仕組みで守るため。
  * 素材を置いて再ビルドするだけで背景動画が現れる（コード変更不要）。
  */
+/**
+ * いちばん多く貼られるのはここなので、**正規 URL を名乗る**（設計 A）。
+ * 無いと `?utm_source=…` の付いたリンクが別の対象として扱われる
+ * （`og:url` は OGP の必須 4 項目の 1 つ・事例 36）。
+ *
+ * **題名と説明はここに書かない。**app/layout.common.tsx から来る。
+ * 同じ文字列を 2 か所に持つと必ずずれる。
+ */
+const canonical = absoluteUrl('/')
+export const metadata: Metadata = {
+  alternates: alternatesFor(canonical),
+  openGraph: ogWithUrl(canonical, 'website'),
+}
+
 const MEDIA_DIR = path.join(process.cwd(), 'public', 'media')
 const rightsApproved = fs.existsSync(path.join(MEDIA_DIR, 'RIGHTS_APPROVED'))
 const hasHeroVideo = rightsApproved && fs.existsSync(path.join(MEDIA_DIR, 'hero.mp4'))

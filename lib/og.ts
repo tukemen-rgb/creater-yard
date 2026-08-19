@@ -20,6 +20,25 @@ export const SITE_OG = {
 } as const
 
 /** nginx の既存 /api/ 経路でそのまま配信できる全体 RSS。 */
+/**
+ * ページ 1 枚ぶんの Open Graph の土台（設計 A・2026-08-19 10:30）。
+ *
+ * **`SITE_OG` の展開を、呼ぶ側から取り上げるためだけに在る。**
+ * Next.js の metadata は浅くマージするので、子が `openGraph` を書くと
+ * 親の入れ子はまとめて置き換わる。展開を忘れると `og:site_name` と
+ * `og:locale` が黙って消える —— `app/layout.common.tsx` の註釈が名指しで
+ * 警告しているが、**それでもこの repo で 2 回踏んでいる。**
+ * 註釈で守れなかったものは、形で守る。
+ *
+ * 正規 URL が作れないとき（`CY_SITE_ORIGIN` 未設定）は **`url` をキーごと
+ * 出さない。**`undefined` を入れると焼く側が拾って空の値になりうる。
+ * **無い URL を指すより、出さないほうがまし**（2026-08-09 に `og:image` で
+ * 決めたのと同じ理屈）。
+ */
+export function ogWithUrl(canonical: string | null, type: 'website' | 'article' | 'profile') {
+  return { ...SITE_OG, type, ...(canonical ? { url: canonical } : {}) }
+}
+
 export const SITE_FEED = '/api/feeds/stories.xml'
 
 /** RSS discovery を保ったまま、設定済みの場合だけ canonical を加える。 */
