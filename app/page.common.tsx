@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import { alternatesFor, absoluteUrl, ogWithUrl } from '../lib/og'
+import { WRITE_START_HREF } from '../lib/write-entry.ts'
 import HeroVideo from './hero-video'
 
 /**
@@ -86,7 +87,7 @@ export default function Home() {
             <Link prefetch={false} href="/stories/" className="button">
               Story を読む
             </Link>
-            <Link prefetch={false} href="/write/?mode=interview" className="button button--ghost">
+            <Link prefetch={false} href={WRITE_START_HREF} className="button button--ghost">
               書き始める
             </Link>
           </p>

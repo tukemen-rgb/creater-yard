@@ -670,6 +670,15 @@ a:hover {
   font-size: 0.95rem;
 }
 
+/* 読み終えた人に出す、書き始める道（U-14）。**本人には出ない。**
+   `story__next` と別にしてあるのは、片方の見た目を変えたときに
+   もう片方が黙って変わらないため。**通報より前・囲みにしない** ——
+   囲むと「お願い」に見えて、静かな場所という約束と食い違う。 */
+.story__invite {
+  margin-block: 24px;
+  font-size: 0.95rem;
+}
+
 .pager {
   display: flex;
   align-items: center;
