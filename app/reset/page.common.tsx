@@ -5,6 +5,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
+import { DEVICE_STORAGE_WRITE_FAILED } from '../../lib/device-storage'
 
 /**
  * パスワード再設定。?t= が無ければ要求フォーム、あればメールのリンクから
@@ -71,8 +72,12 @@ function ResetInner() {
         method: 'POST',
         body: { token, password },
       })
-      // 再設定できた＝本人確認は済んでいる。そのままログイン状態にする
-      saveSession(data.token, data.account)
+      // 再設定できた＝本人確認は済んでいる。そのままログイン状態にする。
+      // ただし端末に残せなければ進まない（U-13）。**下の catch に渡す**ので、
+      // ロックを解く場所は 1 つのままにする。
+      if (!saveSession(data.token, data.account)) {
+        throw new ApiError(DEVICE_STORAGE_WRITE_FAILED, 0)
+      }
       router.push('/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '再設定できませんでした。')

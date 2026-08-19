@@ -6,6 +6,8 @@
  * （:3000）と API（:8798）が別ポートになるので、そのときは API 側へ向ける
  * （API 側も CY_ALLOW_ORIGIN で明示的に開ける必要がある）。
  */
+import { readValue, removeValue, writeValue } from './device-storage.ts'
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ??
   (typeof window !== 'undefined' && window.location.port === '3000'
@@ -101,23 +103,28 @@ const TOKEN_KEY = 'cy-token'
 const HANDLE_KEY = 'cy-handle'
 
 export function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return window.localStorage.getItem(TOKEN_KEY)
+  return readValue(TOKEN_KEY)
 }
 
 export function getHandle(): string | null {
-  if (typeof window === 'undefined') return null
-  return window.localStorage.getItem(HANDLE_KEY)
+  return readValue(HANDLE_KEY)
 }
 
-export function saveSession(token: string, account: Account) {
-  window.localStorage.setItem(TOKEN_KEY, token)
-  window.localStorage.setItem(HANDLE_KEY, account.handle)
+/**
+ * **保存できたら true。**
+ *
+ * ログインそのものは成立している（トークンはサーバーが出した）。
+ * ここで偽が返るのは**この端末に残せない**という意味だけなので、
+ * **呼び出した画面が、その場で人に言う**（黙って捨てない）。
+ */
+export function saveSession(token: string, account: Account): boolean {
+  const kept = writeValue(TOKEN_KEY, token)
+  return writeValue(HANDLE_KEY, account.handle) && kept
 }
 
 export function clearSession() {
-  window.localStorage.removeItem(TOKEN_KEY)
-  window.localStorage.removeItem(HANDLE_KEY)
+  removeValue(TOKEN_KEY)
+  removeValue(HANDLE_KEY)
 }
 
 export async function api<T>(

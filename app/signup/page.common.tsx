@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
+import { DEVICE_STORAGE_WRITE_FAILED } from '../../lib/device-storage'
 import { hasInterviewDraft } from '../../lib/story-interview'
 
 /**
@@ -45,7 +46,11 @@ export default function SignupPage() {
         method: 'POST',
         body: { handle, password, contact },
       })
-      saveSession(data.token, data.account)
+      // 端末に残せないなら進まない（U-13。進むと書く画面でログアウト状態に戻る）。
+      // **下の catch に渡す**ので、ロックを解く場所は 1 つのままにする。
+      if (!saveSession(data.token, data.account)) {
+        throw new ApiError(DEVICE_STORAGE_WRITE_FAILED, 0)
+      }
       router.push(hasInterviewDraft() ? '/write/?restore=interview' : '/write/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '登録できませんでした。')

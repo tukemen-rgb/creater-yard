@@ -1,3 +1,5 @@
+import { readValue, removeValue, writeValue } from './device-storage.ts'
+
 export const INTERVIEW_DRAFT_KEY = 'creatoryard:story-interview-draft'
 export const INTERVIEW_PROGRESS_KEY = 'creatoryard:story-interview-progress'
 
@@ -56,31 +58,29 @@ export function appendInterviewTranscript(current: string, transcript: string) {
   return `${before}${before && spoken ? ' ' : ''}${spoken}`.slice(0, 1200)
 }
 
-export function saveInterviewDraft(draft: InterviewDraft) {
-  window.localStorage.setItem(INTERVIEW_DRAFT_KEY, JSON.stringify(draft))
+/** 保存できたら true（端末が保存を拒否していれば偽）。 */
+export function saveInterviewDraft(draft: InterviewDraft): boolean {
+  return writeValue(INTERVIEW_DRAFT_KEY, JSON.stringify(draft))
 }
 
 export function saveInterviewProgress(progress: InterviewProgress) {
-  try {
-    window.localStorage.setItem(INTERVIEW_PROGRESS_KEY, JSON.stringify({
-      answers: progress.answers.map((answer) => answer.slice(0, 1200)),
-      step: Math.min(Math.max(progress.step, 0), INTERVIEW_QUESTIONS.length - 1),
-    }))
-  } catch {
-    // The interview still works when storage is unavailable; only resume is disabled.
-  }
+  // 端末が保存を拒否していても、ヒアリングそのものは進む（続きから再開できないだけ）。
+  writeValue(INTERVIEW_PROGRESS_KEY, JSON.stringify({
+    answers: progress.answers.map((answer) => answer.slice(0, 1200)),
+    step: Math.min(Math.max(progress.step, 0), INTERVIEW_QUESTIONS.length - 1),
+  }))
 }
 
 export function loadInterviewProgress(): InterviewProgress | null {
   try {
-    const raw = window.localStorage.getItem(INTERVIEW_PROGRESS_KEY)
+    const raw = readValue(INTERVIEW_PROGRESS_KEY)
     if (!raw) return null
     const value = JSON.parse(raw) as Partial<InterviewProgress>
     if (!Array.isArray(value.answers)
       || value.answers.length !== INTERVIEW_QUESTIONS.length
       || value.answers.some((answer) => typeof answer !== 'string')
       || !Number.isInteger(value.step)) {
-      window.localStorage.removeItem(INTERVIEW_PROGRESS_KEY)
+      removeValue(INTERVIEW_PROGRESS_KEY)
       return null
     }
     return {
@@ -89,7 +89,7 @@ export function loadInterviewProgress(): InterviewProgress | null {
     }
   } catch {
     try {
-      window.localStorage.removeItem(INTERVIEW_PROGRESS_KEY)
+      removeValue(INTERVIEW_PROGRESS_KEY)
     } catch {
       // Storage may be entirely unavailable.
     }
@@ -99,7 +99,7 @@ export function loadInterviewProgress(): InterviewProgress | null {
 
 export function clearInterviewProgress() {
   try {
-    window.localStorage.removeItem(INTERVIEW_PROGRESS_KEY)
+    removeValue(INTERVIEW_PROGRESS_KEY)
   } catch {
     // Nothing else is required when storage is unavailable.
   }
@@ -107,14 +107,14 @@ export function clearInterviewProgress() {
 
 function readInterviewDraft(removeAfterRead: boolean): InterviewDraft | null {
   try {
-    const raw = window.localStorage.getItem(INTERVIEW_DRAFT_KEY)
+    const raw = readValue(INTERVIEW_DRAFT_KEY)
     if (!raw) return null
     const value = JSON.parse(raw) as Partial<InterviewDraft>
     if (typeof value.title !== 'string' || typeof value.body !== 'string' || typeof value.hurdleText !== 'string') {
-      window.localStorage.removeItem(INTERVIEW_DRAFT_KEY)
+      removeValue(INTERVIEW_DRAFT_KEY)
       return null
     }
-    if (removeAfterRead) window.localStorage.removeItem(INTERVIEW_DRAFT_KEY)
+    if (removeAfterRead) removeValue(INTERVIEW_DRAFT_KEY)
     return {
       title: value.title.slice(0, 80),
       body: value.body.slice(0, 8000),
@@ -122,7 +122,7 @@ function readInterviewDraft(removeAfterRead: boolean): InterviewDraft | null {
     }
   } catch {
     try {
-      window.localStorage.removeItem(INTERVIEW_DRAFT_KEY)
+      removeValue(INTERVIEW_DRAFT_KEY)
     } catch {
       // Storage may be entirely unavailable (for example, in a restricted browser mode).
     }

@@ -13,6 +13,7 @@ import {
   type Account,
   type Story,
 } from '../../lib/api'
+import { DEVICE_STORAGE_WRITE_FAILED } from '../../lib/device-storage'
 import { StoryCard } from '../../components/story-card'
 
 /**
@@ -62,9 +63,14 @@ export default function AccountPage() {
         body: { currentPassword, newPassword },
         auth: true,
       })
-      // パスワード変更で古いトークンは全部切れる。新しいものに差し替える
-      saveSession(data.token, data.account)
-      setMessage('パスワードを変更しました。他の端末ではログインし直しになります。')
+      // パスワード変更で古いトークンは全部切れる。新しいものに差し替える。
+      // 差し替えられなければ、この端末では次の操作から入り直しになる（U-13）
+      const kept = saveSession(data.token, data.account)
+      setMessage(
+        kept
+          ? 'パスワードを変更しました。他の端末ではログインし直しになります。'
+          : 'パスワードは変更しました。ただし' + DEVICE_STORAGE_WRITE_FAILED,
+      )
       setCurrentPassword('')
       setNewPassword('')
     } catch (err) {

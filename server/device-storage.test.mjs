@@ -41,7 +41,10 @@ function keysUsedByCode() {
     .filter((f) => f !== 'lib/device-storage.ts')
   for (const rel of files) {
     const source = withoutComments(read(rel))
-    if (!/localStorage/.test(source)) continue
+    // **囲いを 1 か所に集めた（U-13）ので、`localStorage` の語だけでは
+    // 探せなくなった。**いまは `readValue` などに鍵を渡している側を見る。
+    // 両方を見るのは、片方に戻したときも気づけるようにするため。
+    if (!/localStorage|readValue|writeValue|removeValue/.test(source)) continue
     for (const m of source.matchAll(/'((?:cy-|creatoryard:)[A-Za-z0-9:_-]+)'/g)) found.add(m[1])
   }
   return [...found].sort()
@@ -88,4 +91,62 @@ test('ブラウザが消すことを、画面が言っている', () => {
 /** 上限は `lib/saved-stories.ts` から取る（数を書き写さない）。 */
 test('「あとで読む」の本数を、一覧が書き写していない', () => {
   assert.match(table, /MAX_SAVED_STORIES/, '上限を数で書き写している')
+})
+
+/**
+ * ここから下は**触り方**（U-13）。
+ *
+ * `localStorage` は**触っただけで落ちる**ことがある（事例 84）。
+ * 2026-08-20 に数えたら**穴が 6 か所**あり、しかも**囲っていない読み取りを
+ * 呼ぶのは全ページのヘッダー**だった。
+ *
+ * **関数ごとに `try` を数える試験にはしない**（また抜ける）。
+ * **直に触るファイルが 1 本であること**を見る。
+ */
+test('端末の保存領域を直に触るのは、1 つのファイルだけ', () => {
+  const offenders = ['app/**/*.tsx', 'app/**/*.ts', 'components/**/*.tsx', 'lib/**/*.ts']
+    .flatMap((g) => globSync(g, { cwd: ROOT }))
+    .filter((f) => f !== 'lib/device-storage.ts')
+    .filter((f) => /window\.(local|session)Storage/.test(withoutComments(read(f))))
+  assert.deepEqual(
+    offenders,
+    [],
+    `直に触っているファイルがある（囲いが要る）: ${offenders.join(' ')}`,
+  )
+})
+
+test('その 1 本の中で、触る場所はすべて囲われている', () => {
+  const source = withoutComments(table)
+  for (const fn of ['readValue', 'writeValue', 'removeValue']) {
+    const at = source.indexOf(`export function ${fn}`)
+    assert.notEqual(at, -1, `${fn} が無い`)
+    const body = source.slice(at, source.indexOf('\n}', at))
+    assert.match(body, /try\s*\{/, `${fn} が囲われていない`)
+    assert.match(body, /catch/, `${fn} が受け止めていない`)
+  }
+})
+
+/**
+ * **書けなかったことを、黙って捨てない。**
+ * `catch` で握り潰すと「保存したつもりで保存されていない」が生まれる。
+ */
+test('保存できたかを返し、呼ぶ面がそれを見ている', () => {
+  assert.match(table, /export function writeValue[^\n]*: boolean/, '書けたかを返していない')
+  const callers = globSync('app/**/*.tsx', { cwd: ROOT }).filter((f) =>
+    withoutComments(read(f)).includes('saveSession('),
+  )
+  assert.ok(callers.length > 0, 'saveSession を呼ぶ面が見つからない（前提が崩れている）')
+  for (const rel of callers) {
+    const source = withoutComments(read(rel))
+    assert.match(
+      source,
+      /(!saveSession\(|=\s*saveSession\()/,
+      `${rel}: saveSession を呼びっぱなしにしている（保存できなくても気づけない）`,
+    )
+    assert.match(
+      source,
+      /DEVICE_STORAGE_WRITE_FAILED/,
+      `${rel}: 保存できなかったときに言う文が無い`,
+    )
+  }
 })
