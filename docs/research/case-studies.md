@@ -12,6 +12,31 @@
 
 ---
 
+## 89. **OWASP —— 端末の保存領域に、消えてほしいものを置かない**
+
+- 出典: <https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html>
+  （OWASP Cheat Sheet Series「HTML5 Security」／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`it's recommended to avoid storing any sensitive information in local storage where authentication would be assumed.`**
+  >
+  > **`A single Cross Site Scripting can be used to steal all the data in these objects`**
+  >
+  > **`Use the object sessionStorage instead of localStorage if persistent storage is not needed. sessionStorage object is available only to that window/tab until the window is closed.`**
+
+- 学び: CreatorYard が端末に置いているのは 5 つで、**そのうち 2 つは
+  書き手が書いた文章そのもの**である（ヒアリングの書きかけと、4 つの答え）。
+
+  **この事例は「置くな」とまでは言えない場面もある**と①は考える ——
+  書きかけを端末に預けるのは、**書いたものを失わせないため**で、
+  U-15 でその判断をしたばかりである。**そこは変えない。**
+
+  **効くのは「いつ消すか」のほう。**`sessionStorage` の話が示すのは
+  **「要らなくなったら残さない」**という考え方で、
+  ①が今回見つけたのは**要らなくなったのに残っている場面**である（下の U-18）。
+
+---
+
 ## 88. **NN/g —— 一覧では、頭の 2 語くらいしか見られていない**
 
 - 出典: <https://www.nngroup.com/articles/first-2-words-a-signal-for-scanning/>
