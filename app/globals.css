@@ -1141,3 +1141,15 @@ a:hover {
     width: 100%;
   }
 }
+
+/* 下書きの続きへ戻る導線（設計 A-4）。カードの直下に小さく置く。
+   カード本体（story-card）は公開の一覧と共有しているので触らない。 */
+.account__draft {
+  display: grid;
+  gap: 4px;
+}
+.account__draft-actions {
+  margin: 0 0 16px;
+  padding-inline-start: 4px;
+  font-size: 0.9rem;
+}
