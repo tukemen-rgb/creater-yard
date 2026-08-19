@@ -12,6 +12,52 @@
 
 ---
 
+## 74. **NN/g「Visibility of System Status」—— 情報が無いことは、制御が無いことと同じ**
+
+- 出典: <https://www.nngroup.com/articles/visibility-system-status/>
+  （Aurora Harley・Nielsen Norman Group・2018-06-03 公開／**2026-08-19 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`How well the state of the system is conveyed to its users. Ideally, systems`**
+  > **`should always keep users informed about what is going on, through appropriate`**
+  > **`feedback within reasonable time.`**
+
+  同記事はさらに、
+
+  > **`A lack of information often equates to a lack of control.`**
+
+  > **`The predictability of the interaction creates trust not only in the mechanics`**
+  > **`of the site or the app, but also in the brand itself.`**
+
+  と書いている。これは Nielsen の 10 ヒューリスティクスの **1 番目**である。
+
+- 学び（**2 つ**）:
+
+  **(1) 「正しく動いていること」と「動いていると伝わること」は別物である。**
+  この事例が言っているのは**表示を足せ**ではなく、**利用者の側が状態を
+  知らないと、自分に制御が無いと感じる**ということ。
+
+  **CreatorYard で実際に当たっている場所がある。**①が 2026-08-19 に実物を
+  歩いて測った ——**ヒアリングに 4 問答えた直後、`/signup/` へ送られる。
+  答えは端末に保存されていて登録後に全部戻る（①が全文で確認）。
+  ところが `/signup/` の画面には、それを伝える語が 1 つも無い**
+  （「残」「保存」「消え」「戻」「下書き」「ヒアリング」「回答」の 7 語すべて不在）。
+
+  **やっていることは正しい。伝えていないだけである。**しかし書き手の側から
+  見れば、**いま書いた 4 つが消えるのかどうか確かめる手段が無い。**
+
+  **(2) 信頼は「作り」ではなく「予測できること」から来る、という主張に注意する。**
+  原文は `predictability` が brand への信頼まで作ると言っている。
+  **これは CreatorYard が売りにしている性質そのもの**（数字で競わせない・
+  勝手に計測しない）。**黙って正しくやる**のは、この場では**半分しか
+  果たしていない。**
+
+  **ただし、足すのは説明であって装飾ではない。**この事例を
+  「進捗バーを付けよう」に使うのは読み違いである。**足りないのは、
+  利用者がいま知りたい 1 つのこと**（＝書いたものは残るのか）だけ。
+
+---
+
 ## 73. **GDPR 第 20 条「データポータビリティの権利」—— 消せることと、持ち出せることは別**
 
 - 出典: <https://gdpr-info.eu/art-20-gdpr/>（`Art. 20 GDPR – Right to data portability`・2026-08-17 確認）
