@@ -14,6 +14,48 @@
 
 ---
 
+## 2026-08-20 08:20 **本番を歩いたら、外から見ると配信が死んで見えていた（HEAD）**
+
+- 状態: **実装済み。PR #69 を押した**（⑤ 03:30 の裁定でいう「本番の壊れ直し」）
+- 観点: **外の数字**。検索に出す判断（noindex を外すか）より前に直すもの
+
+### 見つけ方
+
+本番（`creatoryard.io`）の経路を GET で一通り叩いてから、**同じ経路を HEAD で
+叩いた**。GET は全部 200 なのに、**この API が出す経路だけ HEAD が 404** だった。
+
+```
+HEAD 404 / GET 200   /api/health
+HEAD 404 / GET 200   /api/feeds/stories.xml
+HEAD 404 / GET 200   /api/feeds/creators/sidra_studio.xml
+HEAD 404 / GET 200   /sitemap-stories.xml
+HEAD 200 / GET 200   /・/story/<id>/・/robots.txt   ← Next と静的配信は正しい
+```
+
+**なぜ効くか。**HEAD は「本文の無い GET」である（RFC 9110 9.3.2）。
+**外から確かめる道具 —— RSS の検査、リンク切れ調べ、死活監視 —— は HEAD で叩く。**
+いまの本番は、そういう道具から見ると**配信が死んでいる**。
+
+### ついでに直った、目に見えない側
+
+読み書きの上限を分ける判定が **GET だけを「読み」と見なしていた**ため、
+**HEAD は書き込みの枠（20）を減らしていた。**読みの枠（60）より厳しいので、
+**HEAD を続けて投げると、その接続元の書き込みだけが先に止まる。**
+**上限そのものは緩めていない**（振り分けを直しただけ）。
+
+### 歩いて分かった、壊れていないもの（記録として残す）
+
+| 見たもの | 結果 |
+| --- | --- |
+| `/`・`/stories/`・`/tags/`・`/guidelines/`・`/data-policy/`・`/signup/`・`/login/`・`/write/`・`/saved/`・`/account/` | すべて 200 |
+| RSS（全体・作者別）・sitemap | GET は 200。中身も正しい（Story 1 本・書き手 1 人） |
+| `/api/health` | `{"ok":true,"service":"creatoryard-api","mail":false}` —— **再設定が使えないのは記録どおり** |
+| 見出しのヘッダ（HSTS・nosniff・CSP・X-Frame-Options・Referrer-Policy） | すべて付いている。CSP は想定どおりの形 |
+| `robots.txt` | **Sitemap の行はまだ無い**（`deploy/GO-LIVE.md` の手順待ち）。noindex のうちは足しても効かないので、**急がない** |
+| `/feed.xml`・`/sitemap.xml` | 404。**これは壊れではない**（この製品の経路は `/api/feeds/stories.xml` と `/sitemap-stories.xml`） |
+
+---
+
 ## 2026-08-20 07:50 **社長待ちの「連なりを見せるか」に、判断材料を足した**
 
 - 状態: **要判断（社長へ）。①は決めない。**測って足しただけで、PR は作っていない
