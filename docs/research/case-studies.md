@@ -12,6 +12,42 @@
 
 ---
 
+## 79. **Google 検索セントラル「noindex」—— 見てもらうには、まず来てもらう必要がある**
+
+- 出典: <https://developers.google.com/search/docs/crawling-indexing/block-indexing>
+  （Google Search Central／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`For the noindex rule to be effective, the page or resource must not be`**
+  > **`blocked by a robots.txt file, and it has to be otherwise accessible to the`**
+  > **`crawler.`**
+
+  > **`There are two ways to implement noindex: as a <meta> tag and as an HTTP`**
+  > **`response header. They have the same effect.`**
+
+  > **`Depending on the importance of the page on the internet, it may take months`**
+  > **`for Googlebot to revisit a page.`**
+
+- 学び（この場所に効くこと 3 つ）:
+  1. **`robots.txt` で塞がない判断は正しかった。**`public/robots.txt` は
+     `Allow: /` のままで、「robots.txt で止めると crawler が noindex を
+     読みに来られない」と註釈に書いてある。**一次資料がそれを裏づけた。**
+  2. **いまは `<meta>` で `noindex, nofollow`**（`app/layout.common.tsx`）。
+     HTTP ヘッダでも同じ効果、と明記されている —— **2 通りある**ので、
+     **片方だけ外してもう片方が残る事故**がありうる。
+     **数えた（2026-08-20）: この場所は `<meta>` の 1 か所だけ。**
+     `X-Robots-Tag` は `deploy/` にも `server/` にも無く、**本番の応答
+     ヘッダにも無い**（`curl -I` で確認）。**外すときに触るのは 1 か所。**
+  3. **外したあと、すぐには載らない。**「重要度によっては**数か月**かかる
+     ことがある」と書いてある。**noindex を外す判断は、外した日に効果が
+     出る類のものではない。**招待や反映より**前倒しで決める理由はないが、
+     決めたら早いほうがよい**、という性質のもの
+
+- **この事例は判断材料であり、判断ではない。**noindex を外すかどうかは
+  社長の決定（人が決めるまで変えない一覧）。
+
+---
+
 ## 78. **WCAG 2.2 SC 2.5.8 Target Size (Minimum) —— 24×24。ただし文中のリンクは対象外**
 
 - 出典: <https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html>
