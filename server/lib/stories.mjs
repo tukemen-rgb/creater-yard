@@ -521,19 +521,44 @@ export class StoryStore {
   }
 
   /**
-   * タグ索引。公開 Story に付いたタグと件数（サイト全体の合計）。
-   * 件数は「どの面が育っているか」を示す合計値で、人を並べる数字ではない
-   * （個人単位の計測はしない — 文化 §5）。
+   * タグ索引。公開 Story に付いたタグの語彙（名前だけ）。
+   *
+   * **数は持たない。**「どの面が育っているか」を数で見せるのは公開カウンタ
+   * なので作らない（標準制約・文化 §5）。以前ここには「件数（サイト全体の
+   * 合計）」と書いてあったが、**返り値にそんなものは無い**（2026-08-19 に
+   * 註釈だけが実物と食い違っていたのを直した）。
+   *
+   * `toolNames` は「小文字のタグ → 書き手が打った書き方」の対応表（設計 U-6）。
+   * タグの値は小文字のまま（`Godot` と `GODOT` を束ねるために要る）で、
+   * **画面に出すときだけ**これを引く。作れなかった語は入れない。
    */
   tagIndex() {
     const tools = new Set()
     const topics = new Set()
+    const names = new Map()
+    const ambiguous = new Set()
     for (const record of this.#readAll()) {
       if (record.status !== 'public') continue
       for (const tag of record.toolTags ?? []) tools.add(tag)
       for (const tag of record.topicTags ?? []) topics.add(tag)
+      // 書き方は「使ったツール」欄に残っている（normalizeTools は
+      // toLowerCase を呼んでいない）。タグと同じ形に落として鍵にする
+      for (const tool of record.tools ?? []) {
+        const key = normalizeTag(tool)
+        if (!key || key === tool) continue
+        const known = names.get(key)
+        // 同じ語に 2 通りの書き方があったら、どちらも選ばない。
+        // 片方を採るのは書き手のあいだに優劣を作ること。小文字のまま出す
+        if (known !== undefined && known !== tool) ambiguous.add(key)
+        names.set(key, tool)
+      }
     }
-    return { tools: [...tools].sort(byTagName), topics: [...topics].sort(byTagName) }
+    for (const key of ambiguous) names.delete(key)
+    return {
+      tools: [...tools].sort(byTagName),
+      topics: [...topics].sort(byTagName),
+      toolNames: Object.fromEntries([...names].filter(([key]) => tools.has(key))),
+    }
   }
 }
 

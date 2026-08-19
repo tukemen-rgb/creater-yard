@@ -76,6 +76,13 @@ export type StoryListing = {
 export type TagIndex = {
   tools: string[]
   topics: string[]
+  /**
+   * 「小文字のタグ → 書き手が打った書き方」の対応表（設計 U-6）。
+   * **画面に出すときだけ**引く。絞り込みの鍵は `tools` の側のまま
+   * （**表示と鍵を混ぜない**。混ぜると、既に配った URL が壊れる）。
+   * 古い応答には無いので任意。
+   */
+  toolNames?: Record<string, string>
 }
 
 export class ApiError extends Error {

@@ -42,13 +42,15 @@ export default function TagsPage() {
         {index.tools.length === 0 && <p className="notice">まだありません。</p>}
         <p className="story-card__tags">
           {index.tools.map((tag) => (
+            // 出すのは書き手が打った書き方、押した先の鍵は小文字のまま。
+            // 混ぜると、既に配った絞り込みの URL が壊れる（設計 U-6）
             <Link
               prefetch={false}
               key={tag}
               className="tag"
               href={`/stories/?tool=${encodeURIComponent(tag)}`}
             >
-              {tag}
+              {index.toolNames?.[tag] ?? tag}
             </Link>
           ))}
         </p>
