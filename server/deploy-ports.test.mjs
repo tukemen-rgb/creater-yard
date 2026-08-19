@@ -91,8 +91,14 @@ test('設定例に書いてある変数は、どこかで読まれている', ()
  * 書き写しをやめさせる。**
  */
 test('反映の確認が、港を直に書いていない', () => {
-  const web = /WEB_CHECK="\$\{HEALTH_WEB:-[^"]*"/.exec(apply)
-  assert.ok(web, '反映の確認が、死活確認と同じ変数を見ていない')
+  assert.match(apply, /HEALTH_WEB:-/, '反映の確認が、死活確認と同じ変数を見ていない')
+  // 変数が無いときは**当てて確かめる**（この repo から港を決めない）。
+  assert.match(
+    apply,
+    /WEB_CANDIDATES="http:\/\/127\.0\.0\.1:\d+ http:\/\/127\.0\.0\.1:\d+"/,
+    '変数が無いときに、港を 1 つに決め打ちしている',
+  )
+  assert.match(apply, /web がどの港でも答えません/, 'どれも答えないときに、黙って通している')
   const api = /API_CHECK="\$\{HEALTH_API:-[^"]*"/.exec(apply)
   assert.ok(api, 'API の確認が、死活確認と同じ変数を見ていない')
   const hardcoded = apply
