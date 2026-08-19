@@ -781,6 +781,20 @@ a:hover {
   padding-inline: 4px;
 }
 
+/* 見つからなかった面の出口（U-9）。押せる場所を離して、指で外さないようにする。 */
+.not-found__exits {
+  display: grid;
+  gap: 4px;
+  margin-block-start: 24px;
+  padding-block-start: 16px;
+  border-top: 1px solid var(--border);
+}
+.not-found__exits a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .optional-fields {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
