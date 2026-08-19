@@ -12,6 +12,34 @@
 
 ---
 
+## 81. **Google —— canonical は「お願い」であって命令ではない**
+
+- 出典: <https://developers.google.com/search/docs/crawling-indexing/canonicalization>
+  （Google Search Central「Canonicalization」／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`You can indicate your preference to Google using these techniques, but Google may choose a different page as canonical than you do`**
+  >
+  > **`indicating a canonical preference is a hint, not a rule`**
+
+  同じ文書は、同じ中身が複数の URL に並ぶ原因の 1 つとして
+  **`Protocol variants: for example, the HTTP and HTTPS versions of a site`**
+  を挙げている。
+
+- **確かめられなかったこと（書かない）**: **`www.` の有無**については、
+  この文書は**名指しで触れていない。**①は「www と非 www は重複として扱われ、
+  片方へ寄せるべき」という材料を探したが、**この一次資料からは取れなかった。**
+  **だから「取れなかった」と書く。**別の資料で裏が取れるまで、
+  `www.` の判断材料としては数えない。
+
+- 学び: 2026-08-20 に、本番の `/` に `canonical` が無いことを見つけて直した
+  （PR #70）。**その価値をここで正しく見積もっておく** —— canonical は
+  **希望を伝える手段**であって、検索側がそのとおりにするとは限らない。
+  **「canonical を入れたから大丈夫」とは書かない。**
+  逆に言えば、**入れないと希望を伝える手段が 1 つも無い**。
+
+---
+
 ## 80. **Open Graph protocol —— `og:image` は「必須の 4 つ」の 1 つ**
 
 - 出典: <https://ogp.me/>（Open Graph protocol／**2026-08-20 に①が取得して確認**）
