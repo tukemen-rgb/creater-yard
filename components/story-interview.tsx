@@ -99,8 +99,9 @@ export function StoryInterview({
       <h1 id="interview-title">話すだけで、Story の下書きに。</h1>
       <p className="page__lede">
         4 つの質問に答えると、端末内で投稿フォームへ自動で整理します。
-        CreatorYard 独自の AI/API へ回答を送信しません。音声入力はブラウザの音声認識機能を使い、
-        ブラウザ提供者側で処理される場合があります。
+        CreatorYard 独自の AI/API へ回答を送信しません。
+        {/* 音声の行き先は VoiceInput が各ボタンのそばで言う（設計 U-11）。
+            ここで繰り返すと、同じことを 2 度言ううえに、**片方だけ古くなる** */}
       </p>
       <p className="interview__progress" aria-live="polite">
         質問 {step + 1} / {INTERVIEW_QUESTIONS.length}
