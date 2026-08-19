@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { api, ApiError, saveSession, type Account } from '../../lib/api'
@@ -14,6 +14,14 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const submitLockRef = useRef(false)
+  /**
+   * ヒアリングの答えを持ったまま、ここへ来た人か（設計 U-7）。
+   * signup の同じ註釈と対にすること —— **片方だけ直すと、既にアカウントを
+   * 持っている人だけが置き去りになる。**見るのは画面が出たあと（静的書き出しの
+   * 事前描画には端末の保存領域が無い）。
+   */
+  const [fromInterview, setFromInterview] = useState(false)
+  useEffect(() => setFromInterview(hasInterviewDraft()), [])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +46,11 @@ export default function LoginPage() {
   return (
     <div className="page page--narrow auth-page">
       <h1>ログイン</h1>
+      {fromInterview && (
+        <p className="notice">
+          さっき答えた内容はこの端末に残っています。ログインすると、そのまま続きから書けます。
+        </p>
+      )}
       <div className="auth-panel">
         <form className="form" onSubmit={submit}>
           <label className="form__field">
@@ -62,7 +75,7 @@ export default function LoginPage() {
           </label>
           {error && <p className="notice notice--error" role="alert">{error}</p>}
           <button type="submit" className="button auth-panel__submit" disabled={busy}>
-            {busy ? 'ログイン中…' : 'ログイン'}
+            {busy ? 'ログイン中…' : fromInterview ? 'ログインして続きへ' : 'ログイン'}
           </button>
         </form>
 
