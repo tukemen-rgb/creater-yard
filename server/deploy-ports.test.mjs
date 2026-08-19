@@ -25,6 +25,7 @@ const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 const health = read('deploy/healthcheck.sh')
 const webUnit = read('deploy/creatoryard-web.service')
 const envExample = read('deploy/creatoryard.env.example')
+const apply = read('deploy/apply-latest.sh')
 
 /** `VAR="${VAR:-http://host:PORT}"` の既定から港を取る。 */
 function defaultPort(name) {
@@ -74,4 +75,29 @@ test('設定例に書いてある変数は、どこかで読まれている', ()
     .join('\n')
   const unread = [...new Set(declared)].filter((name) => !sources.includes(name))
   assert.deepEqual(unread, [], `設定例に在るのに、どこも読んでいない: ${unread.join(' ')}`)
+})
+
+/**
+ * **分母がひとつ足りなかった。**この試験を書いた最初の版は、unit と
+ * healthcheck と設定例の 3 か所しか見ていなかった。翌る周に数え直したら、
+ * **`deploy/apply-latest.sh` が 4 か所目**で、**そこだけ 3001 を直に
+ * 書いていた**（ほかの 3 か所は 3000）。
+ *
+ * `set -eu` と `curl --fail` があるので、ここが違うと**サービスを再起動した
+ * あとの最後の行で反映が失敗する。**社長が押す 1 コマンドの、いちばん最後。
+ *
+ * どちらが本番の港かは、この repo からは決められない（GO-LIVE には
+ * 同居機なら 3001 へ移すと書いてある）。**だから数を直すのではなく、
+ * 書き写しをやめさせる。**
+ */
+test('反映の確認が、港を直に書いていない', () => {
+  const web = /WEB_CHECK="\$\{HEALTH_WEB:-[^"]*"/.exec(apply)
+  assert.ok(web, '反映の確認が、死活確認と同じ変数を見ていない')
+  const api = /API_CHECK="\$\{HEALTH_API:-[^"]*"/.exec(apply)
+  assert.ok(api, 'API の確認が、死活確認と同じ変数を見ていない')
+  const hardcoded = apply
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('#'))
+    .filter((line) => /curl[^\n]*127\.0\.0\.1:\d+/.test(line))
+  assert.deepEqual(hardcoded, [], `港を直に書いている行が残っている:\n  ${hardcoded.join('\n  ')}`)
 })
