@@ -109,7 +109,46 @@ test('読めなくても反映は止まらない（ただし何が抜けるか�
   assert.match(elseBranch, /canonical/, '何が抜けるかを言っていない')
 })
 
+/**
+ * **読む行を足しただけでは足りない。**置き場が違えば、また黙って設定の
+ * 抜けた版が出来上がる。だから**出来上がったものを見て**確かめる。
+ *
+ * **配る場所を書き写さない。**配置の行（`rsync … <dir>/ …`）から取り出す。
+ */
+function staticOutDir() {
+  const m = /rsync\s+-a\s+--delete\s+([A-Za-z0-9_.-]+)\//.exec(apply)
+  assert.ok(m, '配置の行から、書き出し先が読み取れない')
+  return m[1]
+}
+
+test('ビルドのあとで、設定が届いたかを出来上がったものから確かめる', () => {
+  const dir = staticOutDir()
+  const check = apply.indexOf(`grep -q 'rel="canonical"' ${dir}/index.html`)
+  assert.notEqual(check, -1, `${dir}/index.html を見て確かめていない`)
+  assert.ok(apply.indexOf('npm run build') < check, 'ビルドより前に確かめている')
+  assert.ok(check < apply.indexOf('rsync'), '配置より後に確かめている（もう遅い）')
+})
+
+test('届いていなければ、配置する前に止まる', () => {
+  const check = apply.indexOf(`grep -q 'rel="canonical"'`)
+  const stop = apply.indexOf('exit 1', check)
+  assert.notEqual(stop, -1, '届いていなくても続けている（黙って設定の抜けた版を配る）')
+  assert.ok(stop < apply.indexOf('rsync'), '止まるのが配置より後になっている')
+})
+
+test('確かめる印は、製品コードが本当に出すものである', () => {
+  // 印（canonical）と、その出どころ（CY_SITE_ORIGIN）が切れていたら、
+  // 上の確認は「いつも赤い」か「いつも緑」のどちらかになる。
+  const home = read('app/page.common.tsx')
+  assert.match(home, /alternatesFor\(canonical\)/, 'トップが canonical を出していない')
+  assert.match(
+    read('lib/og.ts'),
+    /process\.env\.CY_SITE_ORIGIN/,
+    'canonical の出どころが CY_SITE_ORIGIN でない',
+  )
+})
+
 test('手順書が POSIX sh として壊れていない', () => {
-  // `set -a` の囲いを足したので、構文そのものを確かめる。
+  // `set -a` の囲いと、届いたかの確認を足したので、構文そのものを確かめる。
   execFileSync('sh', ['-n', path.join(ROOT, 'deploy/apply-latest.sh')])
 })

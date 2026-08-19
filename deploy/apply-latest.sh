@@ -70,6 +70,25 @@ npm ci
 npm run build
 npm run build:server
 
+# **設定がビルドに届いたかを、出来上がったものを見て確かめる。**
+#
+# 設定ファイルを読む行を足しただけでは足りない —— 置き場が違えば、
+# また**黙って設定の抜けた版**が出来上がる。それが 2026-08-20 に本番で
+# 見つかった形（`/` に canonical が無く、`/stories/` には在る）である。
+#
+# ここはまだ**配置の前**なので、止めても本番は今のまま動き続ける。
+if [ -n "${CY_SITE_ORIGIN:-}" ]; then
+  if grep -q 'rel="canonical"' out/index.html; then
+    echo "  設定はビルドに届きました（out/index.html に canonical あり）"
+  else
+    echo "CY_SITE_ORIGIN は設定されているのに、書き出した / に canonical がありません" >&2
+    echo "設定がビルドへ渡っていません。**配置はしていない**ので、本番は今のままです" >&2
+    exit 1
+  fi
+else
+  echo "  CY_SITE_ORIGIN が空です。/ に canonical と og:url は入りません" >&2
+fi
+
 echo "== 2/3 CSP・配置・再起動 =="
 # Next.js の静的書き出しはインライン初期化 script を使うため、
 # script-src 'self' だけだと描画直後に画面が消える（PR #6 と同じ修正。
