@@ -1,13 +1,15 @@
 import Link from 'next/link'
 
 import { formatDate, imageUrl, type Story } from '../lib/api'
+import { excerptSource } from '../lib/story-excerpt.ts'
 
 /**
  * 一覧・個人ページで使う Story の 1 枚。本文は先頭だけ見せる。
  * 数字（閲覧数等）は出すものがそもそも無い（数字を競争にしない）。
  */
 export function StoryCard({ story, showAuthor = true }: { story: Story; showAuthor?: boolean }) {
-  const excerpt = story.body.length > 120 ? `${story.body.slice(0, 120)}…` : story.body
+  const source = excerptSource(story.body)
+  const excerpt = source.length > 120 ? `${source.slice(0, 120)}…` : source
   // 公開分は実 URL（server モードが返す）。下書きは本人トークンが要るので
   // プレビュー（/story/?id=）へ
   const href = story.status === 'draft' ? `/story/?id=${story.id}` : `/story/${story.id}/`

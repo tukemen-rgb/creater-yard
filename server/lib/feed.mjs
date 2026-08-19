@@ -47,9 +47,30 @@ function hurdleLine(hurdle) {
   return `つまずき（${state}）: ${text}\n\n`
 }
 
+/**
+ * 一覧に出すときだけ、**行まるごとの見出しを頭から飛ばす**（U-17）。
+ *
+ * **`components/story-card.tsx` に同じ規則がある。**あちらは Next が束ねる
+ * TypeScript で、ここは `api.mjs` が素の Node で読む `.mjs` なので、
+ * **輸入し合えない**（本番の API に型剥がしの読み込みを持ち込まない）。
+ * **同じであることは `server/story-excerpt.test.mjs` が振る舞いで突き合わせる。**
+ */
+const HEADING_LINE = /^【[^】]*】$/
+const HEADING_SCAN_LINES = 5
+
+export function excerptSource(body) {
+  const lines = String(body ?? '').split('\n')
+  let at = 0
+  while (at < lines.length && at < HEADING_SCAN_LINES && HEADING_LINE.test(lines[at].trim())) {
+    at += 1
+  }
+  const rest = lines.slice(at).join('\n').trim()
+  return rest || String(body ?? '')
+}
+
 /** 本文の冒頭だけを description に使う。全文は載せない（ページへ来てもらう）。 */
 function excerpt(body, max = 200) {
-  const text = String(body ?? '')
+  const text = excerptSource(body)
   return text.length > max ? `${text.slice(0, max)}…` : text
 }
 
