@@ -4,6 +4,7 @@ import { formatDate, imageUrl, type Story } from '../lib/api'
 import { CopyOwnStoryLink } from './copy-own-story-link'
 import { EditLink } from './edit-link'
 import { SaveStory } from './save-story'
+import { WriteNextLink } from './write-next-link'
 
 /**
  * Story 本文の表示。server モードの実 URL ページと、下書きプレビュー
@@ -63,6 +64,12 @@ export function StoryArticle({ story, nextStory }: { story: Story; nextStory?: S
         <CopyOwnStoryLink id={story.id} authorHandle={story.authorHandle} />
       )}
       {story.status === 'public' && <SaveStory id={story.id} />}
+      {/* 公開したあとの着地点から、次の 1 本へ（I-11）。本人にだけ出る。
+          status === 'public' で囲むのは、StoryArticle が下書きプレビュー
+          （app/story/page.common.tsx）からも使われるため —— 未公開のものを
+          見ながら「その後を書く」は筋が通らない。すぐ上の SaveStory と
+          同じ作法で、新しい形は持ち込んでいない。 */}
+      {story.status === 'public' && <WriteNextLink authorHandle={story.authorHandle} />}
       {story.tools.length > 0 && (
         <p className="story__tools">使ったツール: {story.tools.join(' / ')}</p>
       )}
