@@ -12,6 +12,27 @@
 
 ---
 
+## 77. **MDN `SpeechRecognition` —— ブラウザによっては、音声はサーバーへ送られる**
+
+- 出典: <https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition>
+  （MDN Web Docs／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`On some browsers, like Chrome, using Speech Recognition on a web page`**
+  > **`involves a server-based recognition engine. Your audio is sent to a web`**
+  > **`service for recognition processing, so it won't work offline.`**
+
+- 学び: CreatorYard の「音声で入力」は、この API をそのまま使っている
+  （`components/voice-input.tsx`。**第三者の JS は 1 つも読み込んでいない**）。
+  つまり**うちは音声を受け取らない。**それでも、**書き手から見れば
+  「声が外へ出るかどうか」が問題**である。
+  2026-08-20 に①が数えたら、**ヒアリングの面だけが説明していて、書く面の
+  同じボタン 2 つには何も書いていなかった**（`/data-policy/` にも記述なし）。
+  **押す前に言う**ようにし、その一言を部品に持たせて
+  **音声入力を置いた場所すべてに付いて回る**形にした（U-11・PR #64）。
+
+---
+
 ## 76. **NN/g の 10 ヒューリスティクス #3・#5 —— 「取り消せること」と「起こる前に止めること」**
 
 - 出典: <https://www.nngroup.com/articles/ten-usability-heuristics/>
