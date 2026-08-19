@@ -12,6 +12,31 @@
 
 ---
 
+## 84. **MDN —— `localStorage` は「読むだけ」でも例外を投げることがある**
+
+- 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage>
+  （MDN Web Docs「Exceptions」／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`SecurityError` … Thrown in one of the following cases:**
+  > **`The origin is not a valid scheme/host/port tuple. This can happen if the origin uses the file: or data: schemes, for example.`**
+  > **`The request violates a policy decision. For example, the user has configured the browsers to prevent the page from persisting data.`**
+  >
+  > **`Note that if the user blocks cookies, browsers will probably interpret this as an instruction to prevent the page from persisting data.`**
+
+- 学び: **「保存できない」ではなく「触っただけで落ちる」**のが要点。
+  CreatorYard の `lib/api.ts` は `window.localStorage` を**囲わずに**触っている。
+  同じ repo の `lib/story-interview.ts` と `lib/saved-stories.ts` は
+  **`try`/`catch` で囲っている** —— **同じ製品の中で扱いが分かれている。**
+
+  囲っていないほうを呼ぶのが `components/nav-auth.tsx`（**ヘッダー＝全ページ**）で、
+  描画後の `useEffect` の中である。**cookie を全部拒否している人には、
+  全ページで落ちうる。**（Safari の「サイト越えトラッキングを防ぐ」は
+  1st party の `localStorage` を止めないので、これに当たるのは**明示的に
+  保存を拒否している人**である。**少数だが実在する。**）
+
+---
+
 ## 83. **MDN —— Safari は、7 日来ない人の保存領域を消す**
 
 - 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria>
