@@ -12,6 +12,42 @@
 
 ---
 
+## 83. **MDN —— Safari は、7 日来ない人の保存領域を消す**
+
+- 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria>
+  （MDN Web Docs／**2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`Browsers can store up to 5 MiB of local storage, and 5 MiB of session storage per origin.`**
+  >
+  > **`Once this limit is reached, browsers throw a QuotaExceededError exception …`**
+  >
+  > **`Safari proactively evicts data when cross-site tracking prevention is turned on. If an origin has no user interaction, such as click or tap, in the last seven days of browser use, its data created from script will be deleted. Cookies set by server are exempt from this eviction.`**
+
+- 学び（**事例 82 と正面からぶつかる。両方を並べて書く**）:
+
+  82 は「`localStorage` に**期限は無い**」と言い、83 は「Safari では **7 日**で
+  消えうる」と言う。**どちらも正しい** —— 仕様に期限が無いことと、
+  ブラウザが消さないことは別である。**CreatorYard にとっては後者が効く。**
+
+  この製品が端末に置いているのは 5 つで、**Safari ではその全部が対象になる**
+  （サーバーが立てた cookie は除外だが、**この製品は cookie を使っていない**）。
+
+  | 消えると何が起きるか |
+  | --- |
+  | `cy-token` `cy-handle` … **ログインが切れる**（7 日来なければ） |
+  | `cy-saved-story-ids` … **「あとで読む」が空になる** |
+  | `creatoryard:story-interview-draft` … **書きかけが消える** |
+
+  **招かれた人が iPhone でヒアリングを途中まで書き、8 日後に戻ってくると、
+  書きかけは無い。**これは不具合ではなく、**Safari の既定の動き**である。
+
+  **5 MiB のほうも効く** —— 「あとで読む」は ID（8 文字）を最大 50 本なので
+  **1 KB に満たない。上限 50 は、容量の話ではない**（＝**製品としての判断**であって、
+  技術の制約ではない。社長の未決 1 件ぶんの材料）。
+
+---
+
 ## 82. **MDN —— `localStorage` は期限が無い。閉じても消えない**
 
 - 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage>
