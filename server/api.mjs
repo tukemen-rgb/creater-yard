@@ -265,19 +265,36 @@ async function handle(req, res) {
   const url = new URL(req.url, 'http://localhost')
   const p = url.pathname.replace(/\/+$/, '') || '/'
   const key = clientKey(req, { trustProxy: TRUST_PROXY })
-  const isRead = req.method === 'GET'
+  /**
+   * HEAD は「本文の無い GET」である（RFC 9110 9.3.2）。外から確かめる道具
+   * —— RSS の検査、リンク切れ調べ、死活監視 —— は HEAD で叩く。
+   * **2026-08-20 に本番を歩いて見つけた**: `/api/feeds/stories.xml` は
+   * GET なら 200 なのに **HEAD だと 404** を返していた（この API が出す
+   * 経路すべてで同じ。Next が出す面は 200 を返していた）。
+   *
+   * 直し方は「GET に読み替える」だけにする。**書き込みには回らない** ——
+   * POST/PUT/DELETE の判定は下で `method` を見るので、HEAD が当たることは
+   * ない。本文は Node が HEAD のとき落とすので、GET の処理をそのまま通してよい。
+   *
+   * **もう 1 つ直っている**: 読み書きの上限を分ける `isRead` が GET だけを
+   * 読みと見なしていたため、**HEAD は書き込みの枠を減らしていた**。
+   * 書き込みの枠は読みより厳しいので、HEAD を続けて投げると、その接続元の
+   * 書き込みが先に止まる。上限そのものは緩めない（振り分けを直すだけ）。
+   */
+  const method = req.method === 'HEAD' ? 'GET' : req.method
+  const isRead = method === 'GET'
   if (isRead) gate.consumeRead(key)
   else gate.consumeWrite(key)
 
   // ---- 死活 ----
-  if (req.method === 'GET' && p === '/api/health') {
+  if (method === 'GET' && p === '/api/health') {
     // mail は再設定機能が使えるかどうか。UI がこれを見て案内を変えられる
     send(res, 200, { ok: true, service: 'creatoryard-api', mail: passwordResetAvailable() })
     return
   }
 
   // ---- アカウント ----
-  if (req.method === 'POST' && p === '/api/auth/register') {
+  if (method === 'POST' && p === '/api/auth/register') {
     const body = await readJson(req)
     const account = accounts.register({
       handle: body.handle,
@@ -289,7 +306,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'POST' && p === '/api/auth/login') {
+  if (method === 'POST' && p === '/api/auth/login') {
     const body = await readJson(req)
     const account = accounts.login({
       handle: body.handle,
@@ -301,12 +318,12 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'GET' && p === '/api/auth/me') {
+  if (method === 'GET' && p === '/api/auth/me') {
     send(res, 200, { account: accounts.authenticate(req) })
     return
   }
 
-  if (req.method === 'POST' && p === '/api/auth/reset') {
+  if (method === 'POST' && p === '/api/auth/reset') {
     const origin = passwordResetOrigin()
     if (!mailer.enabled || !origin) {
       // 送れないのに受け付けたふりはしない。ここは存在を漏らさない
@@ -347,7 +364,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'POST' && p === '/api/auth/reset/confirm') {
+  if (method === 'POST' && p === '/api/auth/reset/confirm') {
     const body = await readJson(req)
     const account = accounts.completeReset({ token: body.token, password: body.password })
     // ここで新しいトークンを出す。再設定したのにログインし直させる理由がない
@@ -356,7 +373,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'POST' && p === '/api/auth/password') {
+  if (method === 'POST' && p === '/api/auth/password') {
     const me = accounts.authenticate(req)
     const body = await readJson(req)
     const account = accounts.changePassword({
@@ -371,7 +388,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'POST' && p === '/api/auth/contact') {
+  if (method === 'POST' && p === '/api/auth/contact') {
     const me = accounts.authenticate(req)
     const body = await readJson(req)
     const { account } = accounts.setContact({
@@ -384,7 +401,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'DELETE' && p === '/api/auth/me') {
+  if (method === 'DELETE' && p === '/api/auth/me') {
     const me = accounts.authenticate(req)
     const body = await readJson(req)
     // パスワード再入力を必須にする（auth.mjs 参照）。Story も一緒に消す —
@@ -397,7 +414,7 @@ async function handle(req, res) {
   }
 
   // ---- Story ----
-  if (req.method === 'GET' && p === '/api/stories.json') {
+  if (method === 'GET' && p === '/api/stories.json') {
     send(res, 200, stories.listPublic({
       page: url.searchParams.get('page') ?? 1,
       tool: url.searchParams.get('tool') ?? '',
@@ -406,7 +423,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'POST' && p === '/api/stories') {
+  if (method === 'POST' && p === '/api/stories') {
     const me = accounts.authenticate(req)
     const body = await readJson(req)
     const { image } = resolveImage(body.imageId, me, null)
@@ -417,7 +434,7 @@ async function handle(req, res) {
   }
 
   const storyJson = /^\/api\/stories\/([A-Za-z0-9_-]{8})\.json$/.exec(p)
-  if (req.method === 'GET' && storyJson) {
+  if (method === 'GET' && storyJson) {
     const record = stories.get(storyJson[1])
     if (!record) throw new StoryError('Story が見つかりません。', 404)
     if (record.status !== 'public') {
@@ -432,9 +449,9 @@ async function handle(req, res) {
   }
 
   const storyPath = /^\/api\/stories\/([A-Za-z0-9_-]{8})$/.exec(p)
-  if (storyPath && (req.method === 'PUT' || req.method === 'DELETE')) {
+  if (storyPath && (method === 'PUT' || method === 'DELETE')) {
     const me = accounts.authenticate(req)
-    if (req.method === 'PUT') {
+    if (method === 'PUT') {
       const body = await readJson(req)
       const current = stories.get(storyPath[1])
       const { image, removed } = resolveImage(
@@ -456,7 +473,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'GET' && p === '/api/mine') {
+  if (method === 'GET' && p === '/api/mine') {
     const me = accounts.authenticate(req)
     const mine = stories.listByAuthor(me.id).map(publicStory)
     send(res, 200, {
@@ -468,7 +485,7 @@ async function handle(req, res) {
   }
 
   const creatorPath = /^\/api\/creators\/([a-z0-9][a-z0-9_-]{2,31})\.json$/.exec(p)
-  if (req.method === 'GET' && creatorPath) {
+  if (method === 'GET' && creatorPath) {
     const handle = creatorPath[1]
     if (!HANDLE_RE.test(handle)) throw new StoryError('書き手が見つかりません。', 404)
     const listing = stories.listPublic({
@@ -484,7 +501,7 @@ async function handle(req, res) {
 
   // ---- RSS ----
   // CY_SITE_ORIGIN が無ければ配らない。嘘の絶対 URL を購読者の手元に残さない。
-  if (req.method === 'GET' && p.startsWith('/api/feeds/')) {
+  if (method === 'GET' && p.startsWith('/api/feeds/')) {
     if (!siteOrigin()) {
       send(res, 503, { error: 'フィードは準備中です。' })
       return
@@ -517,13 +534,13 @@ async function handle(req, res) {
     }
   }
 
-  if (req.method === 'GET' && p === '/api/tags.json') {
+  if (method === 'GET' && p === '/api/tags.json') {
     send(res, 200, stories.tagIndex())
     return
   }
 
   // ---- 画像 ----
-  if (req.method === 'POST' && p === '/api/story-image') {
+  if (method === 'POST' && p === '/api/story-image') {
     const me = accounts.authenticate(req)
     // 上限＋1 バイトまで読む。ぴったりで切ると「上限ちょうど」の正当な
     // 画像まで壊れて届く
@@ -540,7 +557,7 @@ async function handle(req, res) {
   }
 
   const imagePath = /^\/api\/images\/([A-Za-z0-9_-]{16})\.(png|jpg|webp)$/.exec(p)
-  if (req.method === 'GET' && imagePath) {
+  if (method === 'GET' && imagePath) {
     const found = images.filePath(imagePath[1], imagePath[2])
     if (!found) throw new ImageError('画像が見つかりません。', 404)
     // ID は乱数で、中身が変わることはない（差し替えは別 ID になる）ので
@@ -557,7 +574,7 @@ async function handle(req, res) {
   }
 
   // ---- 通報 ----
-  if (req.method === 'POST' && p === '/api/reports') {
+  if (method === 'POST' && p === '/api/reports') {
     const body = await readJson(req)
     const { ticket } = reports.create({
       target: body.target,
@@ -578,7 +595,7 @@ async function handle(req, res) {
     return
   }
 
-  if (req.method === 'GET' && p === '/api/reports') {
+  if (method === 'GET' && p === '/api/reports') {
     requireAdmin(req)
     send(res, 200, {
       reports: reports.list({ status: url.searchParams.get('status') ?? '' }),
@@ -589,7 +606,7 @@ async function handle(req, res) {
   }
 
   const reportPath = /^\/api\/reports\/([0-9a-f-]{36})$/.exec(p)
-  if (req.method === 'POST' && reportPath) {
+  if (method === 'POST' && reportPath) {
     requireAdmin(req)
     const body = await readJson(req)
     send(res, 200, { report: reports.update(reportPath[1], { status: body.status, note: body.note }) })
@@ -602,7 +619,7 @@ async function handle(req, res) {
   // API へ回す。sitemap の URL は絶対でなければならないので、公開オリジン
   // （CY_SITE_ORIGIN）が決まるまでは出さない — 相対や仮のドメインで出すと、
   // 検索側に間違った URL を覚えさせることになる。
-  if (req.method === 'GET' && p === '/sitemap-stories.xml') {
+  if (method === 'GET' && p === '/sitemap-stories.xml') {
     const origin = (process.env.CY_SITE_ORIGIN ?? '').replace(/\/+$/, '')
     if (!/^https:\/\//.test(origin)) {
       send(res, 404, { error: 'CY_SITE_ORIGIN が未設定のため sitemap はまだ出せません。' })
