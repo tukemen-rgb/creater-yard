@@ -24,11 +24,11 @@ export function SaveStory({ id }: { id: string }) {
       {saved && (
         <>
           {' ・ '}
-          <Link prefetch={false} href="/saved/">保存したStoryを見る</Link>
+          <Link prefetch={false} href="/saved/">保存した Story を見る</Link>
         </>
       )}
       <br />
-      <small>保存するのはStory IDだけです。CreatorYardのサーバーには送信しません。</small>
+      <small>保存するのは Story ID だけです。CreatorYard のサーバーには送信しません。</small>
     </p>
   )
 }

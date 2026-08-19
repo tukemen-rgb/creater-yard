@@ -242,7 +242,7 @@ function WriteInner() {
           </button>
         </div>
         <p>
-          <Link prefetch={false} href="/account/">← 自分のStory一覧へ</Link>
+          <Link prefetch={false} href="/account/">← 自分の Story 一覧へ</Link>
         </p>
       </div>
     )

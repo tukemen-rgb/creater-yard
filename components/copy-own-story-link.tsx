@@ -39,7 +39,7 @@ export function CopyOwnStoryLink({ id, authorHandle }: { id: string; authorHandl
       </button>
       {message && <span role="status"> ・ {message}</span>}
       <br />
-      <small>共有先と文面は自分で選べます。CreatorYardは共有先を記録しません。</small>
+      <small>共有先と文面は自分で選べます。CreatorYard は共有先を記録しません。</small>
     </p>
   )
 }
