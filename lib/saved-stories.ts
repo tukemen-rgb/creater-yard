@@ -49,9 +49,17 @@ export function savedLimitNotice(savedCount: number, alreadySaved: boolean): str
   return `保存できるのは ${MAX_SAVED_STORIES} 本までです。押すと、いちばん古い 1 本が外れます。`
 }
 
-export function toggleSavedStory(id: string): boolean {
+/**
+ * 押した結果を返す。**`kept` は「端末に残せたか」**（U-15）。
+ *
+ * 前は「押したあとの状態」だけを返していて、**残せたかどうかは誰も
+ * 受け取っていなかった**。端末が保存を拒否していると、`SaveStory` は
+ * 読み直して表示を戻すので、**押しても何も起きないように見える**。
+ * 何が起きたかは、受け取った側が言う（事例 86・NN/g #1）。
+ */
+export function toggleSavedStory(id: string): { saved: boolean; kept: boolean } {
   const current = savedStoryIds()
   const saved = !current.includes(id)
-  saveStoryIds(saved ? [id, ...current] : current.filter((item) => item !== id))
-  return saved
+  const kept = saveStoryIds(saved ? [id, ...current] : current.filter((item) => item !== id))
+  return { saved, kept }
 }

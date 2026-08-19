@@ -150,3 +150,66 @@ test('保存できたかを返し、呼ぶ面がそれを見ている', () => {
     )
   }
 })
+
+/**
+ * ここから下は**受け取っているか**（U-15）。
+ *
+ * U-13 で「保存できたか」を返すようにしたが、**返しただけでは足りない** ——
+ * **受け取らなければ、黙って捨てるのと同じ**である。
+ *
+ * > `When users know the current system status, they learn the outcome of their
+ * > prior interactions and determine next steps.` —— NN/g #1（事例 86）
+ *
+ * **source 検査だけにしない。**端末の保存領域の代わりを置いて、
+ * **実際に投げさせて確かめる。**
+ */
+function withBrokenStorage() {
+  const box = new Map()
+  globalThis.window = {
+    localStorage: {
+      getItem: (k) => (box.has(k) ? box.get(k) : null),
+      // 端末が保存を拒否している状態（事例 84 の SecurityError と同じ形）
+      setItem: () => {
+        throw new Error('保存できません')
+      },
+      removeItem: (k) => box.delete(k),
+    },
+  }
+  return box
+}
+
+test('【実行】保存できない端末では、「あとで読む」が偽を返し、一覧も変わらない', async () => {
+  withBrokenStorage()
+  const saved = await import('../lib/saved-stories.ts?u15=toggle')
+  const before = saved.savedStoryIds()
+  const result = saved.toggleSavedStory('s0000001')
+  assert.equal(result.kept, false, '残せていないのに、残せたと言っている')
+  assert.deepEqual(saved.savedStoryIds(), before, '残っていないのに一覧が変わっている')
+})
+
+test('【実行】保存できない端末では、ヒアリングの書きかけも偽を返す', async () => {
+  withBrokenStorage()
+  const interview = await import('../lib/story-interview.ts?u15=draft')
+  const kept = interview.saveInterviewDraft({ title: 'あ', body: 'い', hurdleText: '' })
+  assert.equal(kept, false, '預けられていないのに、預けられたと言っている')
+})
+
+test('ヒアリングの終わりは、預けられないときに登録へ送らない', () => {
+  const write = withoutComments(read('app/write/page.common.tsx'))
+  const at = write.indexOf('const finishInterview')
+  assert.notEqual(at, -1, 'ヒアリングの終わりが見つからない')
+  const body = write.slice(at, at + 900)
+  // 送るのは「預けられた」枝の中だけ
+  assert.match(
+    body,
+    /saveInterviewDraft\([^)]*\)\s*\)\s*\{\s*router\.push\('\/signup\/'\)/,
+    '預けられたか確かめずに登録へ送っている（書いた 4 行が消える）',
+  )
+  assert.match(body, /DEVICE_STORAGE_DRAFT_KEPT_ON_SCREEN/, '残っていることを言っていない')
+})
+
+test('「あとで読む」を押した側が、残せたかを受け取っている', () => {
+  const button = withoutComments(read('components/save-story.tsx'))
+  assert.match(button, /\{\s*kept\s*\}\s*=\s*toggleSavedStory\(/, '返り値を捨てている')
+  assert.match(button, /DEVICE_STORAGE_SAVE_STORY_FAILED/, '残せなかったことを言っていない')
+})

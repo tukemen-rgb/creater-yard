@@ -13,6 +13,7 @@ import {
   type Story,
   type StoryImage,
 } from '../../lib/api'
+import { DEVICE_STORAGE_DRAFT_KEPT_ON_SCREEN } from '../../lib/device-storage'
 import { SITE_FEED } from '../../lib/og'
 import { VoiceInput } from '../../components/voice-input'
 import { StoryInterview } from '../../components/story-interview'
@@ -218,11 +219,14 @@ function WriteInner() {
   }
 
   const finishInterview = async (draft: InterviewDraft) => {
-    if (!getHandle()) {
-      saveInterviewDraft(draft)
+    // 名乗っていない人は、書いたものを端末に預けてから登録へ送る。
+    // **預けられなかったら送らない**（U-15）—— 送れば画面が変わり、
+    // 書いた 4 行は本当に消える。送らなければ、少なくとも本人の画面には残る。
+    if (!getHandle() && saveInterviewDraft(draft)) {
       router.push('/signup/')
       return
     }
+    if (!getHandle()) setError(DEVICE_STORAGE_DRAFT_KEPT_ON_SCREEN)
     setTitle(draft.title)
     setBody(draft.body)
     setHurdleText(draft.hurdleText)

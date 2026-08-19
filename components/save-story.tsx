@@ -3,12 +3,15 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
+import { DEVICE_STORAGE_SAVE_STORY_FAILED } from '../lib/device-storage'
 import { savedLimitNotice, savedStoryIds, toggleSavedStory } from '../lib/saved-stories'
 
 export function SaveStory({ id }: { id: string }) {
   const [saved, setSaved] = useState(false)
   const [savedCount, setSavedCount] = useState(0)
   const [ready, setReady] = useState(false)
+  /** 端末に残せなかったこと。押すたびに取り直す（U-15）。 */
+  const [failed, setFailed] = useState(false)
 
   /** 端末の中身を見て、いまの状態を取り直す。押したあとも同じ道を通る。 */
   const sync = (ids: string[]) => {
@@ -35,12 +38,21 @@ export function SaveStory({ id }: { id: string }) {
         type="button"
         className="linklike"
         onClick={() => {
-          toggleSavedStory(id)
+          // 残せなかったときは、読み直した表示が勝手に元へ戻る。
+          // **戻ったことだけでは理由が分からない**ので、そこに 1 行出す。
+          const { kept } = toggleSavedStory(id)
+          setFailed(!kept)
           sync(savedStoryIds())
         }}
       >
         {saved ? '保存を解除する' : 'あとで読むために、このブラウザへ保存'}
       </button>
+      {failed && (
+        <>
+          <br />
+          <small role="alert">{DEVICE_STORAGE_SAVE_STORY_FAILED}</small>
+        </>
+      )}
       {limitNotice && (
         <>
           <br />
