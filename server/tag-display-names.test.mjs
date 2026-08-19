@@ -8,12 +8,17 @@
  * **本物の Stories を、本物のファイルに対して動かす。**U-5 で分かったとおり、
  * ソース検査では条件の向きを縛れない。**規則そのものは実行で確かめる。**
  *
- * SSR 側（lib/stories-read.ts）は TypeScript なのでここからは呼べない。
- * **同じ規則を持っていることをソースで縛り、実際の表示はブラウザで見る**
- * （③がその 3 通りの結果を PR に書く）。
+ * **SSR 側（lib/stories-read.ts）も実行で確かめる。**Node 22 は型注釈を
+ * 剥がして `.ts` をそのまま読めるので、`node --test` から直接 import できる
+ * （`server/og.test.mjs` が前からそうしている）。
+ *
+ * **2026-08-19 の②の設計と⑤の裁定に「TypeScript なので呼べない」と書いたが、
+ * 誤りだった。**確かめずに書いた制約で、ソース検査に落としていた。
+ * **U-5・U-7 で 2 周続けて踏んだ「ソース検査は条件の中身を縛れない」は、
+ * ここでは実行に替えられる。**
  */
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -99,12 +104,63 @@ test('表示だけ差し替えている（2 ファイルとも）', async () => 
   }
 })
 
-// server/lib/stories.mjs と lib/stories-read.ts は同じ規則を 2 度書いている
-// （byTagName と同じ事情）。片方だけ直すと SSR と静的書き出しで食い違う。
-test('SSR 側の索引も、同じ 3 つの規則を持っている', async () => {
-  const src = await read('lib/stories-read.ts')
-  assert.match(src, /record\.tools/, '使ったツール欄を見ていない')
-  assert.match(src, /toLowerCase\(\)/, 'タグと同じ形に落としていない')
-  assert.match(src, /ambiguous/, '揺れているときの扱いが無い')
-  assert.match(src, /toolNames/, '対応表を返していない')
+/**
+ * server/lib/stories.mjs と lib/stories-read.ts は同じ規則を 2 度書いている
+ * （byTagName と同じ事情）。片方だけ直すと SSR と静的書き出しで食い違う。
+ *
+ * **こちらは実行で確かめる。**置き場を env で渡してから読み込む
+ * （`DATA_DIR` は読み込みのときに 1 度だけ決まるので、**import より先に
+ * 環境変数を置く**）。
+ */
+async function withSsrIndex(records) {
+  const dir = mkdtempSync(path.join(tmpdir(), 'cy-ssr-'))
+  const before = process.env.CY_DATA_DIR
+  try {
+    mkdirSync(path.join(dir, 'stories'), { recursive: true })
+    records.forEach((r, i) => {
+      const id = `ssrtest${i}`.slice(0, 8)
+      writeFileSync(
+        path.join(dir, 'stories', `${id}.json`),
+        JSON.stringify({
+          id,
+          authorHandle: 'demo_writer',
+          title: '確認のための記録',
+          body: '確認のための本文です。',
+          status: 'public',
+          publishedAt: `2026-08-1${i}T00:00:00.000Z`,
+          toolTags: [],
+          topicTags: [],
+          tools: [],
+          ...r,
+        }),
+      )
+    })
+    process.env.CY_DATA_DIR = dir
+    const mod = await import(`../lib/stories-read.ts?ssr=${encodeURIComponent(dir)}`)
+    return mod.tagIndex()
+  } finally {
+    if (before === undefined) delete process.env.CY_DATA_DIR
+    else process.env.CY_DATA_DIR = before
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+test('SSR 側も、書き方を「使ったツール」欄から採る（実行で確かめる）', async () => {
+  const index = await withSsrIndex([{ tools: ['Godot'], toolTags: ['godot'] }])
+  assert.deepEqual(index.tools, ['godot'], 'タグの値が小文字でなくなった')
+  assert.equal(index.toolNames.godot, 'Godot', 'SSR 側が書き方を拾えていない')
+})
+
+test('SSR 側も、揺れているときはどちらも採らない（実行で確かめる）', async () => {
+  const index = await withSsrIndex([
+    { tools: ['Godot'], toolTags: ['godot'] },
+    { tools: ['GODOT'], toolTags: ['godot'] },
+  ])
+  assert.deepEqual(index.tools, ['godot'], '束ねる働きが壊れた')
+  assert.equal(index.toolNames.godot, undefined, '揺れているのに片方を採っている')
+})
+
+test('SSR 側も、見つからなければ小文字のまま（実行で確かめる）', async () => {
+  const index = await withSsrIndex([{ toolTags: ['godot'] }])
+  assert.equal(index.toolNames.godot, undefined, '書いていない名前を作っている')
 })
