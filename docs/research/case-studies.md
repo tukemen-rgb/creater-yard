@@ -12,6 +12,35 @@
 
 ---
 
+## 88. **NN/g —— 一覧では、頭の 2 語くらいしか見られていない**
+
+- 出典: <https://www.nngroup.com/articles/first-2-words-a-signal-for-scanning/>
+  （Nielsen Norman Group「First 2 Words: A Signal for the Scanning Eye」／
+  **2026-08-20 に①が取得して確認**）
+- 事実（原文の表現）:
+
+  > **`read the first few listed items somewhat thoroughly — thus the cross-bars of the "F" — but read less and less as they continue down the list, eventually passing their eyes down the text's left side in a fairly straight line.`**
+  >
+  > **`Users typically see about 2 words`**（一覧の各項目について）
+
+- 学び: CreatorYard の一覧カードは、**本文の先頭 120 字**を抜粋に使う
+  （`components/story-card.tsx` の `body.slice(0, 120)`）。
+  ところが**ヒアリングから書いた本文は、必ず定型の見出しで始まる**:
+
+  ```
+  【つくっているもの】
+  古い動物園を探索するホラーゲーム
+
+  【今日試したこと】
+  …
+  ```
+
+  **抜粋の頭は毎回「【つくっているもの】」**になる。
+  この事例が言う「見られている 2 語」が、**全部の記録で同じ語**になる。
+  しかも**その直後に来るのは題と同じ文字列**である（U-16）。下の提案 U-17。
+
+---
+
 ## 87. **NN/g —— 既定値は、たいていそのまま使われる**
 
 - 出典: <https://www.nngroup.com/articles/the-power-of-defaults/>
