@@ -12,6 +12,28 @@
 
 ---
 
+## 91. **Next.js —— 画面を移ってもレイアウトは作り直されない**
+
+- 出典: <https://nextjs.org/docs/app/api-reference/file-conventions/layout>
+  （Next.js Docs「layout.js」／**2026-08-21 に①が取得して確認**）
+- 事実（原文の表現）:
+  - > `Layouts do not rerender. They can be cached and reused to avoid unnecessary
+    > computation when navigating between pages.`
+  - > `Layouts do not re-render on navigation, so they do not access pathname which
+    > would otherwise become stale.`
+  - > `Since Client Components re-render during navigation, they have access to the
+    > latest pathname.`
+- 学び: **3 文目を「だから大丈夫」と読むと間違える。**
+  レイアウトの中の Client Component は**再描画はされる**が、
+  **`useEffect(…, [])` はもう一度走らない**（実行は取り付けのときだけで、
+  再描画では走らない）。つまり
+  **「取り付けのときに端末を 1 回だけ読む」ヘッダーは、画面を移っても古いまま**になる。
+  この製品の `components/nav-auth.tsx` がその形（提案 U-20）。
+  **「古くなる」と書いてあるのは pathname と searchParams の節だけ**だが、
+  **同じことは自分で持った状態にも起きる。**書いていないものは自分で数える
+
+---
+
 ## 90. **MDN —— 保存領域の変化は「よそのタブ」にだけ届く**
 
 - 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event>
