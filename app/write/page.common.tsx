@@ -13,7 +13,10 @@ import {
   type Story,
   type StoryImage,
 } from '../../lib/api'
-import { DEVICE_STORAGE_DRAFT_KEPT_ON_SCREEN } from '../../lib/device-storage'
+import {
+  DEVICE_STORAGE_DRAFT_KEPT_ON_SCREEN,
+  DEVICE_STORAGE_SESSION_EXPIRED,
+} from '../../lib/device-storage'
 import { SITE_FEED } from '../../lib/og'
 import { VoiceInput } from '../../components/voice-input'
 import { StoryInterview } from '../../components/story-interview'
@@ -63,6 +66,14 @@ function WriteInner() {
   const [busy, setBusy] = useState(false)
   const storyOperationLockRef = useRef(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  /**
+   * **ログインが切れた（401）ときだけ真**（U-19）。
+   *
+   * これが真のときだけ「別のタブでログインし直す」を出す。**常設にしない。**
+   * 離脱警告は `link.target === '_blank'` を除外しているので、常設にすると
+   * **警告の効かない道が 1 本、恒久的にできる**（下の警告の効果を参照）。
+   */
+  const [sessionExpired, setSessionExpired] = useState(false)
   const [optionalFieldsOpen, setOptionalFieldsOpen] = useState(false)
   const [interviewActive, setInterviewActive] = useState(startsWithInterview)
 
@@ -193,6 +204,8 @@ function WriteInner() {
       router.push(saveStatus === 'public' ? `/story/${data.story.id}/` : '/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '保存できませんでした。')
+      // 401 のときだけ。通信不能（status 0）や 413 で「入り直せ」は嘘になる
+      setSessionExpired(err instanceof ApiError && err.status === 401)
       storyOperationLockRef.current = false
       setBusy(false)
     }
@@ -213,6 +226,7 @@ function WriteInner() {
       router.push('/account/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '削除できませんでした。')
+      setSessionExpired(err instanceof ApiError && err.status === 401)
       storyOperationLockRef.current = false
       setBusy(false)
     }
@@ -269,6 +283,23 @@ function WriteInner() {
           : '完成していなくていい。今日つまずいたこと、試したこと、それだけで 1 本になります。'}
       </p>
       {error && <p className="notice notice--error">{error}</p>}
+      {/* ログインが切れたときだけ（U-19）。**この画面を離れさせない。**
+          離れれば書いた本文（最大 8000 字）は本当に消え、留まれば入り直せない
+          ——どちらを選んでも失う、というのが直したい形だった。
+          別のタブで入り直せば、lib/api.ts は保存のたびにトークンを読み直して
+          いるので、戻ってもう一度押すだけで通る。仕組みは足していない。
+          rel="noopener" は同一オリジンでも省かない（次に貼る人が外部リンクで
+          忘れる）。target="_blank" は離脱警告の除外に当たるので、**常設に
+          しない**こと —— 常設にすると警告の効かない道が恒久的に 1 本できる。 */}
+      {sessionExpired && (
+        <p className="notice notice--error" role="alert">
+          {DEVICE_STORAGE_SESSION_EXPIRED}
+          {' '}
+          <a href="/login/" target="_blank" rel="noopener">
+            別のタブでログインし直す
+          </a>
+        </p>
+      )}
       <form
         className="form"
         onSubmit={(e) => {
