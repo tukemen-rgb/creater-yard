@@ -12,6 +12,25 @@
 
 ---
 
+## 90. **MDN —— 保存領域の変化は「よそのタブ」にだけ届く**
+
+- 出典: <https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event>
+  （MDN Web Docs「Window: storage event」／**2026-08-21 に①が取得して確認**）
+- 事実（原文の表現）:
+  - > `The storage event of the Window interface fires when another document that
+    > shares the same storage area (either localStorage or sessionStorage) as the
+    > current window updates that storage area.`
+  - > `The event is not fired on the window that made the change.`
+- 学び: **別のタブでログインし直す**という道（提案 U-19 の案 B）は、
+  この 2 文の上に成り立つ。**書き換えたタブ（ログイン画面）では発火せず、
+  元のタブ（書きかけを抱えたほう）で発火する** —— つまり
+  **知りたいほうにだけ届く**。ただし**頼り切らない**こと:
+  `lib/api.ts` は保存のたびにトークンを読み直しているので、
+  **イベントが来なくても、もう一度押せば通る。**
+  「無くても失われない」形にしてから飾りとして足す
+
+---
+
 ## 89. **OWASP —— 端末の保存領域に、消えてほしいものを置かない**
 
 - 出典: <https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html>
