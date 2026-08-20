@@ -283,3 +283,114 @@ test('「あとで読む」を押した側が、残せたかを受け取って�
   assert.match(button, /\{\s*kept\s*\}\s*=\s*toggleSavedStory\(/, '返り値を捨てている')
   assert.match(button, /DEVICE_STORAGE_SAVE_STORY_FAILED/, '残せなかったことを言っていない')
 })
+
+/**
+ * ここから下は**退会したときに消えるもの**（U-18）。
+ *
+ * 退会したのに、書いたものが端末に残っていた。**共有の端末なら、
+ * 次に座った人が開発者ツールで読める。**押したボタンには
+ * 「退会して全部消す」と書いてあった。
+ *
+ * **鍵も文言も書き写さない。**「表が退会と言っている鍵」と
+ * 「実際に消える鍵」を**両側から取り出して比べる。**
+ */
+
+/** `lib/` 全体の `const NAME = '…'`。鍵の名前を値に直すために使う。 */
+function constantsInLib() {
+  const map = new Map()
+  for (const rel of globSync('lib/**/*.ts', { cwd: ROOT })) {
+    for (const m of withoutComments(read(rel)).matchAll(/(?:export )?const (\w+) = '([^']*)'/g)) {
+      map.set(m[1], m[2])
+    }
+  }
+  return map
+}
+
+/** `removeValue(X)` に渡している鍵を値にして返す。解決できなければ投げる。 */
+function keysRemovedIn(body) {
+  const constants = constantsInLib()
+  const keys = []
+  for (const m of body.matchAll(/removeValue\(\s*(?:'([^']*)'|(\w+))\s*\)/g)) {
+    if (m[1] !== undefined) {
+      keys.push(m[1])
+      continue
+    }
+    const value = constants.get(m[2])
+    assert.ok(value !== undefined, `鍵「${m[2]}」の値を解決できない（試験の前提が崩れている）`)
+    keys.push(value)
+  }
+  return [...new Set(keys)].sort()
+}
+
+/** 名前で始まる関数・定数の本体を、次の行頭の閉じ括弧まで切り出す。 */
+function bodyAfter(source, marker, closer) {
+  const at = source.indexOf(marker)
+  assert.notEqual(at, -1, `${marker} が見つからない（試験の前提が崩れている）`)
+  const end = source.indexOf(closer, at)
+  assert.notEqual(end, -1, `${marker} の終わりが見つからない`)
+  return source.slice(at, end)
+}
+
+/** 表が「<いつ>」に消えると言っている鍵。 */
+function keysClearedBy(when) {
+  return [...withoutComments(table).matchAll(/key: '([^']+)',[\s\S]*?clearedBy: '([^']*)'/g)]
+    .filter((m) => m[2].includes(when))
+    .map((m) => m[1])
+    .sort()
+}
+
+test('退会で消える鍵が、一覧の「退会したとき」と過不足なく一致する', () => {
+  const listed = keysClearedBy('退会')
+  const removed = keysRemovedIn(
+    bodyAfter(withoutComments(read('lib/story-interview.ts')), 'export function clearInterviewWriting', '\n}'),
+  )
+  assert.ok(removed.length > 0, '退会で消える鍵が 1 つも無い（試験の前提が崩れている）')
+  assert.deepEqual(
+    listed,
+    removed,
+    `一覧と実装がずれている（一覧: ${listed.join(' ')} ／ 実装: ${removed.join(' ')}）`,
+  )
+})
+
+/**
+ * **`clearSession()` に消すものを足させない。**
+ *
+ * あれの呼び出し元は 3 か所で、**1 つは `lib/api.ts` の 401 の自動ログアウト**
+ * である。トークンが 30 日で切れただけの人は、**何も押していない。**
+ * ここに書きかけや「あとで読む」の削除を足すと、**押していない人のものが
+ * 黙って消える。**だから、触ってよい鍵を一覧の「ログアウトしたとき」で縛る。
+ */
+test('ログアウトの片づけが触る鍵は、一覧の「ログアウトしたとき」だけ', () => {
+  const listed = keysClearedBy('ログアウト')
+  const removed = keysRemovedIn(
+    bodyAfter(withoutComments(read('lib/api.ts')), 'export function clearSession', '\n}'),
+  )
+  assert.ok(listed.length > 0, '一覧がログアウトで消えるものを 1 つも挙げていない')
+  assert.deepEqual(
+    listed,
+    removed,
+    `ログアウトで触る鍵がずれている（一覧: ${listed.join(' ')} ／ 実装: ${removed.join(' ')}）`,
+  )
+})
+
+test('退会は書いたものを消し、ログアウトは消さない', () => {
+  const page = withoutComments(read('app/account/page.common.tsx'))
+  const logout = bodyAfter(page, 'const logout =', '\n  }')
+  const remove = bodyAfter(page, 'const deleteAccount =', '\n  }')
+  assert.match(remove, /clearInterviewWriting\(\)/, '退会が書いたものを消していない')
+  assert.ok(
+    !/clearInterviewWriting\(/.test(logout),
+    'ログアウトで書きかけを消している（戻ってくる人のものを消してはいけない）',
+  )
+  // サーバーが消えてから端末。逆だと、削除に失敗したとき書きかけだけ失う
+  assert.ok(
+    remove.indexOf('clearInterviewWriting()') > remove.indexOf("method: 'DELETE'"),
+    'サーバーの削除より先に端末を消している',
+  )
+})
+
+test('退会のボタンが、消えないものまで消すと言っていない', () => {
+  const page = withoutComments(read('app/account/page.common.tsx'))
+  const button = bodyAfter(page, 'button--danger', '</button>')
+  assert.ok(!/全部/.test(button), 'ボタンが「全部」と言っている（あとで読むは端末に残る）')
+})
