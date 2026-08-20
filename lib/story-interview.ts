@@ -106,6 +106,31 @@ export function clearInterviewProgress() {
   }
 }
 
+/**
+ * **退会したときに、この端末から書いたものを消す**（U-18）。
+ *
+ * **`clearSession()`（`lib/api.ts`）に入れてはいけない。**
+ * あれの呼び出し元は 3 か所あり、**1 つは 401 の自動ログアウト**である
+ * ——**トークンが 30 日で切れただけ**の人は、何も押していない。
+ * そこで消すと、**押していない人の書きかけが黙って消える。**
+ * 消してよいのは「退会」を押した経路だけなので、**関数を分けてある。**
+ *
+ * **「あとで読む」（`cy-saved-story-ids`）はここで消さない。**
+ * あれは読む側の記録で、アカウントとは別のものである
+ * （`/data-policy/` の「自分で外したとき」を真のままにする）。
+ *
+ * 名前を「device」ではなく「interview」にしてあるのは、
+ * **入れ物の名前にすると、関係ない鍵を足したくなる**ため。
+ * 中身の名前なら、**関係ないものを入れた時点で名前が嘘になる。**
+ *
+ * `server/device-storage.test.mjs` が、**ここで消す鍵の集合**と
+ * `DEVICE_STORAGE` の「退会したとき」の記載を突き合わせる。
+ */
+export function clearInterviewWriting() {
+  removeValue(INTERVIEW_DRAFT_KEY)
+  removeValue(INTERVIEW_PROGRESS_KEY)
+}
+
 function readInterviewDraft(removeAfterRead: boolean): InterviewDraft | null {
   try {
     const raw = readValue(INTERVIEW_DRAFT_KEY)

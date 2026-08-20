@@ -53,12 +53,12 @@ export const DEVICE_STORAGE: readonly DeviceStorageItem[] = [
   {
     key: 'creatoryard:story-interview-draft',
     what: 'ヒアリングで書いた題・本文・つまずき',
-    clearedBy: '書く画面に引き継いだとき（引き継がなければ残ります）',
+    clearedBy: '書く画面に引き継いだときと、退会したとき（どちらも無ければ残ります）',
   },
   {
     key: 'creatoryard:story-interview-progress',
     what: 'ヒアリングの答えと、どこまで進んだか',
-    clearedBy: '最後まで進めたときと、やり直したとき',
+    clearedBy: '最後まで進めたとき・やり直したとき・退会したとき',
   },
 ] as const
 
