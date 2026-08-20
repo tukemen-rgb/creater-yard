@@ -14,6 +14,7 @@ import {
   type Story,
 } from '../../lib/api'
 import { DEVICE_STORAGE_WRITE_FAILED } from '../../lib/device-storage'
+import { clearInterviewWriting } from '../../lib/story-interview'
 import { StoryCard } from '../../components/story-card'
 
 /**
@@ -109,6 +110,10 @@ export default function AccountPage() {
         auth: true,
       })
       clearSession()
+      // **サーバーが消えてから端末**（U-18）。先に端末を消すと、削除が
+      // 失敗したときに「書きかけだけ失って退会もできていない」になる。
+      // ログアウト（上）では呼ばない —— 戻ってくる人の書きかけは残す。
+      clearInterviewWriting()
       router.push('/')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '退会できませんでした。')
@@ -243,7 +248,9 @@ export default function AccountPage() {
           </label>
           <div className="form__actions">
             <button type="submit" className="button button--danger" disabled={busy}>
-              退会して全部消す
+              {/* 「全部消す」と書かない（U-18）。退会のあとも「あとで読む」は
+                  端末に残る。**「全部」はその 1 つのぶんだけ嘘になる。** */}
+              退会して Story も画像も消す
             </button>
           </div>
         </form>
